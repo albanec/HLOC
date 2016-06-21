@@ -229,7 +229,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
                            "data.state$",data.names[i],".n <- NA ; ",
                            "data.state$",data.names[i],".Open <- NA ; ",
                            "data.state$",data.names[i],".Close <- NA ; ",
-                           "data.state$",data.names[i],".comiss <- NA ; "
+                           "data.state$",data.names[i],".comiss <- NA ; ",
                            sep = "")
         eval(parse(text = temp.text))
     }
