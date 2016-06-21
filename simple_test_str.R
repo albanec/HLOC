@@ -11,7 +11,7 @@ ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
 balance <- 100000
-portfolio.weights <- c(1,1,1) # веса инструментов в портфеле
+basket.weights <- c(1,1,1) # количество инструментов в портфеле
 balance.initial <- 10000000
 k.mm <- 0.02    # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
@@ -30,8 +30,15 @@ data.source.list[[1]] <- NormData_NA_inXTS(data = data.source.list[[1]], type = 
 data.source.list[[1]] <- AddData_FuturesSpecs_inXTS(data = data.source.list[[1]], from.date, to.date, im.wd)
 # вычисляем return'ы (в пунктах)
 data.source.list[[1]] <- STR_CalcReturn_inXTS(data = data.source.list[[1]], type = ret.type)
-# расчёт суммарного ГО (согласно весам инструмента в портфеле)
-data.source.list[[1]] <- STR_CalcPortfolio_sumIM_inXTS(data = data.source.list[[1]], portfolio.weights)
+#
+# расч1т суммарных показателей портфеля
+    # расчёт суммарного ГО (согласно весам инструмента в портфеле)
+data.source.list[[1]] <- STR_CalcPortfolio_Basket_IM_inXTS(data = data.source.list[[1]], basket.weights)
+    # расёт суммарного return'a 
+data.source.list[[1]] <- STR_CalcReturn_Basket_Ret_inXTS(data = data.source.list[[1]], basket.weights)
+    # расёт суммарной комиссии 
+basket.comiss <- STR_CalcPortfolio_Basket_Comiss_Simple(basket.weights, comissions)
+
 ##
 # работа стратегии
 # конвертируем return'ы (в рублях и там, где нужно)
