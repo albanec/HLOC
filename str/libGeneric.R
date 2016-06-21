@@ -254,23 +254,35 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
             data.names <- names(data)[grep("Close", names(data))]
             data.names <- sub(".Close", "", data.names)
             for (i in 1:length(data.names)) {
-                temp.text <- paste("data$",data.names[i],".temp <- data$",data.names[i],".Open ; ",                
-                    "data$",data.names[i],".Open[is.na(data$",data.names[i],".Open)] <- ",
-                    "na.locf(coredata(data$",data.names[i],".Close))[is.na(data$",data.names[i],".Open)] ; ",
-                    "data$",data.names[i],".Close[is.na(data$",data.names[i],".Close)] <- ",
-                    "rev(na.locf(rev(coredata(data$",data.names[i],".temp))))[is.na(data$",data.names[i],".Close)] ; ",
-                    "data$",data.names[i],".High[is.na(data$",data.names[i],".High)] <- ",
-                        "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".High)] > ",
-                            "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)],",
-                            "data$",data.names[i],".Close[is.na(data$",data.names[i],".High)],",
-                            "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)]) ; ",
-                    "data$",data.names[i],".Low[is.na(data$",data.names[i],".Low)] <- ",
-                        "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)] >",
-                            "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
-                            "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
-                            "data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)]) ; ",
-                    "data$",data.names[i],".Volume[is.na(data$",data.names[i],".Volume)] <- 0 ; ",
-                    "data$",data.names[i],".temp <- NULL", 
+                
+                temp.text <- paste(
+                    "if (any(is.na(data$",data.names[i],".Close))!= TRUE) {",
+                        "cat(\"INFO(NormData_NA): No NA in\"",",data.names[i]", ",\"\\n\")",
+                    "} else {",
+                        "data$",data.names[i],".temp <- data$",data.names[i],".Open ; ",                
+                        "data$",data.names[i],".Open[is.na(data$",data.names[i],".Open)] <- ",
+                        "na.locf(coredata(data$",data.names[i],".Close))[is.na(data$",data.names[i],".Open)] ; ",
+                        "",
+                        "data$",data.names[i],".Close[is.na(data$",data.names[i],".Close)] <- ",
+                        "rev(na.locf(rev(coredata(data$",data.names[i],".temp))))[is.na(data$",data.names[i],".Close)] ; ",
+                        "",
+                        "data$",data.names[i],".High[is.na(data$",data.names[i],".High)] <- ",
+                            "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".High)] > ",
+                                "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)],",
+                                "data$",data.names[i],".Close[is.na(data$",data.names[i],".High)],",
+                                "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)]) ; ",
+                        "",
+                        "data$",data.names[i],".Low[is.na(data$",data.names[i],".Low)] <- ",
+                            "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)] >",
+                                "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
+                                "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
+                                "data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)]) ; ",
+                        "",
+                        "data$",data.names[i],".Volume[is.na(data$",data.names[i],".Volume)] <- 0 ; ",
+                        "",
+                        "data$",data.names[i],".temp <- NULL ; ",
+                        "cat(\"INFO(NormData_NA): All NA remove in\"",",data.names[i]", ",\"\\n\")", 
+                    "}",
                     sep = "")
                 eval(parse(text = temp.text))
             }
@@ -287,7 +299,7 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
     return(data)
 }
 #
-NormData_Price_byCol <- function(data, norm.data, convert.to) {
+NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.price) {
     # ----------
     # Общее описание:
     # Функция для расчёта стоимости тиков
@@ -298,10 +310,10 @@ NormData_Price_byCol <- function(data, norm.data, convert.to) {
     # data: основной xts 
     # ----------
     if (convert.to == "RUB") {
-        data <- data * norm.data
+        data <- (data * tick.price / tick.val) * norm.data
     }
     if (convert.to == "USD") {
-        data <- data / norm.data    
+        data <- (data * tick.price / tick.val) / norm.data    
     }
     return(data)
 }
@@ -332,7 +344,7 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
     }
     remove(temp.text); remove(data.names); 
     # загрузка котировок USDRUB_TOM
-    data.USDRUB <- GetData_Ticker_One(ticker="USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
+    data.USDRUB <- GetData_Ticker_One(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
     data$USDRUB <- data.USDRUB$Close
     remove(data.USDRUB)
     data$USDRUB <- na.locf(data$USDRUB)

@@ -1,12 +1,14 @@
-source("~/Templates/HLOC/str/libGeneric.R")
-source("~/Templates/HLOC/str/libStrategy.R")
+# начальные параметры
+source("~/R.projects/HLOC/str/libGeneric.R")
+source("~/R.projects/HLOC/str/libStrategy.R")
+#source("~/R.projects/HLOC/str/simple_str_gear.R")
 # входные параметры
-wd <- "~/Templates/HLOC/temp/"
-from.date <- Sys.Date()-300
+wd <- "~/R.projects/HLOC/temp/"
+from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
 period <- "15min"
 tickers <- c("SPFB.Si", "SPFB.RTS", "SPFB.BR")
-im.wd <- "~/Templates/HLOC/data/im"
+im.wd <- "~/R.projects/HLOC/data/im"
 ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
@@ -18,7 +20,8 @@ sleeps <- c(6, 20, 0.06) # в пунктах
 comissions <- c(2, 2, 2)    # в рублях
 #
 setwd(wd)
-# загрузка и нормализация данных
+#
+#### загрузка и нормализация данных
 cat("Start Loading Data... ", "\n")
 data.source.list <- GetData_Ticker_Set(tickers, from.date, to.date, period)
 cat("Start Merging Data... ", "\n")
@@ -31,16 +34,24 @@ data.source.list[[1]] <- AddData_FuturesSpecs_inXTS(data = data.source.list[[1]]
 # вычисляем return'ы (в пунктах)
 data.source.list[[1]] <- STR_CalcReturn_inXTS(data = data.source.list[[1]], type = ret.type)
 #
-# расч1т суммарных показателей портфеля
-    # расчёт суммарного ГО (согласно весам инструмента в портфеле)
-data.source.list[[1]] <- STR_CalcPortfolio_Basket_IM_inXTS(data = data.source.list[[1]], basket.weights)
-    # расёт суммарного return'a 
-data.source.list[[1]] <- STR_CalcReturn_Basket_Ret_inXTS(data = data.source.list[[1]], basket.weights)
-    # расёт суммарной комиссии 
-basket.comiss <- STR_CalcPortfolio_Basket_Comiss_Simple(basket.weights, comissions)
-
+#### расчёт суммарных показателей портфеля
+# расчёт суммарного ГО (согласно весам инструмента в портфеле)
+data.source.list[[1]] <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+                                                            target = "IM", basket.weights)
+# расчёт суммарного return'a 
+# перевод return'ов в валюту
+data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
+data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]], 
+                                                  names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
+                                                  outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
+                                                  tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
+                                                  convert.to = "RUB")
+# суммирование
+data.source.list[[1]] <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+                                                            target = "cret", basket.weights)
+# расёт суммарной комиссии 
+basket.comiss <- sum(basket.weights * comissions)
 ##
 # работа стратегии
-# конвертируем return'ы (в рублях и там, где нужно)
-data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]], 
-                                                  names = c("SPFB.BR.ret"), convert.to = "RUB")
+
+
