@@ -1,12 +1,12 @@
-source("/HLOC/str/libGeneric.R")
-source("/HLOC/str/libStrategy.R")
+source("~/Templates/HLOC/str/libGeneric.R")
+source("~/Templates/HLOC/str/libStrategy.R")
 # входные параметры
-wd <- "/HLOC/temp/"
+wd <- "~/Templates/HLOC/temp/"
 from.date <- Sys.Date()-300
 to.date <- Sys.Date()
 period <- "15min"
 tickers <- c("SPFB.Si", "SPFB.RTS", "SPFB.BR")
-im.wd <- "/home/evgeni/R.projects/EVA test/"
+im.wd <- "~/Templates/HLOC/data/im"
 ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
