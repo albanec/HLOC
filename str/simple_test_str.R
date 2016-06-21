@@ -1,7 +1,7 @@
-source("/home/evgeni/Templates/R.libs/libGeneric.R")
-source("/home/evgeni/Templates/R.libs/libStrategy.R")
+source("/HLOC/str/libGeneric.R")
+source("/HLOC/str/libStrategy.R")
 # входные параметры
-wd <- "/home/evgeni/Templates/temp/HLOC_simple_str/"
+wd <- "/HLOC/temp/"
 from.date <- Sys.Date()-300
 to.date <- Sys.Date()
 period <- "15min"

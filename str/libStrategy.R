@@ -1,6 +1,3 @@
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# описания стратегий и вспомагательных функций
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 STR_Convert_SigToState <- function(x) {
     # ----------
@@ -18,42 +15,6 @@ STR_Convert_SigToState <- function(x) {
     x$y[ind] = x$a[ind]
     x$y[1] <- x$a[1]
     return (x$y)
-}
-#
-STR_CrossLine_ForVector <- function(x1,x2) {
-    # ----------
-    # Общее описание:
-    #  функция вычисляет пересечения графиков векторов
-    # Входные данные:
-    #  x1 - вектор1
-    #  x2 - вектор2
-    # Выходные данные:
-    #  вектор пересечений
-    # ----------
-    #
-    x <- diff(x1 > x2)
-    x[1] <- 0
-    x[x < 0] <- 0
-    x <- as.logical(c(0, x))
-    return(x)
-}
-#
-STR_CrossLine_inXTS <- function(x1,x2) {
-    # ----------
-    # Общее описание:
-    #  функция вычисляет пересечения графиков рядов
-    # Входные данные:
-    #  x1 - xts1
-    #  x2 - xts2
-    # Выходные данные:
-    #  ряд пересечений
-    # ----------
-    # 
-    x <- diff(x1 > x2)
-    x[1] <- 0
-    x[x < 0] <- 0
-    x <- sign(x)
-    return(x)
 }
 #
 STR_CalcState_Data <- function(data) {
@@ -114,78 +75,6 @@ STR_CalcReturn_inXTS <- function(data, type = "sret") {
     }
     return(data)
 }
-# 
-STR_CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinvest = TRUE, state = FALSE) {
-    # ----------
-      # Общее описание:
-      #   функция расчета equity
-     # Входные данные:
-     #   data: данные с доходностями и позициями
-      # Выходные данные:
-      #   data: данные + объем(w), относительной прибылью(margin), equity 
-      # Зависимости:
-      require(quantmod) 
-      # ----------
-    # расчет 
-    if (state == FALSE) {
-        data$state <- data$pos
-    }
-    if (abs == TRUE) {     
-        if (reinvest == TRUE) {
-            data$w <- data$state[[1]] * s0/data$Open[[1]]
-            data$w <- trunc(data$w)
-            data$equity <- s0
-            data$margin <- 0
-            for (i in 2:nrow(data)) { 
-                data$margin[i] <- data$w[[i-1]] * ( data$Open[[i]] - data$Open[[i-1]] )
-                data$equity[i] <- (data$equity[[i-1]] + data$margin[[i]])
-                data$w[i] <- data$state[[i]] * data$equity[[i]] / data$Open[[i]]
-                data$w[i] <- trunc(data$w[i])
-            } 
-        } else {
-            data$w <- 1 
-            data$margin <- lag(data$state) * ( data$Open-lag(data$Open) )
-            data$margin[1] <- 0
-            data$equity <- cumsum(data$margin)
-        }
-    }
-    if (SR == TRUE) {
-        if (reinvest == TRUE) {
-            data$SR <- lag(data$state) * data$SR
-            data$SR[1] <- 0
-            data$margin <- cumprod(data$SR + 1) 
-            data$margin[1] <- 0
-            data$equity <- s0*data$margin
-        } else {
-            data$SR <- lag(data$state) * data$SR
-            data$SR[1] <- 0
-            data$margin <- cumprod(data$SR + 1) - 1
-            data$equity <- data$Open[[1]] * as.numeric(data$margin)
-        }
-    }
-    if (LR == TRUE) {
-        #if (reinvest==TRUE) {
-            #
-        #} else {
-            data$LR <- lag(data$state) * data$LR
-            data$LR[1] <- 0
-            data$margin <- cumsum(data$LR)
-            data$equity <- data$Open[[1]] * (exp(as.numeric(last(data$margin))) - 1)
-        #}
-    }
-    return(data)
-}
-#
-STR_CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
-    require(quantmod) 
-    # расчет итогового профита
-    if (reinvest == TRUE) {
-        profit <- as.numeric(last(data$equity / pip) - s0)        
-    } else {
-        profit <- as.numeric(last(data$equity / pip))    
-    }
-    return (profit)
-}
 #
 STR_NormData_Price_inXTS <- function(data, names, convert.to) {
     # ----------
@@ -206,22 +95,6 @@ STR_NormData_Price_inXTS <- function(data, names, convert.to) {
     }
     return(data)    
 }
-#
-STR_PSARand2SMA <- function(data, slow.sma, fast.sma, accel.start = 0.02, accel.max = 0.2) {
-     require(quantmod) 
-    # описание psar.2sma стратегии 
-    data$sma <- SMA(Cl(data), slow.sma)
-    data$fma <- SMA(Cl(data), fast.sma)
-    data$sar <- SAR(data, accel = c(accel.start, accel.max))
-    data$sig.sma <- ifelse(data$fma > data$sma, 1, 
-                           ifelse(data$fma < data$sma, -1, 0))
-    data$sig.sar <- ifelse(data$Close > data$sar, 1, 
-                           ifelse(data$Close < data$sar, -1, 0))
-    data$pos <- sign(data$sig.sma + data$sig.sar)
-    data$pos <- lag(data$pos)
-    data <- na.omit(data)
-    return(data)
-}        
 #
 STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SPFB.BR"),
                              sma.per, add.per,
@@ -437,20 +310,3 @@ STR_CalcReturn_Basket_Ret_inXTS <- function(data) {
     return(data)
 }
 #
-STR_CalcSleeps_Basket_inXTS <- function(data.source, data.state) {
-    data.names <- names(data)[grep(".Close", names(data))]
-    data.names <- sub(".Close", "", data.names)
-    for (i in 1:length(data.names)) {
-        temp.text <- paste("data.state$",data.names[i],"sleep <- ",
-                           "runif(1, data.source$",data.names[i],".Low ,",
-                                 "data.source$",data.names[i],".High) ; ",
-                           "data.state$",data.names[i],"sleep <- ",
-
-                           sep = "")
-        
-        eval(parse(text = temp.text))
-
-    
-    #data.state$sleep <- runif(1, data.source$[index(data.state)], 1.4)
-    }
-}

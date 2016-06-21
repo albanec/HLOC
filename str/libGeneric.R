@@ -1,101 +1,4 @@
 #
-PrepareForWork_Packages <- function(package.list.csv, package.list = FALSE, download = FALSE, 
-                                    update = FALSE) {
-    # ----------
-    # Общее описание:
-    # функция загружает, устанавливает и подключает необходимые пакеты 
-    # Входные данные:
-    # package.list.csv или package.list: путь к .csv или вектор с пакетами 
-    # download, update или load: загрузить, обновить или подколючить пакеты
-    # ----------
-    #
-    if (package.list == FALSE) {
-        cat("Package List Path:", package.list.csv, "\n")    
-        cat("Reading Package Lists...", "\n")
-        package.list <- read.csv(package.list.csv, header = F, stringsAsFactors = F)    
-        package.list <- unlist(package.list, use.names = FALSE)    
-    } 
-    cat("Loading Installed Package List...", "\n")
-    if (update == TRUE) {
-        cat ("Start Upgrading packages", "\n")
-        update.packages(ask = FALSE)
-        cat ("Upgrade Packages: OK", "\n")
-        download <- FALSE
-    } 
-    if (download == TRUE) {
-        package.list.temp1 <- setdiff(package.list, rownames(installed.packages()))
-        if (length(package.list.temp1) > 0) {
-            install.packages(package.list.temp1, dependencies = TRUE)        
-            package.list.temp2 <- setdiff(package.list.temp1, rownames(installed.packages()))
-            if (length(package.list.temp2) > 0) {
-                warning("Installation Error!!!")
-            } else {
-                cat (length(diff(package.list, package.list.temp1)), " packages newly installed!", "\n")
-                cat("Installation Complete", "\n")
-            }
-        } else {
-            cat ("All Packages Already Installed!", "\n")
-        }    
-    }
-    if (load == TRUE) {
-        cat("Load Libraries to Workspace")
-        lapply(package.list, library, character.only = TRUE)
-        cat("Libraries Prepare to Work")
-    }
-}
-#
-Repeat_Row <- function(x,n) {
-    # ----------
-    # Общее описание:
-    #     функция создает матрицу из n строк вектора x
-    # Входные данные:
-    #     x - вектор, который надо повторить 
-    #    n - количество нужных строк
-    # Выходные данные:
-    #    матрица m, состоящая их n сток вектора x
-    # ----------
-    #
-    m <- matrix(rep(x,each = n),nrow = n)
-    return(m)
-}
-#
-Repeat_Col <- function(x,n) {
-    # ----------
-    # Общее описание:
-    #     функция создает матрицу из n столбцов вектора x
-    # Входные данные:
-    #     x - вектор, который надо повторить 
-    #    n - количество нужных столбцов
-    # Выходные данные:
-    #    матрица m, состоящая их n столбцов вектора x
-    # ----------
-    # 
-    m <- matrix(rep(x,each = n), ncol = n, byrow = TRUE)
-    return(m)
-}
-#
-FindMax_DistancePoint <- function(y, x=1:len(y)) {
-    # ----------
-    # Общее описание:
-    # Входные данные:
-    # Выходные данные:    
-    # ----------
-    # 
-    all.coord <- rbind(vec(y), vec(x))
-    first.point <- all.coord[, 1]
-    line.vec <- all.coord[, len(y)] - first.point
-    line.vec.n <- line.vec / sqrt(sum(line.vec^2))
-    #    
-    vec.from.first <- all.coord - first.point
-    scalar.product <- line.vec.n %*% vec.from.first
-    #    
-    vec.from.first.parallel <- t(scalar.product) %*% line.vec.n
-    vec.to.line <- t(vec.from.first) - vec.from.first.parallel
-    dist.to.line <- sqrt(rowSums(vec.to.line^2, 2))
-    dist <- which.max(dist.to.line)
-    return(dist)
-}    
-#
 Save_XTStoCSV <- function(data, filename, period = FALSE, tframe = FALSE) {
     # ----------
     # Общее описание:
@@ -248,7 +151,7 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
     return(data.list)
 }
 #
-Calcreturn<- function(data, type = "sret") {
+CalcReturn <- function(data, type = "sret") {
     # ----------
     # Общее описание:
     #     функция вычисляет return'ы
@@ -271,75 +174,6 @@ Calcreturn<- function(data, type = "sret") {
     }
     data[1] <- 0
     return(data)
-}
-#
-ExpandData_toPeriod <- function(data.list, frames, period) {
-    # ----------
-    # Общее описание:
-    #     функция выделения данных по tf и временному интервалу
-    # Входные данные:
-    #    data.list: лист с котировками в XTS
-    #     frames: файл (или вектор), сожержащий список нужных временных интервалов (в виде '2014-12-01/2014-12-31')             
-    #     period: вектор, содержащий нужные периоды свечей (в порядке возрастания); или один период
-    # Выходные данные:
-    #    выдает несколько .csv, расширенных по периодам
-    # ----------
-    # 
-    if (any(grepl(".csv", frames)) == TRUE) {
-        cat("INFO(ExpandData_toPeriod):  Loading FrameList: ", frames, "\n")
-        frames <- read.csv(frames, header = F, stringsAsFactors = F)
-        frames <- frames[, 1]      
-        cat("(ExpandData_toPeriod):  Loading FrameList: OK", "\n")
-    } 
-    n.frame <- length(frames)
-    n.ticker <- length(data.list) 
-    n.period <- length(period)
-    period.min <- period[1]
-    for (i in 1:n.ticker) {
-        data <- data.list[[i]]
-        data.name <- names(data)[grep("Close", names(data))]
-        data.name <- sub(".Close", "", data.name)
-        cat( "INFO(ExpandData_toPeriod):  Processing Data:  ", data.name, "\n")
-        for (n in 1:n.frame) {
-            # цикл time.frame'а
-            cat ("INFO(ExpandData_toPeriod):  Expand...  ", data.name, "for TimeFrame ", frames[n], "\n")
-            window <- frames[n] 
-            for (t in 1:n.period) {
-                # цикл периода
-                p <- period[t]
-                cat ("INFO(ExpandData_toPeriod):  Expand...  ", data.name, "for Period ", p, "\n")
-                if (p == "5min") { 
-                    p1 <- "mins"
-                    k <- 5
-                }
-                if (p == "10min") {
-                    p1 <- "mins"
-                    k <- 10
-                }
-                if (p == "15min") {
-                    p1 <- "mins"
-                    k <- 15
-                }
-                if (p == "30min") {
-                    p1 <- "mins"
-                    k <- 30
-                }
-                if (p == "1hour") {
-                    p1 <- "hours"
-                    k <- 1
-                }
-                if (p == "1day") {
-                    p1 <- "days"
-                    k <- 1
-                }
-                data.temp <- data[window]
-                ends <- endpoints(data.temp, p1, k)
-                data.temp <- data.temp[ends]
-                Save_XTStoCSV(data = data.temp, filename = data.name, period = p, tframe = n)
-            }
-            remove(data.temp); remove(data)
-        }
-    }
 }
 #
 MergeData_inList_byCol <- function(data.list, col.name = FALSE) {
