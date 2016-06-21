@@ -2,5 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+.HLOC.Rproj
 data/temp/*min.csv
 
