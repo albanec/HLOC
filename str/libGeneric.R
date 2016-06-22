@@ -95,7 +95,7 @@ GetData_Ticker_One <- function(ticker, period = "15min",
 }
 #
 GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, period, 
-                               maxattempts = 5, rename = FALSE) {
+                               maxattempts = 5, rename = FALSE, wd = "temp") {
     # ----------
     # Общее описание:
     #     функция загрузки списка котировок за период from/to.date + сохранения в файлы
@@ -138,7 +138,8 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
         }
         data <- na.omit(data)
         data.name <- as.character(tickers[i])
-        Save_XTStoCSV(data = data, filename = data.name, period = period.min)
+        filename <- file.path(wd, data.name)
+        Save_XTStoCSV(data = data, filename = filename, period = period.min)
         assign(paste(data.name, period.min, sep="."), data)
         remove(data); remove(data.name)
     }

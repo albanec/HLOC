@@ -1,14 +1,14 @@
 # начальные параметры
-source("~/R.projects/HLOC/str/libGeneric.R")
-source("~/R.projects/HLOC/str/libStrategy.R")
-#source("~/R.projects/HLOC/str/simple_str_gear.R")
+source("str/libGeneric.R")
+source("str/libStrategy.R")
+#source("str/simple_str_gear.R")
 # входные параметры
-wd <- "~/R.projects/HLOC/temp/"
+wd <- "data/temp/"
 from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
 period <- "15min"
 tickers <- c("SPFB.Si", "SPFB.RTS", "SPFB.BR")
-im.wd <- "~/R.projects/HLOC/data/im"
+im.wd <- "data/im"
 ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
@@ -19,11 +19,9 @@ k.mm <- 0.02    # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
 comissions <- c(2, 2, 2)    # в рублях
 #
-setwd(wd)
-#
 #### загрузка и нормализация данных
 cat("Start Loading Data... ", "\n")
-data.source.list <- GetData_Ticker_Set(tickers, from.date, to.date, period)
+data.source.list <- GetData_Ticker_Set(tickers, from.date, to.date, period, wd)
 cat("Start Merging Data... ", "\n")
 data.source.list <- MergeData_inList_byCol(data.source.list)
 cat("Start Normalization&Improve Data... ", "\n")
