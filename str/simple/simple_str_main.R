@@ -15,9 +15,9 @@ add.per <- 10
 balance <- 100000
 basket.weights <- c(1,1,1) # количество инструментов в портфеле
 balance.initial <- 10000000
-k.mm <- 0.02    # mm на заход в сделку
+k.mm <- 0.02  # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
-comissions <- c(2, 2, 2)    # в рублях
+commisions <- c(2, 2, 2)  # в рублях
 #
 #### загрузка и нормализация данных
 cat("Start Loading Data... ", "\n")
@@ -34,8 +34,8 @@ data.source.list[[1]] <- STR_CalcReturn_inXTS(data = data.source.list[[1]], type
 #
 #### расчёт суммарных показателей портфеля
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
-data.source.list[[1]] <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
-                                                            target = "IM", basket.weights)
+data.source.list[[1]]$IM <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+                                                               target = "IM", basket.weights)
 # расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
@@ -45,10 +45,10 @@ data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]],
                                                   tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                                                   convert.to = "RUB")
 # суммирование
-data.source.list[[1]] <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
-                                                            target = "cret", basket.weights)
+data.source.list[[1]]$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+                                                                 target = "cret", basket.weights)
 # расёт суммарной комиссии 
-basket.comiss <- sum(basket.weights * comissions)
+basket.commis <- sum(basket.weights * commisions)
 ##
 # работа стратегии
 
