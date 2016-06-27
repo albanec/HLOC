@@ -11,7 +11,7 @@ Save_XTStoCSV <- function(data, filename, period = FALSE, tframe = FALSE) {
   # Выходные данные:
   #  сохраненный .csv файл
   # Зависимости:
-    require(zoo)
+  require(zoo)
   # ----------  
   #
   if (period !=  FALSE) {
@@ -20,9 +20,9 @@ Save_XTStoCSV <- function(data, filename, period = FALSE, tframe = FALSE) {
   if (tframe !=  FALSE) {
     filename <- paste(filename, tframe, sep = ".")
   }
-  filename <- paste(filename, "csv", sep = ".")
+  filename <- paste(filename, ".csv", sep = "")
   write.zoo(data, file = filename, sep = ",")
-  cat("Save OK :  ", filename, "\n")
+  cat("Save OK :  ", file.path(getwd(), filename), "\n")
 }
 #
 Read_CSVtoXTS <- function(filename, period = FALSE, tframe = FALSE) {
@@ -48,7 +48,7 @@ Read_CSVtoXTS <- function(filename, period = FALSE, tframe = FALSE) {
   filename <- paste(filename, "csv", sep = ".")
   data <- read.csv(file = filename)
   data <- xts(data[,-1], order.by = as.POSIXct(data$Index))
-  cat("Read OK :  ", filename, "\n")
+  cat("Read OK :  ", file.path(getwd(), filename), "\n")
   return(data)
 }
 #
@@ -68,7 +68,7 @@ Read_CSVtoDF <- function(file.path, sep = ";") {
 }
 #
 GetData_Ticker_One <- function(ticker, period = "15min", 
-                 from.date, to.date = Sys.Date(), rename = FALSE) {
+                               from.date, to.date = Sys.Date(), rename = FALSE) {
   # ----------
   # Общее описание:
   #   функция загрузки тикера с Финам + (если нужно) переименовывает столбцы
@@ -88,14 +88,14 @@ GetData_Ticker_One <- function(ticker, period = "15min",
   if (is.xts(data) !=  TRUE) {
     stop(paste("ERROR(GetData_Ticker_One):  ticker ", ticker, " not present!!!", sep = ""))
   }
-  if (rename ==TRUE) {
+  if (rename == TRUE) {
     names(data) <- c("Open" , "High" , "Low" , "Close" , "Volume")  
   }
   return(data)
 }
 #
 GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, period, 
-                 maxattempts = 5, rename = FALSE, wd = "temp") {
+                               maxattempts = 5, rename = FALSE, dir) {
   # ----------
   # Общее описание:
   #   функция загрузки списка котировок за период from/to.date + сохранения в файлы
@@ -111,11 +111,14 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
   require(rusquant)
   # ----------
   #
-  cat("INFO(GetData_Ticker_Set):  Current work.dir:", getwd())  
+  old.dir <- getwd()
+  setwd(dir)
+  cat("INFO(GetData_Ticker_Set):  Current work.dir:", getwd(), "\n")  
   if (all(grepl(".csv", tickers)) == TRUE) {
     cat("INFO(GetData_Ticker_Set):  Loading Tickers: ", tickers, "\n")
-    tickers <- read.csv(tickers, header = F, stringsAsFactors = F)
-    tickers <- tickers[, 1]   
+    tickers <- 
+      read.csv(tickers, header = F, stringsAsFactors = F) %>%
+      .[, 1]   
     cat("INFO(GetData_Ticker_Set):  Loading Tickers: OK", "\n") 
   } 
   n.ticker <- length(tickers)
@@ -126,29 +129,29 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
   for (i in 1:n.ticker) {
     # цикл загрузки с max количеством попыток
     for (t in 1:maxattempts) {
-      cat("INFO(GetData_Ticker_Set):  (", i , "/" , n.ticker, ")", 
-        "Downloading: ", tickers[i], "  Attempt: ", t , "/", maxattempts, "\n")
+      cat("INFO(GetData_Ticker_Set):  (", i ,"/", n.ticker, ")", 
+          "Downloading: ", tickers[i], "  Attempt: ", t ,"/", maxattempts, "\n")
       data <- GetData_Ticker_One(ticker = tickers[i], from.date = from.date, to.date = to.date, 
-                   period = period.min, rename = rename)
+                                 period = period.min, rename)
       if (exists("data")) {
-        cat( "INFO(GetData_Ticker_Set):  (", i , "/" , n.ticker, ")", "
-          Downloading ", tickers[i] , "  complete", "\n")
-          break
+         cat("INFO(GetData_Ticker_Set):  (", i ,"/", n.ticker, ")", 
+             "Downloading ", tickers[i], "  complete", "\n")
+         break
       }
     }
     data <- na.omit(data)
     data.name <- as.character(tickers[i])
-    filename <- file.path(wd, data.name)
-    Save_XTStoCSV(data = data, filename = filename, period = period.min)
+    Save_XTStoCSV(data = data, filename = data.name, period = period.min)
     assign(paste(data.name, period.min, sep="."), data)
     remove(data); remove(data.name)
   }
   tickers <- sapply(tickers, function(x) { paste(x, period.min, sep = ".") })
   tickers.temp <- paste(tickers, collapse = ",")
-  temp.text <- paste("data.list <- list(", tickers.temp,") ;",
+  temp.text <- paste("data.list <- list(", tickers.temp, ") ;",
              "names(data.list) <-  tickers",  
              sep = "")
   eval(parse(text = temp.text))
+  setwd(old.dir)
   return(data.list)
 }
 #
@@ -193,12 +196,14 @@ MergeData_inList_byCol <- function(data.list, col.name = FALSE) {
   #  чтение и объединение данных
   for (i in 1:n.ticker) {
     data <- data.list[[i]]
-    data.name <- names(data)[grep("Close", names(data))]
-    data.name <- sub(".Close", "", data.name)
+    data.name <- 
+      names(data)[grep("Close", names(data))] %>%
+      sub(".Close", "", .)
     cat("INFO(MergeData_fromAll_toOne):  Processing StocksData:  ", data.name, "\n")
     if (col.name != FALSE) {
-      col.name <- paste(data.name, col.name, sep = ".")
-      temp.text <- paste("data <- data$", col.name, sep = "")
+      temp.text <-
+        paste(data.name, col.name, sep = ".") %>%
+        paste("data <- data$", ., sep = "")
       eval(parse(text = temp.text))
     }
     if (FirstTime == TRUE) {
@@ -252,10 +257,10 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
     } 
     if (type == "full") {
       # нормализация по уровням свечей 
-      data.names <- names(data)[grep("Close", names(data))]
-      data.names <- sub(".Close", "", data.names)
+      data.names <- 
+        names(data)[grep("Close", names(data))] %>%
+        sub(".Close", "", .)
       for (i in 1:length(data.names)) {
-        
         temp.text <- paste(
           "if (any(is.na(data$",data.names[i],".Close))!= TRUE) {",
             "cat(\"INFO(NormData_NA): No NA in\"",",data.names[i]", ",\"\\n\")",
@@ -319,7 +324,7 @@ NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.pri
   return(data)
 }
 #
-AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
+AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
   # ----------
   # Общее описание:
   # функция добавляет параметры инструментов (для фьючерсов: размеры ГО и курс USDRUB для пересчёта к RUB)
@@ -330,10 +335,11 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
   #  data: XTS ряд, с добавленными параметрами
   # ----------
   # 
+  old.dir <- getwd()
+  setwd(dir) 
   # загрузка ГО
   data.names <- names(data)[grep("Close", names(data))]
   data.names <- sub(".Close", "", data.names)
-  setwd(im.wd) 
   temp.data <- xts()
   for (i in 1:length(data.names)) {
     temp.text <- paste("temp.data <- Read_CSVtoXTS(filename = \"",data.names[i],".IM\") ; ",
@@ -351,6 +357,7 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
   data$USDRUB <- na.locf(data$USDRUB)
   # очистка от NA (на данном этапе na.omit полезным данным не навредит)
   data <- na.omit(data)
+  setwd(old.dir)
   return(data)
 }
   # выгрузка данных
@@ -359,8 +366,9 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
 #
 SubsetColumn_inXTS <- function(data, target) {
   # выделение имён столбцов, содержащих target параметр
-  target.names <- names(data)[grep(target, names(data))]
-  target.names <- sub(target, "", target.names)
+  target.names <- 
+    names(data)[grep(target, names(data))] %>%
+    sub(target, "", target.names)
   data <- data[, (which(colnames(data) %in% data))]
   return(data)
 }

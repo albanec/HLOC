@@ -3,12 +3,12 @@ source("str/libGeneric.R")
 source("str/libStrategy.R")
 #source("str/simple_str_gear.R")
 # входные параметры
-wd <- "data/temp/"
+temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
 period <- "15min"
 tickers <- c("SPFB.Si", "SPFB.RTS", "SPFB.BR")
-im.wd <- "data/im"
+im.dir <- "data/im"
 ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
@@ -20,22 +20,30 @@ sleeps <- c(6, 20, 0.06) # в пунктах
 commisions <- c(2, 2, 2)  # в рублях
 #
 #### загрузка и нормализация данных
-cat("Start Loading Data... ", "\n")
-data.source.list <- GetData_Ticker_Set(tickers, from.date, to.date, period, wd)
-cat("Start Merging Data... ", "\n")
-data.source.list <- MergeData_inList_byCol(data.source.list)
-cat("Start Normalization&Improve Data... ", "\n")
-# удаление NA (по свечам)
-data.source.list[[1]] <- NormData_NA_inXTS(data = data.source.list[[1]], type = "full")	
-# добавляем ГО и данные по USDRUB
-data.source.list[[1]] <- AddData_FuturesSpecs_inXTS(data = data.source.list[[1]], from.date, to.date, im.wd)
-# вычисляем return'ы (в пунктах)
-data.source.list[[1]] <- STR_CalcReturn_inXTS(data = data.source.list[[1]], type = ret.type)
+data.source.list <- 
+  {
+    cat("Start Loading Data... ", "\n")
+    GetData_Ticker_Set(tickers, from.date, to.date, period, dir = temp.dir, maxattempts = 5)
+  } %>%
+  {
+    cat("Start Merging Data... ", "\n")
+    MergeData_inList_byCol(.)  
+  }
 #
-#### расчёт суммарных показателей портфеля
+cat("Start Normalization&Improve Data... ", "\n")
+data.source.list[[1]] <- 
+  # удаление NA (по свечам)
+  NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
+  # добавляем ГО и данные по USDRUB
+  AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
+  # вычисляем return'ы (в пунктах)
+  STR_CalcReturn_inXTS(data = ., type = ret.type)
+#
+### расчёт суммарных показателей портфеля 
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
 data.source.list[[1]]$IM <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                target = "IM", basket.weights)
+#
 # расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 

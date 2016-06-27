@@ -104,14 +104,14 @@ STR_NormData_Price_inXTS <- function(data, names, outnames, convert.to, tick.val
 }
 #
 STR_CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
-  require()
+  #require()
   # расчёт суммарного параметра (согласно весам инструмента в портфеле)
   temp.text <- 
     names(data)[grep(".Close", names(data))] %>% 
-    sub(".Close", "", data.names) %>%
-    paste("data$",data.names,".",target, sep = "") %>%
-    paste(temp.text, basket.weights, sep = " * ", collapse = " + ") %>%
-    paste("data$ <- ", temp.text, sep = "") 
+    sub(".Close", "", .) %>%
+    paste("data$", .,".", target, sep = "") %>%
+    paste(., basket.weights, sep = " * ", collapse = " + ") %>%
+    paste("data <- ", ., sep = "") 
   eval(parse(text = temp.text))
   return(data)
 }

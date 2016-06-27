@@ -8,16 +8,23 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   #              закрытие позиций "ЗакрПозиПоРынку" в %%%
   data <- xts()
   # добавляем индикаторы  (SMA)
-  # тикер-индикатор: SI
-  cat("Calculate SMA with period:  ", sma.per, "\n")
-  data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-  cat("Calculate $sig and $pos...", "\n")
-  data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
-             ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
-  data <- na.omit(data)
+  data <- 
+    { 
+       cat("Calculate SMA with period:  ", sma.per, "\n")
+       # тикер-индикатор: SI        
+       sma <- SMA(data.source$SPFB.SI.Close, sma.per)
+    } %>%
+    merge(data, .) %>%
+    {
+       cat("Calculate $sig and $pos...", "\n")
+       sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
+                     ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
+    } %>%
+    merge(data, .) %>% 
+    na.omit(.)
   # т.к. открытия зависят только от SMA, то добавляем их 
-  data$pos <- lag(data$sig)
-  data$pos[1] <- 0
+  pos <- lag(data$sig)
+  pos[1] <- 0     
   #
   ## 1.2 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
   ## 1.2.1 сигналы на сброс лотов ($sig.drop - продажа по рынку)
@@ -36,13 +43,14 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # вектор, содержащий номера состояний сигналов
   num.vector <- seq(1:max(data$sig.num))
   # нумерация тиков внутри состояний сигналов
-  data.temp <- list()
-  data.temp <- sapply(num.vector, 
-            function(x, y) {
-              xts(cumsum(abs(sign(which(data$sig.num == x)))), 
-                order.by = index(data$sig.num[data$sig.num == x]))
-            })
-  data$sig.ticks <- NA
+  data.temp <- 
+    list() %>%
+    sapply(num.vector, 
+           function(x, y) {
+             xts(cumsum(abs(sign(which(data$sig.num == x)))), 
+             order.by = index(data$sig.num[data$sig.num == x]))
+           })
+  data$sig.ticks <- NA 
   data$sig.ticks <- MergeData_inList_byRow(data.temp)
   # ряд позиций и число тиков внутри позиции 
   data$pos.num <- lag(data$sig.num)
@@ -52,8 +60,9 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # удаляем мусор
   remove(data.temp); data$sig.num <- NULL
   # выделение сигналов "$sig.add"
-  data$sig.add <- data$sig.ticks %/% add.per
-  data$sig.add <- sign(data$sig.add) * abs(sign(diff(data$sig.add)))
+  data$sig.add <- 
+    data$sig.ticks %/% add.per %>%
+    sign(.) * abs(sign(diff(.)))
   data$sig.add[1] <- 0
   # 
   ## 1.3 расчёт позиций drop/add
@@ -64,16 +73,17 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # нумерация drop/add действий
   data$pos.add.num <- NA
   data$pos.drop.num <- NA
-  data.temp <- list()
   num.vector <- c(0, num.vector)
-  data.temp <- sapply(num.vector, 
-            function(x, y) {
-              merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                    order.by = index(data$pos.num[data$pos.num == x])),
-                  xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                    order.by = index(data$pos.num[data$pos.num == x])))
-            })
-  data.temp <- MergeData_inList_byRow(data.temp)
+  data.temp <- 
+    list() %>%
+    sapply(num.vector, 
+           function(x, y) {
+             merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
+                       order.by = index(data$pos.num[data$pos.num == x])),
+                   xts(cumsum(data$pos.drop[data$pos.num == x]), 
+                       order.by = index(data$pos.num[data$pos.num == x])))
+           }) %>%
+    MergeData_inList_byRow(.)
   data$pos.add.num <- data.temp$pos.add
   data$pos.drop.num <- data.temp$pos.drop
   # удаляем мусор
