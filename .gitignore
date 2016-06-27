@@ -2,5 +2,5 @@
 .Rhistory
 *.RData
 .Ruserdata
-data/temp/*.csv
+data/temp/*min.csv
 
