@@ -48,6 +48,7 @@ data.source.list[[1]]$IM <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.sourc
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
 data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]], 
+                                                  norm.data = data.source.list[[1]]$USDRUB, 
                                                   names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                                                   outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                                                   tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 

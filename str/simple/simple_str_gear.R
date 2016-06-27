@@ -97,35 +97,111 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   ## 2.расчет экономических параметров
   #
   ## 2.1 расчет начальных условий
-  # вектор инсрументор внутри портфеля
-  data.names <- names(data.source)[grep(".Close", names(data.source))]
-  data.names <- sub(".Close", "", data.names)
+  # вектор инсрументов внутри портфеля
+  data.names <- 
+    names(data.source)[grep(".Close", names(data.source))] %>%
+    sub(".Close", "", .)
   # выгрузка return'ов и Open'ов 
+  temp.ind <- index(data)
+  for (i in 1:length(data.names)) {
+    temp.text <- 
+      paste("data$",data.names[i],".Open <- data.source$",data.names[i],".Open[temp.ind] ; ", 
+            "data$",data.names[i],".ret <- data.source$",data.names[i],".ret[temp.ind] ; ",
+            "data$",data.names[i],".cret <- data.source$",data.names[i],".cret[temp.ind] ; ",
+            sep = "")
+    eval(parse(text = temp.text))
+  }
+  # выгрузка cret
+  data$cret <- data.source$cret[temp.ind]
+  remove(temp.ind)
+  #
   # начальный баланс
   data$balance <- NA
   data$balance[1] <- balance.initial 
   # начальное число синтетических портфельных контрактов
   data$n  <- NA
   #
-  # скелет таблицы сделок
+  ## 2.2 Работа с таблицей сделок
+  #
+  # 2.2.1 скелет таблицы сделок
   data$state <- STR_CalcState_Data(data)
   #data.state <- data.state[-1, ]
   data$state[data$pos.add != 0 | data$pos.drop != 0] <- data$pos[data$pos.add != 0 | data$pos.drop != 0]
   data.state <- data[!is.na(data$state)]
-  # добавление нужных столбцов
+  # 
+  # 2.2.1.1 расщепление переворотов в сделках
+  data.state <-
+    {
+      ind <- index(data.state[data.state$action == 2 | data.state$action == -2])
+      temp <- 
+        data.state[ind] %>% 
+        { 
+          x <- .
+          x$pos <- sign(x$action)  
+          x$state <- sign(x$action)  
+          x$action <- sign(x$action)  
+          return(x)
+        }
+      data.state %<>% 
+        {
+          x <- .
+          x$pos[ind] <- 0 
+          x$state[ind] <- -1 * sign(x$action[ind])  
+          x$action[ind] <- -1 * sign(x$action[ind])  
+          x$pos.num[ind] <- x$pos.num[ind] - 1
+          return(x)
+        }
+      data.state <- rbind(data.state, temp)   
+    }
+  #  
+  # 2.2.1.2 добавление нужных столбцов
   data.state$im.balance <- NA
   data.state$equity <- NA
   data.state$commis <- NA
   data.state$ret <- NA
   data.state$margin <- NA
   #
+  # котировки берём из data.source
+  for (i in 1:length(data.names)) {
+    temp.text <- 
+      paste("data.state$",data.names[i],".ret <- data.state$",data.names[i],".Open -", 
+            "lag(data.state$",data.names[i],".Open) ; ",
+            "data.state$",data.names[i],".ret[1] <- 0 ;", 
+            sep = "")
+    eval(parse(text = temp.text))  
+  }
+  data.state %<>% 
+    {
+      x <- .
+      x$SPFB.SI.cret <- x$SPFB.SI.ret
+      x <- STR_NormData_Price_inXTS(data = x, 
+                                    names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
+                                    outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
+                                    tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
+                                    convert.to = "RUB")
+      x$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = x, 
+                                                   target = "cret", basket.weights)
+      return(x)
+    }
+
+
+  ## 2.2.2 расчёт самих сделок
   for (i in 1:nrow(data.state)) {
     if (i == 1) {
       data.state$balance[1] <- balance.initial
       data.state$im.balance[1] <- 0
       data.state$commis[1] <- 0
+      data.state$equity[1] <- 0
+      data.state$ret[1] <- 0
+      data.state$margin[1] <- 0
+    } else {
+      ind <- index(data.state$n[i])    
+      # заполнение параметров по инструментам
+
+
     } 
-    temp.index <- index(data.state$n[i])  
+    
+    
     if (coredata(data.state$balance[i-1]) > 0) {
       if (data.state$pos != 0 & )
       data.state$n[i] <-

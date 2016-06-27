@@ -81,7 +81,7 @@ STR_CalcReturn_inXTS <- function(data, type = "sret") {
   return(data)
 }
 #
-STR_NormData_Price_inXTS <- function(data, names, outnames, convert.to, tick.val, tick.price) {
+STR_NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
   # ----------
   # Общее описание:
   # Функция для расчёта стоимости тиков внутри основного листа данных
@@ -94,7 +94,7 @@ STR_NormData_Price_inXTS <- function(data, names, outnames, convert.to, tick.val
   for (i in 1:length(names)) {
     temp.text <- paste("data$",outnames[i]," <- ",
                        "NormData_Price_byCol(data = data$",names[i],",",
-                       "norm.data = data$USDRUB, convert.to = \"",convert.to,"\",",
+                       "norm.data = ",norm.data,", convert.to = \"",convert.to,"\",",
                        "tick.val = ",tick.val[i],",",
                        "tick.price = ", tick.price[i],")",
                        sep = "")
