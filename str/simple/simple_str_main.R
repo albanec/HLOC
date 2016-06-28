@@ -1,3 +1,8 @@
+# подгрузка пакетов
+library(quantmod)
+library(rusquant)
+library(magrittr)
+library(plyr)
 # начальные параметры
 source("str/libGeneric.R")
 source("str/libStrategy.R")

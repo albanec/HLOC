@@ -1,98 +1,119 @@
 STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SPFB.BR"),
-               sma.per, add.per,
-               k.mm, initial.balance, basket.weights = c()) {
+                             sma.per, add.per,
+                             k.mm, initial.balance, basket.weights = c()) {
   require(quantmod)
   #
-  ## 1 расчет сигналов и позиций
-  ## 1.1 расчёт сигналов на: открытие позиции "ОткрПозиПоРынку" ($sig = 1/-1: long/short)
-  #              закрытие позиций "ЗакрПозиПоРынку" в %%%
-  data <- xts()
-  # добавляем индикаторы  (SMA)
-  data <- 
-    { 
-       cat("Calculate SMA with period:  ", sma.per, "\n")
-       # тикер-индикатор: SI        
-       sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-    } %>%
-    merge(data, .) %>%
+  # 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
+  # (открытие позиции "ОткрПозиПоРынку" ($sig | $pos = 1/-1: long/short); 
+  # закрытие позиций "ЗакрПозиПоРынку" рассчитывается с таюлице сделок (пункт ;;) )
+  data %<>%  
+    # добавляем индикаторы  (SMA)
     {
-       cat("Calculate $sig and $pos...", "\n")
-       sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
-                     ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
+      data <- xts()
+      cat("Calculate SMA with period:  ", sma.per, "\n")
+          # тикер-индикатор: SI        
+      data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
+      cat("Calculate $sig and $pos...", "\n")
+      data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
+                          ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
+      return(data)
+    } %>%   
+    na.omit(.) %>%
+    # т.к. позиции зависят только от SMA, то добавляем их 
+    {
+      data <- .
+      data$pos <- lag(data$sig)
+      data$pos[1] <- 0
+      return(data)
     } %>%
-    merge(data, .) %>% 
-    na.omit(.)
-  # т.к. открытия зависят только от SMA, то добавляем их 
-  pos <- lag(data$sig)
-  pos[1] <- 0     
-  #
-  ## 1.2 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
-  ## 1.2.1 сигналы на сброс лотов ($sig.drop - продажа по рынку)
-  cat("Calculate $sig.drop...", "\n")
-  data$sig.drop <- ifelse((((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
-              ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
-              (data$sig == data$pos), 
-              1, 0)
-  #
-  ## 1.2.2 расчет сигналов на добор лотов ($sig.add - докупка по рынку)
-  # точки смены сигнала
-  data$diff.sig <- diff(data$sig)
-  data$diff.sig[1] <- data$sig[1]
-  # нумерация состояний внутри сигналов
-  data$sig.num <- cumsum(abs(sign(data$diff.sig)))
-  # вектор, содержащий номера состояний сигналов
-  num.vector <- seq(1:max(data$sig.num))
-  # нумерация тиков внутри состояний сигналов
-  data.temp <- 
-    list() %>%
-    sapply(num.vector, 
-           function(x, y) {
-             xts(cumsum(abs(sign(which(data$sig.num == x)))), 
-             order.by = index(data$sig.num[data$sig.num == x]))
-           })
-  data$sig.ticks <- NA 
-  data$sig.ticks <- MergeData_inList_byRow(data.temp)
-  # ряд позиций и число тиков внутри позиции 
-  data$pos.num <- lag(data$sig.num)
-  data$pos.num[1] <- 0
-  data$pos.ticks <- lag(data$sig.ticks)
-  data$pos.ticks[1] <- 0
-  # удаляем мусор
-  remove(data.temp); data$sig.num <- NULL
-  # выделение сигналов "$sig.add"
-  data$sig.add <- 
-    data$sig.ticks %/% add.per %>%
-    sign(.) * abs(sign(diff(.)))
-  data$sig.add[1] <- 0
-  # 
-  ## 1.3 расчёт позиций drop/add
-  data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
-  data$pos.add[1] <- 0
-  data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
-  data$pos.drop[1] <- 0
-  # нумерация drop/add действий
-  data$pos.add.num <- NA
-  data$pos.drop.num <- NA
-  num.vector <- c(0, num.vector)
-  data.temp <- 
-    list() %>%
-    sapply(num.vector, 
-           function(x, y) {
-             merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                       order.by = index(data$pos.num[data$pos.num == x])),
-                   xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                       order.by = index(data$pos.num[data$pos.num == x])))
-           }) %>%
-    MergeData_inList_byRow(.)
-  data$pos.add.num <- data.temp$pos.add
-  data$pos.drop.num <- data.temp$pos.drop
-  # удаляем мусор
-  remove(data.temp); #remove(num.vector)
-  data$diff.sig <- NULL; data$sig.ticks <- NULL; data$sig.ticks <- NULL 
-  #
-  ## 1.4 ряд транзакций 
-  data$action <- data$pos - lag(data$pos)
-  data$action[1] <- 0 
+    ## расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
+    { 
+      # расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
+      data <- .
+      cat("Calculate $sig.drop...", "\n")
+      data$sig.drop <- ifelse((((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
+                           ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
+                          (data$sig == data$pos), 
+                          1, 0)
+      return(data)
+    } %>%
+    {  
+      # расчет сигналов на добор лотов ($sig.add - докупка по рынку)
+      data <- .
+      # точки смены сигнала
+      data$diff.sig <- diff(data$sig)
+      data$diff.sig[1] <- data$sig[1]
+      # нумерация состояний внутри сигналов
+      data$sig.num <- 
+        abs(sign(data$diff.sig)) %>%
+        cumsum(.)
+      # ряд позиций и число тиков внутри позиции 
+      data$pos.num <- lag(data$sig.num)
+      data$pos.num[1] <- 0 
+      # выделение сигналов "$sig.add"
+      data$sig.add <- 
+        # вектор, содержащий номера состояний сигналов
+        seq(1:max(data$sig.num)) %>%
+        # нумерация тиков внутри состояний сигналов
+        sapply(., 
+               function(x) {
+               xts(x = cumsum(abs(sign(which(data$sig.num == x)))) , 
+                   order.by = index(data$sig.num[data$sig.num == x]))
+               }) %>% 
+        MergeData_inList_byRow(.) %T>%
+        {
+          # ветвим и проставляем тики позиций (добаляем напрямую в data)
+          data$pos.ticks <<- lag(.)
+          data$pos.ticks[1] <<- 0
+        } %>%
+        {
+          . %/% add.per
+        } %>%        
+        {
+          sign(.) * abs(sign(diff(.)))
+        }
+      data$sig.add[1] <- 0  
+      return(data)
+    } %>%
+    # расчёт позиций drop/add
+    {
+      data <- .
+      data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
+      data$pos.add[1] <- 0
+      data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
+      data$pos.drop[1] <- 0
+      return(data)      
+    } %>%
+    # нумерация drop/add действий
+    {
+      data <- . 
+      data$pos.add.num <- NA
+      data$pos.drop.num <- NA
+      data.temp <- 
+        seq(1:max(data$sig.num)) %>%
+        c(0, .) %>%
+        sapply(., 
+          function(x) {
+            merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
+                      order.by = index(data$pos.num[data$pos.num == x])),
+                  xts(cumsum(data$pos.drop[data$pos.num == x]), 
+                      order.by = index(data$pos.num[data$pos.num == x])))
+          }) %>%
+        MergeData_inList_byRow(.)
+      data$pos.add.num <- data.temp$pos.add
+      data$pos.drop.num <- data.temp$pos.drop
+      # удаляем мусор
+      remove(data.temp); #remove(num.vector)
+      data$diff.sig <- NULL; data$sig.num <- NULL
+      return(data)
+    } %>%
+    #ряд транзакций 
+    {
+      data <- .
+      data$action <- data$pos - lag(data$pos)
+      data$action[1] <- 0 
+      return(data)
+    }
   #
   ## 2.расчет экономических параметров
   #
