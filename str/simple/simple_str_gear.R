@@ -10,10 +10,10 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     # добавляем индикаторы  (SMA)
     {
       data <- xts()
-      cat("Calculate SMA with period:  ", sma.per, "\n")
+      cat("STR_TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
           # тикер-индикатор: SI        
       data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-      cat("Calculate $sig and $pos...", "\n")
+      cat("STR_TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
                           ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
       return(data)
@@ -30,15 +30,16 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     { 
       # расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
       data <- .
-      cat("Calculate $sig.drop...", "\n")
+      cat("STR_TestStrategy INFO:  Calculate $sig.drop...", "\n")
       data$sig.drop <- ifelse((((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
-                           ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
-                          (data$sig == data$pos), 
-                          1, 0)
+                               ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
+                              (data$sig == data$pos), 
+                              1, 0)
       return(data)
     } %>%
     {  
       # расчет сигналов на добор лотов ($sig.add - докупка по рынку)
+      cat("STR_TestStrategy INFO:  Calculate $sig.add...", "\n")
       data <- .
       # точки смены сигнала
       data$diff.sig <- diff(data$sig)
@@ -77,6 +78,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     } %>%
     # расчёт позиций drop/add
     {
+      cat("STR_TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
       data <- .
       data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
       data$pos.add[1] <- 0
@@ -93,12 +95,12 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
         seq(1:max(data$sig.num)) %>%
         c(0, .) %>%
         sapply(., 
-          function(x) {
-            merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                      order.by = index(data$pos.num[data$pos.num == x])),
-                  xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                      order.by = index(data$pos.num[data$pos.num == x])))
-          }) %>%
+               function(x) {
+                 merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
+                           order.by = index(data$pos.num[data$pos.num == x])),
+                       xts(cumsum(data$pos.drop[data$pos.num == x]), 
+                           order.by = index(data$pos.num[data$pos.num == x])))
+               }) %>%
         MergeData_inList_byRow(.)
       data$pos.add.num <- data.temp$pos.add
       data$pos.drop.num <- data.temp$pos.drop
@@ -117,63 +119,68 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   #
   ## 2.расчет экономических параметров
   #
-  ## 2.1 расчет начальных условий
+  ## 2.1 выгрузка данных
   # вектор инсрументов внутри портфеля
   data.names <- 
-    names(data.source)[grep(".Close", names(data.source))] %>%
+    grep(".Close", names(data.source)) %>%
+    names(data.source)[.] %>%
     sub(".Close", "", .)
-  # выгрузка return'ов и Open'ов 
-  temp.ind <- index(data)
-  for (i in 1:length(data.names)) {
-    temp.text <- 
-      paste("data$",data.names[i],".Open <- data.source$",data.names[i],".Open[temp.ind] ; ", 
-            "data$",data.names[i],".ret <- data.source$",data.names[i],".ret[temp.ind] ; ",
-            "data$",data.names[i],".cret <- data.source$",data.names[i],".cret[temp.ind] ; ",
-            sep = "")
-    eval(parse(text = temp.text))
-  }
-  # выгрузка cret
-  data$cret <- data.source$cret[temp.ind]
-  remove(temp.ind)
+  data.ind <- index(data)
   #
   # начальный баланс
   data$balance <- NA
   data$balance[1] <- balance.initial 
   # начальное число синтетических портфельных контрактов
-  data$n  <- NA
+  data$n <- NA
   #
   ## 2.2 Работа с таблицей сделок
   #
   # 2.2.1 скелет таблицы сделок
-  data$state <- STR_CalcState_Data(data)
-  #data.state <- data.state[-1, ]
-  data$state[data$pos.add != 0 | data$pos.drop != 0] <- data$pos[data$pos.add != 0 | data$pos.drop != 0]
+  # ряд состояний в основную таблицу
+  cat("STR_TestStrategy INFO:  Calculate state column...", "\n")
+  data$state <- 
+    (data$pos.add != 0 | data$pos.drop != 0) %>%
+    {
+      data$state <- STR_CalcState_Data(data)
+      data$state[.] <- data$pos[.]
+      return(data$state)
+    }
+  # скелет таблицы сделок
+  cat("STR_TestStrategy INFO:  Build state.table...", "\n")
   data.state <- data[!is.na(data$state)]
   # 
   # 2.2.1.1 расщепление переворотов в сделках
-  data.state <-
+  data.state %<>%    
     {
-      ind <- index(data.state[data.state$action == 2 | data.state$action == -2])
-      temp <- 
-        data.state[ind] %>% 
-        { 
-          x <- .
-          x$pos <- sign(x$action)  
-          x$state <- sign(x$action)  
-          x$action <- sign(x$action)  
-          return(x)
-        }
-      data.state %<>% 
-        {
-          x <- .
-          x$pos[ind] <- 0 
-          x$state[ind] <- -1 * sign(x$action[ind])  
-          x$action[ind] <- -1 * sign(x$action[ind])  
-          x$pos.num[ind] <- x$pos.num[ind] - 1
-          return(x)
-        }
-      data.state <- rbind(data.state, temp)   
-    }
+      cat("STR_TestStrategy INFO:  Split SwitchPosition...", "\n")
+      temp.ind <- index(data.state[data.state$action == 2 | data.state$action == -2])
+      if (length(temp.ind) == 0) {
+        cat("No Switch Position there", "\n")
+      } else {
+        # temp копия нужных строк (строки начала новой сделки)
+        temp <- 
+          data.state[temp.ind] %>% 
+          { 
+            x <- .
+            x$pos <- sign(x$action)  
+            x$state <- sign(x$action)  
+            x$action <- sign(x$action)  
+            return(x)
+          }
+        # cтроки предыдущей сделки
+        data.state %<>% 
+          {
+            x <- .
+            x$pos[temp.ind] <- 0
+            x$state[temp.ind] <- -1 * sign(x$action[temp.ind])
+            x$action[temp.ind] <- -1 * sign(x$action[temp.ind])
+            x$pos.num[temp.ind] <- x$pos.num[temp.ind] - 1
+            return(x)
+          }
+        data.state <- rbind(data.state, temp)   
+      }
+      return(data.state)
+    } 
   #  
   # 2.2.1.2 добавление нужных столбцов
   data.state$im.balance <- NA
@@ -182,30 +189,62 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   data.state$ret <- NA
   data.state$margin <- NA
   #
+  # выгрузка return'ов (здесь переходим к return'ам стратегии) и Open'ов 
+  # return'ы грузятся как по пунктам, так и приведенные к деньгам
   # котировки берём из data.source
+  cat("STR_TestStrategy INFO:  Loading Returns from source to StartegyData...", "\n")
+  # индексы строк data.state
+  data.state.ind <- index(data.state)
+  temp.ind <- 
+    (data.state$pos != 0) %>% 
+    data.state[.] %>%
+    index
+  #
   for (i in 1:length(data.names)) {
     temp.text <- 
-      paste("data.state$",data.names[i],".ret <- data.state$",data.names[i],".Open -", 
-            "lag(data.state$",data.names[i],".Open) ; ",
-            "data.state$",data.names[i],".ret[1] <- 0 ;", 
-            sep = "")
+      data.names[i] %>%
+      {
+        paste("data$",.,".ret <- NA ; "
+              "data$",.,".ret <- data.source$",.,".ret[data.ind] * data$pos ; ",
+              "data$",.,".cret <- NA ; "
+              "data$",.,".cret <- data.source$",.,".cret[data.ind] * data$pos ; ",
+              "data.state$",.,".Open <- NA ; ",
+              "data.state$",.,".Open[data.state.ind] <- ",
+                "data.source$",.,".Open[data.state.ind] ; ",
+              "data.state$",.,".Close <- NA ; ",
+              "data.state$",.,".Close[data.state.ind] <- ",
+                "data.source$",.,".Close[data.state.ind] ; ",
+              "data.state$",.,".ret <- NA ; "
+              "data.state$",.,".ret <- ",
+                "(data.state$",.,".Open - lag(data.state$",.,".Open)) * data.state$pos - ",sleeps[i]," ; ",  
+              "data.state$",.,".ret[1] <- 0 ;", 
+              "data$",.,".ret[temp.ind] <- ",
+                "(data.state$",.,".Close[temp.ind] - data.state$",.,".Open) * data.state$pos ; ",
+              sep = "")
+      }
     eval(parse(text = temp.text))  
   }
+  #
+  # выгрузка cret
+  data$cret <- data.source$cret[temp.ind]
   data.state %<>% 
     {
-      x <- .
-      x$SPFB.SI.cret <- x$SPFB.SI.ret
-      x <- STR_NormData_Price_inXTS(data = x, 
-                                    names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
-                                    outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
-                                    tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
-                                    convert.to = "RUB")
-      x$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = x, 
-                                                   target = "cret", basket.weights)
-      return(x)
+      data.state <- .
+      data.state$SPFB.SI.cret <- data.state$SPFB.SI.ret
+      data.state <- STR_NormData_Price_inXTS(data = data.state, 
+                                             names = c("SPFB.RTS.ret", "SPFB.BR.ret"),
+                                             norm.data = data.source.list[[1]]$USDRUB, 
+                                             outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
+                                             tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
+                                             convert.to = "RUB")
+      data.state$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.state, 
+                                                            target = "cret", basket.weights)
+      return(data.state)
     }
 
-
+  #####################################################
+  #####################################################
+  
   ## 2.2.2 расчёт самих сделок
   for (i in 1:nrow(data.state)) {
     if (i == 1) {
@@ -219,9 +258,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       ind <- index(data.state$n[i])    
       # заполнение параметров по инструментам
 
-
     } 
-    
     
     if (coredata(data.state$balance[i-1]) > 0) {
       if (data.state$pos != 0 & )
