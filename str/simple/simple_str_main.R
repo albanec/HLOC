@@ -42,7 +42,7 @@ data.source.list[[1]] <-
   # добавляем ГО и данные по USDRUB
   AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
-  STR_CalcReturn_inXTS(data = ., type = ret.type)
+  STR_CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
 #
 ### расчёт суммарных показателей портфеля 
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
@@ -63,7 +63,6 @@ data.source.list[[1]]$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.sou
                                                                  target = "cret", basket.weights)
 # расёт суммарной комиссии 
 basket.commis <- sum(basket.weights * commisions)
-##
-# работа стратегии
+
 
 

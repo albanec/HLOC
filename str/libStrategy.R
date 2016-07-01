@@ -57,7 +57,7 @@ STR_CalcState_Table <- function(data) {
   return(state.data)
 }
 #
-STR_CalcReturn_inXTS <- function(data, type = "sret") {
+STR_CalcReturn_inXTS <- function(data, price = "Close", type = "sret") {
   # ----------
   # Общее описание:
   #  функция вычисляет return'ы по всему портфелю внутри XTS
@@ -74,7 +74,7 @@ STR_CalcReturn_inXTS <- function(data, type = "sret") {
     sub(".Close", "", .)
   for (i in 1:length(data.names)) {
     temp.text <- paste("data$",data.names[i],".",type," <- ",
-                       "CalcReturn(data$",data.names[i],".Close, type = \"",type,"\")", 
+                       "CalcReturn(data$",data.names[i],".",price,", type = \"",type,"\")", 
                        sep="")
     eval(parse(text = temp.text))
   }
@@ -91,12 +91,13 @@ STR_NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.t
   # Выходные данные:
   # data: основной XTS (нужные данные конвертированы к нужной валюте)
   # ----------
+  x <- norm.data
   for (i in 1:length(names)) {
     temp.text <- paste("data$",outnames[i]," <- ",
-                       "NormData_Price_byCol(data = data$",names[i],",",
-                       "norm.data = ",norm.data,", convert.to = \"",convert.to,"\",",
-                       "tick.val = ",tick.val[i],",",
-                       "tick.price = ", tick.price[i],")",
+                        "NormData_Price_byCol(data = data$",names[i],",",
+                                             "norm.data = x, convert.to = \"",convert.to,"\",",
+                                             "tick.val = ",tick.val[i],",",
+                                             "tick.price = ", tick.price[i],")",
                        sep = "")
     eval(parse(text = temp.text))  
   }
@@ -107,9 +108,8 @@ STR_CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
   #require()
   # расчёт суммарного параметра (согласно весам инструмента в портфеле)
   temp.text <- 
-    names(data)[grep(".Close", names(data))] %>% 
-    sub(".Close", "", .) %>%
-    paste("data$", .,".", target, sep = "") %>%
+    names(data)[grep(target, names(data))] %>% 
+    paste("data$", ., sep = "") %>%
     paste(., basket.weights, sep = " * ", collapse = " + ") %>%
     paste("data <- ", ., sep = "") 
   eval(parse(text = temp.text))
