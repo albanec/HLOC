@@ -315,7 +315,6 @@ NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.pri
   # Выходные данные:
   # data: основной xts 
   # ----------
-  cat(norm.data)
   if (convert.to == "RUB") {
     data <- (data * tick.price / tick.val) * norm.data
   }

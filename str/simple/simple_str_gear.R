@@ -195,8 +195,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   data.state$commis <- NA
   data.state$margin <- NA
   #
-  # выгрузка return'ов (здесь переходим к return'ам стратегии) и Open'ов 
-  # return'ы грузятся по пунктам
+  # выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
   # котировки берём из data.source
   cat("STR_TestStrategy INFO:  Loading Returns from source to StartegyData...", "\n")
   # индексы строк data.state
@@ -206,30 +205,29 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     temp.text <- 
       data.names[i] %>%
       {
-        t <- paste(
-            # перенос return'ов позиций по инструментам (в пунктах) в data
-            "data$",.,".ret <- ", 
-            "merge(data, data.source$",.,".ret[data.ind]) %$% ",
-            "na.locf(",.,".ret) %>% ", 
-            "{",
-                ". * lag(data$pos[data.ind])",
-            "} ; ",
-            "data$",.,".ret[1] <- 0 ; ",              
-            # перенос Open'ов в data.state
-            "data.state$",.,".Open <- ", 
+        t <- paste(             
+          # перенос Open'ов в data.state (в пунктах) с учётом проскальзываний
+          "data.state$",.,".Open <- ", 
             "merge(data.state, data.source$",.,".Open[data.state.ind]) %$% ",
-            "na.locf(",.,".Open) ; ",
-            # расчёт return'ов по сделкам (в пунктах) с учётом проскальзываний
-              #"data.state$",.,".ret <- NA ; ",
-            "data.state$",.,".ret <- ",
-              "(data.state$",.,".Open - lag(data.state$",.,".Open)) * lag(data.state$pos) ; ",
-            #    " * data.state$action ; ",  
-            "data.state$",.,".ret[1] <- 0 ;", 
-            # перенос данных по return'ам на свечах открытия/закрытия позиций в data (в пунктах)
-            #"temp <- merge(data$",.,".ret, data.state$",.,".ret[data.state.ind]) ; ",
-            #"temp[, 1][which(!is.na(temp[, 2]))] <- temp[, 2][which(!is.na(temp[, 2]))] ; ",
-            #"data$",.,".ret <- temp[, 1] ;",
-            sep = "")
+            "na.locf(",.,".Open) %>% 
+            { . - sleeps[i] * data.state$state } ; ",
+          # перенос Open'ов в data 
+          "data$",.,".Open <- ", 
+            "merge(data, data.source$",.,".Open[data.ind]) %$% ",
+            "na.locf(",.,".Open) ; ",  
+          # перенос данных по Open'ам на свечах изменения позиций (в пунктах) в data
+          "temp <- merge(data$",.,".Open, data.state$",.,".Open[data.state.ind]) ; ",
+          "temp[, 1][which(!is.na(temp[, 2]))] <- temp[, 2][which(!is.na(temp[, 2]))] ; ",
+          "data$",.,".Open <- temp[, 1] ;",  
+          # расчёт return'ов по сделкам (в пунктах) в data.state 
+          "data.state$",.,".ret <- ",
+            "(data.state$",.,".Open - lag(data.state$",.,".Open)) * lag(data.state$pos) ; ",  
+          "data.state$",.,".ret[1] <- 0 ;",
+          # расчёт return'ов по позициям (в пунктах) в data 
+          "data$",.,".ret <- ",
+            "(data$",.,".Open - lag(data$",.,".Open)) * lag(data$pos) ; ",  
+          "data$",.,".ret[1] <- 0 ;",
+          sep = "")
         return(t)
       } 
     eval(parse(text = temp.text))  
@@ -271,26 +269,6 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # суммарный cret в data.state
   data.state$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
   #
-  # расчёт csleep'ов по корзине 
-  data.state$SPFB.SI.sleep <- sleeps[1]
-  data.state$SPFB.RTS.sleep <- sleeps[2]
-  data.state$SPFB.BR.sleep <- sleeps[3]
-  data.state <- 
-    merge(data.state, data.source$USDRUB[data.state.ind]) %$%
-    na.locf(USDRUB) %>%
-    STR_NormData_Price_inXTS(data = data.state, 
-                             norm.data = ., 
-                             names = c("SPFB.RTS.sleep", "SPFB.BR.sleep"), 
-                             outnames = c("SPFB.RTS.csleep", "SPFB.BR.csleep"), 
-                             tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
-                             convert.to = "RUB")
-  # суммарный csleep в data.state
-  data.state$csleep <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "csleep", 
-                                                          basket.weights = c(1,1,1))
-  data.state$SPFB.SI.sleep <- NULL
-  data.state$SPFB.RTS.sleep <- NULL
-  data.state$SPFB.BR.sleep <- NULL
-
   #####################################################
   #####################################################
   
@@ -304,7 +282,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       data.state$ret[1] <- 0
       data.state$margin[1] <- 0
     } else {
-  
+    
 
     } 
     
