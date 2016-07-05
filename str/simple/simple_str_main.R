@@ -62,7 +62,7 @@ data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]],
 data.source.list[[1]]$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
 # расёт суммарной комиссии 
-basket.commis <- sum(basket.weights * commisions)
+basket.commiss <- sum(basket.weights * commisions)
 
 
 

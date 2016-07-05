@@ -173,12 +173,6 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     sub(".Close", "", .)
   data.ind <- index(data)
   #
-  # начальный баланс
-  data$balance <- NA
-  data$balance[1] <- balance.initial 
-  # начальное число синтетических портфельных контрактов
-  data$n <- NA
-  #
   ## 2.2 Работа с таблицей сделок
   #
   # 2.2.1 скелет таблицы сделок
@@ -187,13 +181,13 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     {
       data.state <- xts() 
       data.state <- data[!is.na(data$state)]
+    } %>% 
+    {
+      .$pos[nrow(.$pos)] <- 0
+      return(.)
     }
   # 
   # 2.2.1.2 добавление нужных столбцов
-  data.state$im.balance <- NA
-  data.state$equity <- NA
-  data.state$commis <- NA
-  data.state$margin <- NA
   #
   # выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
   # котировки берём из data.source
@@ -254,7 +248,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
                              convert.to = "RUB")
   # суммарный cret в data
   data$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
-  # расчёт для data.state
+  # расчёт суммарного cret для data.state
   cat("STR_TestStrategy INFO:  CalcCRet for Data.State", "\n")
   data.state <- 
     merge(data.state, data.source$USDRUB[data.state.ind]) %$%
@@ -271,82 +265,104 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   #
   #####################################################
   #####################################################
-  
+  # начальный баланс
+  data.state$balance <- NA
+  data.state$im.balance <- NA
+  # начальное число синтетических портфельных контрактов
+  data.state$n <- NA
+  data.state$diff.n <- NA
+  #
+  data.state$margin <- NA
+  data.state$commiss <- NA
+  data.state$equity <- NA
+  #
   ## 2.2.2 расчёт самих сделок
-  for (i in 1:nrow(data.state)) {
-    if (i == 1) {
+  for (n in 1:nrow(data.state)) {
+    if (n == 1) {
       data.state$balance[1] <- balance.initial
       data.state$im.balance[1] <- 0
-      data.state$commis[1] <- 0
-      data.state$equity[1] <- 0
-      data.state$ret[1] <- 0
+      data.state$commiss[1] <- 0
       data.state$margin[1] <- 0
+      data.state$diff.n[1] <- 0
+      data.state$n[1] <- 0
+      data.state$equity[1] <- 0
     } else {
-    
-
-    } 
-    
-    if (coredata(data.state$balance[i-1]) > 0) {
-      if (data.state$pos != 0 & )
-      data.state$n[i] <-
-        (balance[i - 1] / coredata(data.source$IM[temp.index]) -  * data.state$n[i]) * k.mm * 
-        runif(1, 0.6, 1.4) %>%
-        round(.)
-      data.state$im.balance[i] <- coredata(data.state$n[i]) * data.source$IM[temp.index]
-      data.state$balance[i] <- ifelse(data.state$balance[i - 1] - coredata(data.state$im.balance[i])
-      data.state$commis[i] <- basket.commis * abs(coredata(data$action[state.index]))
-      
-
-      for (n in length(data.names)) {
-        temp.text <- paste("data.state$",data.names[i],".Open[temp.index] <- ",
-                   "data.source$",data.names[i],".Open[temp.index]" "; ",
+      temp.index <- index(data.state$state[n])
+      data.state$margin[n] <- 
+        data.state$cret[[n]] * data.state$n[[n - 1]]
+      if (data.state$pos[n] == 0) {
+        data.state$n[n] <- 0
+      } else {
+        if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
+          data.state$n[n] <-
+            {
+              data.state$balance[[n - 1]] * k.mm / 
+              coredata(data.source$IM[temp.index]) * 
+              runif(1, 0.6, 1.4) 
+            } %>%
+            round(.)
+        } else {
+          if (data.state$pos.add[n] == 1) {
+            data.state$n[n] <- 
+              {
+                1.5 * data.state$n[[n - 1]]
+              } %>%
+              round(.)
+          }
+          if (data.state$pos.drop[n] == 1) {
+            data.state$n[n] <- 
+              {
+                0.5 * data.state$n[[n - 1]]
+              } %>%
+              round(.)
+          }
+        }   
       }
-    } else {
-      data.state$n[i] <- 0
-      data.state$im.balance[i] <- 0
-      data.state$commis[i] <- 0
+      data.state$diff.n[n] <- data.state$n[[n]] - data.state$n[[n - 1]]
+      data.state$im.balance[n] <- data.state$n[[n]] * coredata(data.source$IM[temp.index])
+      data.state$commiss[n] <- basket.commiss * abs(data.state$diff.n[[n]])
+      data.state$balance[n] <- 
+        data.state$balance[[n - 1]] + data.state$margin[[n]] + 
+        data.state$im.balance[[n - 1]] - data.state$im.balance[[n]] - 
+        data.state$commiss[[n]]
     }
-    
-    
-    
-    
   }
-  
-  #data.state$ret[1] <- data.source$ret[index(data.state$ret[1])]
-   
-    index <- index(data.state[i, ])
-    index.lag <- index(data.state[i-1, ])
-    data.state$margin[index] <- data.state$pos[index] * data.state$pos[index]
-     
-  temp.text <- c()
+  data.state$equity <- cumsum(data.state$margin)
+  #
+  data$n <- 
+    merge(data, data.state$n) %$%
+    na.locf(n)
+  #
+  data$margin <- 
+    merge(data, data.state$commiss) %>%
+    {
+      lag(data$n) * data$cret
+    } %>%
+    {
+      .[1, ] <- 0
+      return(.)
+    }
+  #
+  data$equity <- cumsum(data$margin)
+  #
   for (i in 1:length(data.names)) {
-    temp.text <- paste("data.state$",data.names[i],".ret <- NA ; ",
-               "data.state$",data.names[i],".im.balance <- NA ; ",
-               "data.state$",data.names[i],".sleep <- NA ; ",
-               "data.state$",data.names[i],".equity <- NA ; ",
-               "data.state$",data.names[i],".margin <- NA ; ",
-               "data.state$",data.names[i],".n <- NA ; ",
-               "data.state$",data.names[i],".Open <- NA ; ",
-               "data.state$",data.names[i],".Close <- NA ; ",
-               "data.state$",data.names[i],".commis <- NA ; ",
-               sep = "")
+    temp.text <- 
+      data.names[i] %>%
+      {
+        t <- paste(
+          "data.state$",.,".n <- data.state$n * ",basket.weights[i],"; ",
+          "data$",.,".n <- ", 
+            "merge(data, data.state$",.,".n) %$% ",
+            "na.locf(",.,".n) ; ",
+          "data$",.,".margin <- ",
+            "data$",.,".cret * lag(data$",.,".n) ; ",
+          "data$",.,".margin[1] <- 0 ; ",
+          "data$",.,".equity <- cumsum(data$",.,".margin) ;",
+           sep = "")
+        return(t)
+      }      
     eval(parse(text = temp.text))
-  }
-  #
-  # расчёт количества контрактов на сделках
-  #
-  # цикл расчёта
-  for (i in 1:nrow(data.state)) {
-    if (i == 1) {
-      
-      
-
-
-      for (n in 1:length(data.names)) {
-      temp.text <- paste("temp.index <- index(",data.names[n],") ; ",
-      data.state$",data.names[1],".n <- data.state$n[1] * ",basket.weights[n]," ; ",
-      "data.state$",data.names[n],".commis[1] <- ",commisions[n]," * data.state$",data.names[1],".n ;",
-      "data.state$",data.names[n],".sleep[1] <- ",sleeps[n]," ; ",
-      "data.state$",data.names[n],".n <- data.state$n[1]*",basket.weights[n]," ; ",
-      "data.state$",data.names[n],".Open <- ",
-      "data.source$",data.names[n],".Open[index(data.state$",data.names[n],".margin)]"" ; ",
+  }    
+  return(list(data, data.state))    
+}   
+  
