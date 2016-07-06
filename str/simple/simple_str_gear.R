@@ -1,18 +1,33 @@
 STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SPFB.BR"),
-                             sma.per, add.per,
-                             k.mm, initial.balance, basket.weights = c()) {
+                             sma.per, add.per, k.mm, balance.start, basket.weights = c()) {
   require(quantmod)
   #
   # 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
   # (открытие позиции "ОткрПозиПоРынку" ($sig | $pos = 1/-1: long/short); 
   # закрытие позиций "ЗакрПозиПоРынку" рассчитывается с тблице сделок (пункт ;;) )
   #
+  # вектор имён инсрументов внутри торгуемой корзины
+  data.names <- 
+    grep(".Close", names(data.source)) %>%
+    names(data.source)[.] %>%
+    sub(".Close", "", .)
+  #
+  cat("STR_TestStrategy INFO:  Start TestStrategy with parameters:", "\n",
+      "    TickersInBasket:     ",data.names, "\n",
+      "    SMA period:          ",sma.per, "\n",
+      "    PositionADD period:  ",add.per, "\n",
+      "    MM kofficient:       ",k.mm, "\n",
+      "    Start Balance:       ",balance.start, "\n",
+      "    BasketWeights:       ",basket.weights, "\n")
+  # 
+  cat("STR_TestStrategy INFO:  Start StrategyData Calculation...", "\n")
+  # Расчёт индикаторов и позиций
   data %<>%  
-    # 1.1 добавляем индикаторы  (SMA)
+    # 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
     {
       data <- xts()
       cat("STR_TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
-          # тикер-индикатор: SI        
+      # тикер-индикатор: SI        
       data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
       cat("STR_TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
@@ -20,13 +35,16 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       return(data)
     } %>%   
     na.omit(.) %>%
-    #1.2 т.к. позиции зависят только от SMA, то добавляем их 
+    # 1.2 т.к. позиции корзины зависят только от SMA, то добавляем их 
     {
       data <- .
       data$pos <- lag(data$sig)
       data$pos[1] <- 0
       return(data)
     } %>%
+    # позиции по каждому из инструментов корзины описаны позднее
+      # в этой стратегии позиции по BR обратны позициям по Si (т.к. инструменты обратно коррелированы)
+    #
     # 1.3 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
     { 
       # 1.3.1 расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
@@ -144,7 +162,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           { 
             x <- .
             x$pos <- sign(x$action)  
-            x$state <- sign(x$action)  
+            # x$state <- sign(x$action)  
             x$action <- abs(sign(x$action))  
             return(x)
           }
@@ -153,7 +171,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           {
             x <- .
             x$pos[temp.ind] <- 0
-            x$state[temp.ind] <- -1 * sign(x$action[temp.ind])
+            # x$state[temp.ind] <- sign(x$action[temp.ind])
             x$action[temp.ind] <- abs(sign(x$action[temp.ind]))
             x$pos.num[temp.ind] <- x$pos.num[temp.ind] - 1
             return(x)
@@ -163,19 +181,13 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       return(data)
     } 
   #
-  ## 2.расчет экономических параметров
+  ## 2.расчет результатов отработки робота
   #
-  ## 2.1 выгрузка данных
-  # вектор инсрументов внутри портфеля
-  data.names <- 
-    grep(".Close", names(data.source)) %>%
-    names(data.source)[.] %>%
-    sub(".Close", "", .)
+  ## 2.1 выгрузка данных по инструментам
+  # индексы данных (строк) data
   data.ind <- index(data)
   #
-  ## 2.2 Работа с таблицей сделок
-  #
-  # 2.2.1 скелет таблицы сделок
+  # 2.1.2 скелет таблицы сделок
   cat("STR_TestStrategy INFO:  Build state.table...", "\n")
   data.state <- 
     {
@@ -187,14 +199,21 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       return(.)
     }
   # 
-  # 2.2.1.2 добавление нужных столбцов
+  # 2.1.3 добавление нужных исходных данных в data и data.state 
   #
-  # выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
-  # котировки берём из data.source
-  cat("STR_TestStrategy INFO:  Loading Returns from source to StartegyData...", "\n")
+  # Выгружаем и рассчитываем уникальные данные по инструментам (Open, ret, cret, pos)
+    # все действия проходят внутри одного цикла перебера имён инструментов
+  #
+  # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
+    # котировки берём из data.source
+  cat("STR_TestStrategy INFO:  Loading Tickers Open from data.source...", "\n")
   # индексы строк data.state
   data.state.ind <- index(data.state)
+  #
+  temp.vector <- c(1, 1, -1)
+  #
   # расчёт return'ов позиций и состояний
+  cat("STR_TestStrategy INFO:  CalcReturns for data & data.state...","\n")
   for (i in 1:length(data.names)) {  
     temp.text <- 
       data.names[i] %>%
@@ -204,7 +223,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           "data.state$",.,".Open <- ", 
             "merge(data.state, data.source$",.,".Open[data.state.ind]) %$% ",
             "na.locf(",.,".Open) %>% 
-            { . - sleeps[i] * data.state$state } ; ",
+            { . + sleeps[i] * data.state$state } ; ",
           # перенос Open'ов в data 
           "data$",.,".Open <- ", 
             "merge(data, data.source$",.,".Open[data.ind]) %$% ",
@@ -213,13 +232,17 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           "temp <- merge(data$",.,".Open, data.state$",.,".Open[data.state.ind]) ; ",
           "temp[, 1][which(!is.na(temp[, 2]))] <- temp[, 2][which(!is.na(temp[, 2]))] ; ",
           "data$",.,".Open <- temp[, 1] ;",  
+          # расчёт позиций по инструментам корзины в data.state
+          "data.state$",.,".pos <- data.state$pos * temp.vector[i] ; ",
           # расчёт return'ов по сделкам (в пунктах) в data.state 
           "data.state$",.,".ret <- ",
-            "(data.state$",.,".Open - lag(data.state$",.,".Open)) * lag(data.state$pos) ; ",  
+            "(data.state$",.,".Open - lag(data.state$",.,".Open)) * lag(data.state$",.,".pos) ; ",  
           "data.state$",.,".ret[1] <- 0 ;",
+          # расчёт позиций по инструментам корзины в data
+          "data$",.,".pos <- data$pos * temp.vector[i] ; ",           
           # расчёт return'ов по позициям (в пунктах) в data 
           "data$",.,".ret <- ",
-            "(data$",.,".Open - lag(data$",.,".Open)) * lag(data$pos) ; ",  
+            "(data$",.,".Open - lag(data$",.,".Open)) * lag(data$",.,".pos) ; ",  
           "data$",.,".ret[1] <- 0 ;",
           sep = "")
         return(t)
@@ -227,10 +250,12 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     eval(parse(text = temp.text))  
     remove(temp.text)
     remove(temp)
-    cat("STR_TestStrategy INFO:  Loading Returns from source to StartegyData:  ",data.names[i],  "OK", "\n")       
+    cat("STR_TestStrategy INFO:  CalcReturns for data & data.state:  ",data.names[i],  "OK", "\n")       
   }
+  #
+  # 2.1.3.2 Расчёт cret
   # расчёт cret по инструментам в data и data.state
-  cat("STR_TestStrategy INFO:  CalcCRet for Data", "\n")
+  cat("STR_TestStrategy INFO:  CalcCRet for data...", "\n")
   # для Si всё просто
   data$SPFB.SI.cret <- data$SPFB.SI.ret
   data.state$SPFB.SI.cret <- data.state$SPFB.SI.ret 
@@ -249,7 +274,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # суммарный cret в data
   data$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
   # расчёт суммарного cret для data.state
-  cat("STR_TestStrategy INFO:  CalcCRet for Data.State", "\n")
+  cat("STR_TestStrategy INFO:  CalcCRet for data.state", "\n")
   data.state <- 
     merge(data.state, data.source$USDRUB[data.state.ind]) %$%
     na.locf(USDRUB) %>%
@@ -263,23 +288,25 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
   # суммарный cret в data.state
   data.state$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
   #
-  #####################################################
-  #####################################################
+  # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
   data.state$balance <- NA
   data.state$im.balance <- NA
-  # начальное число синтетических портфельных контрактов
+  # начальное число синтетических контрактов корзины
   data.state$n <- NA
+  # прочее
   data.state$diff.n <- NA
-  #
   data.state$margin <- NA
   data.state$commiss <- NA
   data.state$equity <- NA
   #
-  ## 2.2.2 расчёт самих сделок
+  ## 2.2 Расчёт самих сделок
+  #
+  cat("STR_TestStrategy INFO:  Start Calculation Deals...", "/n")
   for (n in 1:nrow(data.state)) {
+    # на первой строке рассчитываются стартовые значения
     if (n == 1) {
-      data.state$balance[1] <- balance.initial
+      data.state$balance[1] <- balance.start
       data.state$im.balance[1] <- 0
       data.state$commiss[1] <- 0
       data.state$margin[1] <- 0
@@ -287,12 +314,18 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
       data.state$n[1] <- 0
       data.state$equity[1] <- 0
     } else {
+      # основной расчёт
+      # индекс строки
       temp.index <- index(data.state$state[n])
+      # расчёт вариационки
       data.state$margin[n] <- 
         data.state$cret[[n]] * data.state$n[[n - 1]]
+      # расчёт количества контрактов на такте
+      # если закрытие позиции, то контрактов ноль
       if (data.state$pos[n] == 0) {
         data.state$n[n] <- 0
       } else {
+        # если открытие позиции, то
         if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
           data.state$n[n] <-
             {
@@ -302,6 +335,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
             } %>%
             round(.)
         } else {
+          # если докупка
           if (data.state$pos.add[n] == 1) {
             data.state$n[n] <- 
               {
@@ -309,6 +343,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
               } %>%
               round(.)
           }
+          # если сброс
           if (data.state$pos.drop[n] == 1) {
             data.state$n[n] <- 
               {
@@ -318,46 +353,74 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           }
         }   
       }
+      # изменение контрактов на такте
       data.state$diff.n[n] <- data.state$n[[n]] - data.state$n[[n - 1]]
+      # расчёт баланса, заблокированного на ГО
       data.state$im.balance[n] <- data.state$n[[n]] * coredata(data.source$IM[temp.index])
+      # комиссия на такте
       data.state$commiss[n] <- basket.commiss * abs(data.state$diff.n[[n]])
+      # баланс на такте
       data.state$balance[n] <- 
         data.state$balance[[n - 1]] + data.state$margin[[n]] + 
         data.state$im.balance[[n - 1]] - data.state$im.balance[[n]] - 
         data.state$commiss[[n]]
     }
   }
-  data.state$equity <- cumsum(data.state$margin)
+  cat("STR_TestStrategy INFO:  Calculation Deals    OK", "/n")
   #
-  data$n <- 
-    merge(data, data.state$n) %$%
-    na.locf(n)
+  # расчёт equity по корзине в data.state
+  data.state$equity <- cumsum(data.state$margin - data.state$commiss)
   #
-  data$margin <- 
-    merge(data, data.state$commiss) %>%
+  data %<>%  
+    # перенос данных по количеству контрактов корзины в data
     {
-      lag(data$n) * data$cret
+      merge(., data.state$n) %>%
+      {
+        data <- .
+        data$n <- na.locf(data$n)
+        return(data)
+      }
     } %>%
+    # расчёт вариационки в data
     {
-      .[1, ] <- 0
-      return(.)
-    }
+      merge(., data.state$commiss) %>%
+      {
+        data <- .
+        data$commiss[is.na(data$commiss)] <- 0
+        data$margin <- lag(data$n) * data$cret
+        data$margin[1] <- 0
+        return(data)
+      } 
+    }  
   #
-  data$equity <- cumsum(data$margin)
+  # расчёт equity по корзине в data 
+  data$equity <- cumsum(data$margin - data$commiss)
   #
+  # расчёт n, margin и equity по инструментам в data и data.state 
   for (i in 1:length(data.names)) {
     temp.text <- 
       data.names[i] %>%
       {
         t <- paste(
+          # расчёт для data.state 
           "data.state$",.,".n <- data.state$n * ",basket.weights[i],"; ",
+          "data.state$",.,".diff.n <- diff(data.state$",.,".n) ; ",
+          "data.state$",.,".diff.n[1] <- 0 ; ",
+          "data.state$",.,".commiss <- commissions[i] * data.state$",.,".diff.n ; ",
+          "data.state$",.,".margin <- ",
+            "data.state$",.,".cret * lag(data.state$",.,".n) ; ",
+          "data.state$",.,".margin[1] <- 0 ; ",
+          "data.state$",.,".equity <- cumsum(data.state$",.,".margin - data.state$",.,".commiss) ;",
+          # расчёт для data  
           "data$",.,".n <- ", 
             "merge(data, data.state$",.,".n) %$% ",
             "na.locf(",.,".n) ; ",
           "data$",.,".margin <- ",
             "data$",.,".cret * lag(data$",.,".n) ; ",
           "data$",.,".margin[1] <- 0 ; ",
-          "data$",.,".equity <- cumsum(data$",.,".margin) ;",
+          "data <- merge(data, data.state$",.,".commiss) ; ",
+          "data$",.,".commiss[is.na(data$",.,".commiss)] <- 0 ; ",
+          "data$",.,".equity <- cumsum(data$",.,".margin - data$",.,".commiss) ;",
            sep = "")
         return(t)
       }      

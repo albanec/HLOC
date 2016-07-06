@@ -19,10 +19,10 @@ sma.per <- 9
 add.per <- 10
 balance <- 100000
 basket.weights <- c(1,1,1) # количество инструментов в портфеле
-balance.initial <- 10000000
+balance.start <- 10000000
 k.mm <- 0.02  # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
-commisions <- c(2, 2, 2)  # в рублях
+commissions <- c(2, 2, 2)  # в рублях
 #
 #### загрузка и нормализация данных
 data.source.list <- 
@@ -62,7 +62,7 @@ data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]],
 data.source.list[[1]]$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
 # расёт суммарной комиссии 
-basket.commiss <- sum(basket.weights * commisions)
+basket.commiss <- sum(basket.weights * commissions)
 
 
 
