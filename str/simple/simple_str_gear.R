@@ -406,7 +406,7 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
           "data.state$",.,".n <- data.state$n * ",basket.weights[i],"; ",
           "data.state$",.,".diff.n <- diff(data.state$",.,".n) ; ",
           "data.state$",.,".diff.n[1] <- 0 ; ",
-          "data.state$",.,".commiss <- commissions[i] * data.state$",.,".diff.n ; ",
+          "data.state$",.,".commiss <- commissions[i] * abs(data.state$",.,".diff.n) ; ",
           "data.state$",.,".margin <- ",
             "data.state$",.,".cret * lag(data.state$",.,".n) ; ",
           "data.state$",.,".margin[1] <- 0 ; ",
