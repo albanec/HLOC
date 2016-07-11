@@ -1,7 +1,20 @@
-STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SPFB.BR"),
-                             sma.per, add.per, k.mm, balance.start, basket.weights = c()) {
+TestStrategy_gear <- function(data.source,
+                             sma.per, add.per, 
+                             k.mm, balance.start, 
+                             basket.weights, sleeps, commissions) {
+  # ----------
+  # Общее описание:
+  # тестовый робот
+  # Входные данные:
+  # data.souce - с котировками
+  # sma.per, add.per - периоды SMA и докупок
+  # k.mm, balance.start - коэффициент MM и стартовый баланс
+  # basket.weights, sleeps, commissions - параметры корзины (веса, слипы и комиссии)
+  # Выходные данные:
+  # list(data, data.state) - лист с данными отработки и данные сделок
+  # Зависимости:
   require(quantmod)
-  #
+  # ----------
   # 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
   # (открытие позиции "ОткрПозиПоРынку" ($sig | $pos = 1/-1: long/short); 
   # закрытие позиций "ЗакрПозиПоРынку" рассчитывается с тблице сделок (пункт ;;) )
@@ -11,6 +24,9 @@ STR_TestStrategy <- function(data.source, tickers = c("SPFB.SI", "SPFB.RTS", "SP
     grep(".Close", names(data.source)) %>%
     names(data.source)[.] %>%
     sub(".Close", "", .)
+  #
+  # расчёт суммарной комиссии по корзине
+  basket.commiss <- sum(basket.weights * commissions)
   #
   cat("STR_TestStrategy INFO:  Start TestStrategy with parameters:", "\n",
       "    TickersInBasket:     ",data.names, "\n",

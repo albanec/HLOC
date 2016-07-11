@@ -17,7 +17,6 @@ im.dir <- "data/im"
 ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
-balance <- 100000
 basket.weights <- c(1,1,1) # количество инструментов в портфеле
 balance.start <- 10000000
 k.mm <- 0.02  # mm на заход в сделку
@@ -40,7 +39,7 @@ data.source.list[[1]] <-
   # удаление NA (по свечам)
   NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
-  AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
+  STR_AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
   STR_CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
 #
@@ -61,8 +60,10 @@ data.source.list[[1]] <- STR_NormData_Price_inXTS(data = data.source.list[[1]],
 # суммирование
 data.source.list[[1]]$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
-# расёт суммарной комиссии 
-basket.commiss <- sum(basket.weights * commissions)
+# отработка тестового робота
+data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
+                                        sma.per, add.per, k.mm, balance.start, 
+                                        basket.weights, sleeps, commissions)
 
 
 
