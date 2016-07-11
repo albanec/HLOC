@@ -218,7 +218,7 @@ MergeData_inList_byCol <- function(data.list, col.name = FALSE) {
   return(merged.data)
 }
 #
-MergeData_inList_byRow <- function(data.list) {
+MergeData_inList_toXTS_byRow <- function(data.list) {
   while(length(data.list) > 1) {
     idxdata.list <- seq(from=1, to=length(data.list), by=2)
     data.list <- lapply(idxdata.list, 

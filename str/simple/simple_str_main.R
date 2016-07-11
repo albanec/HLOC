@@ -6,7 +6,7 @@ library(plyr)
 # начальные параметры
 source("str/libGeneric.R")
 source("str/libStrategy.R")
-#source("str/simple_str_gear.R")
+source("str/simple/simple_str_gear.R")
 # входные параметры
 temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
