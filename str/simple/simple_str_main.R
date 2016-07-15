@@ -2,7 +2,11 @@
 library(quantmod)
 library(rusquant)
 library(magrittr)
-library(plyr)
+library(PerformanceAnalytics)
+#library(plyr)
+# library(dplyr)
+# library(data.table)
+#
 # начальные параметры
 source("str/libGeneric.R")
 source("str/libStrategy.R")

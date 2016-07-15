@@ -96,7 +96,7 @@ TestStrategy_gear <- function(data.source,
                xts(x = cumsum(abs(sign(which(data$sig.num == x)))) , 
                    order.by = index(data$sig.num[data$sig.num == x]))
                }) %>% 
-        MergeData_inList_toXTS_byRow(.) %T>%
+        MergeData_inList_byRow(.) %T>%
         {
           # ветвим и проставляем тики позиций (добаляем напрямую в data)
           data$pos.ticks <<- lag(.)
@@ -136,7 +136,7 @@ TestStrategy_gear <- function(data.source,
                        xts(cumsum(data$pos.drop[data$pos.num == x]), 
                            order.by = data$pos.num[data$pos.num == x] %>% index(.)))
                }) %>%
-        MergeData_inList_toXTS_byRow(.)
+        MergeData_inList_byRow(.)
       data$pos.add.num <- data.temp$pos.add
       data$pos.drop.num <- data.temp$pos.drop
       # удаляем мусор
