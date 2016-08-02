@@ -1,18 +1,38 @@
-# library(data.table)
-# пример чистки
-d <-
-+     data %>%
-+     {
-+     df <- . 
-+     df <-  df[-which(df$pos != 0 & df$n == 0 & df$diff.n ==0)]
-+     return(df)
-+     } 
 #
 data.names <- 
     grep(".Open", names(data.source)) %>%
     names(data.source)[.] %>%
     sub(".Open", "", .)
 #
+###
+#' Очистка таблицы состояний от пустых сделок
+#'
+#' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
+#' 
+#' @param data Входной xts ряд состояний
+#'  
+#' @return data Очищенный xts ряд состояний
+#'
+#' @export
+CleanStates <- function(data) {
+  data %<>%
+    {
+      df <- . 
+      df <-  df[-which(df$pos != 0 & df$n == 0 & df$diff.n ==0)]
+      return(df)
+    } 
+  return(data)
+} 
+#
+###
+#' Создание итоговой таблицы сделок
+#' 
+#' @param data Входной xts ряд сделок
+#' @param data.names Вектор тикеров
+#'
+#' @return DealsTable data.frame содержащий все сделки
+#'
+#' @export
 TestStrategy_DealsTable_DF <- function(data, data.names) {
   if (!exists("data.names")) {
     data.names <- 
@@ -28,16 +48,59 @@ TestStrategy_DealsTable_DF <- function(data, data.names) {
       return(.)
     } %>%
     as.list(.)
+  #
   DealsTable <- 
     lapply(pos.num.list,
            function (x) {
-             DealSummary_DF(data, n = x, data.names)
+             CalcDealSummary_DF(data, n = x, data.names)
            }) %>%
-    MergeData_inList_byRow(.)
+    MergeData_inList_byRow(.) %>%
+    {
+    df <- . 
+    df <- 
+      last(df$PositionNum) %>%
+        1:. %>%
+        {
+          numDeals <- .
+          colNum <-
+            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "Margin", "Equity") %>%
+            {
+              which(colnames(df) %in% .) 
+            }
+          openRowIndex <- which((df1$PositionNum %in% numDeals) & !is.na(df1$OpenSignal))
+          closeRowIndex <- which((df1$PositionNum %in% numDeals) & is.na(df1$OpenSignal))
+
+          df <- sapply(numDeals, 
+                       function(x) {
+                         
+                         
+                         #df <- 
+                           #{
+                           #  df[openRowIndex, colNum] <- df[closeRowIndex, colNum]
+                           #  return(df)
+                           #}
+                        return(list(openRowIndex, closeRowIndex))
+                       })
+          return(df)
+        }
+      return(df)
+    }
   return(DealsTable)
 }
 #
-DealSummary_DF <- function(data, n, data.names) {
+###
+#' Вычисление данных по одной сделке
+#' 
+#' Выборка данных для конкретного немера сделки
+#' 
+#' @param data Входной xts ряд сделок
+#' @param n Номер сделки
+#' @param data.names Вектор тикеров
+#'
+#' @return DealsTable data.frame содержащий все сделки
+#'
+#' @export
+CalcDealSummary_DF <- function(data, n, data.names) {
   #
   if (!exists("data.names")) {
     data.names <- 
@@ -74,7 +137,30 @@ DealSummary_DF <- function(data, n, data.names) {
                      names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", "Open", 
                                    "n", "diff.n", "commiss", "margin", "equity")
                      return(.)
-                   } 
+                   } %>%
+                   {
+                     df <- .
+                     df$subnum <- 
+                       nrow(df) %>%
+                       { 
+                         ifelse(. < 3, 
+                                0,
+                                0.1)
+                       } %>% 
+                       as.vector
+                     df$pos.num <- 
+                       df$subnum %>%
+                       {
+                         .[1] <- 0 
+                         return(.)
+                       } %>%
+                       cumsum(.) %>%
+                       {
+                         .[nrow(.)] <- 0
+                         df$pos.num + .
+                       } 
+                     return(df)
+                   }
                  return(temp.data)
                }) %>%
         MergeData_inList_byRow(.) %>%
@@ -156,8 +242,8 @@ DealSummary_DF <- function(data, n, data.names) {
           df <- df[, -1]
           return(df)
         }
-        #
-        return(temp.data)
+      #
+      return(temp.data)
     }
   return(deal.summary)
 } 

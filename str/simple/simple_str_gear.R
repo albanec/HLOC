@@ -28,7 +28,7 @@ TestStrategy_gear <- function(data.source,
   # расчёт суммарной комиссии по корзине
   basket.commiss <- sum(basket.weights * commissions)
   #
-  cat("STR_TestStrategy INFO:  Start TestStrategy with parameters:", "\n",
+  cat("TestStrategy INFO:  Start TestStrategy with parameters:", "\n",
       "    TickersInBasket:     ",data.names, "\n",
       "    SMA period:          ",sma.per, "\n",
       "    PositionADD period:  ",add.per, "\n",
@@ -36,16 +36,16 @@ TestStrategy_gear <- function(data.source,
       "    Start Balance:       ",balance.start, "\n",
       "    BasketWeights:       ",basket.weights, "\n")
   # 
-  cat("STR_TestStrategy INFO:  Start StrategyData Calculation...", "\n")
+  cat("TestStrategy INFO:  Start StrategyData Calculation...", "\n")
   # Расчёт индикаторов и позиций
   data %<>%  
     # 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
     {
       data <- xts()
-      cat("STR_TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
+      cat("TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
       # тикер-индикатор: SI        
       data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-      cat("STR_TestStrategy INFO:  Calculate $sig and $pos...", "\n")
+      cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
                           ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
       return(data)
@@ -65,7 +65,7 @@ TestStrategy_gear <- function(data.source,
     { 
       # 1.3.1 расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
       data <- .
-      cat("STR_TestStrategy INFO:  Calculate $sig.drop...", "\n")
+      cat("TestStrategy INFO:  Calculate $sig.drop...", "\n")
       data$sig.drop <- ifelse((((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
                                ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
                               (data$sig == data$pos), 
@@ -75,7 +75,7 @@ TestStrategy_gear <- function(data.source,
     {  
       # 1.3.2 расчет сигналов на добор лотов ($sig.add - докупка по рынку)
       data <- .
-      cat("STR_TestStrategy INFO:  Calculate $sig.add...", "\n")
+      cat("TestStrategy INFO:  Calculate $sig.add...", "\n")
       # точки смены сигнала
       data$diff.sig <- diff(data$sig)
       data$diff.sig[1] <- data$sig[1]
@@ -114,7 +114,7 @@ TestStrategy_gear <- function(data.source,
     # 1.3.3 расчёт позиций drop/add
     {
       data <- .
-      cat("STR_TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
+      cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
       data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
       data$pos.add[1] <- 0
       data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
@@ -154,11 +154,11 @@ TestStrategy_gear <- function(data.source,
     # 1.4 ряд состояний 
     {
       data <- .
-      cat("STR_TestStrategy INFO:  Calculate state column...", "\n")
+      cat("TestStrategy INFO:  Calculate state column...", "\n")
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- STR_CalcState_Data(data)
+          data$state <- CalcState_Data(data)
           data$state[.] <- data$pos[.]
           return(data$state)
         }
@@ -167,7 +167,7 @@ TestStrategy_gear <- function(data.source,
     # 1.5 расщепление переворотов в позициях (расщепление строк с $action = +/-2)
     {
       data <- .
-      cat("STR_TestStrategy INFO:  Split SwitchPosition...", "\n")
+      cat("TestStrategy INFO:  Split SwitchPosition...", "\n")
       temp.ind <- index(data[data$action == 2 | data$action == -2])
       if (length(temp.ind) == 0) {
         cat("No Switch Position there", "\n")
@@ -204,7 +204,7 @@ TestStrategy_gear <- function(data.source,
   data.ind <- index(data)
   #
   # 2.1.2 скелет таблицы сделок
-  cat("STR_TestStrategy INFO:  Build state.table...", "\n")
+  cat("TestStrategy INFO:  Build state.table...", "\n")
   data.state <- 
     {
       data.state <- xts() 
@@ -222,14 +222,14 @@ TestStrategy_gear <- function(data.source,
   #
   # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
     # котировки берём из data.source
-  cat("STR_TestStrategy INFO:  Loading Tickers Open from data.source...", "\n")
+  cat("TestStrategy INFO:  Loading Tickers Open from data.source...", "\n")
   # индексы строк data.state
   data.state.ind <- index(data.state)
   #
   temp.vector <- c(1, 1, -1)
   #
   # расчёт return'ов позиций и состояний
-  cat("STR_TestStrategy INFO:  CalcReturns for data & data.state...","\n")
+  cat("TestStrategy INFO:  CalcReturns for data & data.state...","\n")
   for (i in 1:length(data.names)) {  
     temp.text <- 
       data.names[i] %>%
@@ -266,12 +266,12 @@ TestStrategy_gear <- function(data.source,
     eval(parse(text = temp.text))  
     remove(temp.text)
     remove(temp)
-    cat("STR_TestStrategy INFO:  CalcReturns for data & data.state:  ",data.names[i],  "OK", "\n")       
+    cat("TestStrategy INFO:  CalcReturns for data & data.state:  ",data.names[i],  "OK", "\n")       
   }
   #
   # 2.1.3.2 Расчёт cret
   # расчёт cret по инструментам в data и data.state
-  cat("STR_TestStrategy INFO:  CalcCRet for data...", "\n")
+  cat("TestStrategy INFO:  CalcCRet for data...", "\n")
   # для Si всё просто
   data$SPFB.SI.cret <- data$SPFB.SI.ret
   data.state$SPFB.SI.cret <- data.state$SPFB.SI.ret 
@@ -281,28 +281,28 @@ TestStrategy_gear <- function(data.source,
     merge(data, data.source$USDRUB[data.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
-    STR_NormData_Price_inXTS(data = data, 
+    NormData_Price_inXTS(data = data, 
                              norm.data = ., 
                              names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                              outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                              tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                              convert.to = "RUB")
   # суммарный cret в data
-  data$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
+  data$cret <- CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
   # расчёт суммарного cret для data.state
-  cat("STR_TestStrategy INFO:  CalcCRet for data.state", "\n")
+  cat("TestStrategy INFO:  CalcCRet for data.state", "\n")
   data.state <- 
     merge(data.state, data.source$USDRUB[data.state.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
-    STR_NormData_Price_inXTS(data = data.state, 
+    NormData_Price_inXTS(data = data.state, 
                              norm.data = ., 
                              names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                              outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                              tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                              convert.to = "RUB")
   # суммарный cret в data.state
-  data.state$cret <- STR_CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
+  data.state$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
   #
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
@@ -318,7 +318,7 @@ TestStrategy_gear <- function(data.source,
   #
   ## 2.2 Расчёт самих сделок
   #
-  cat("STR_TestStrategy INFO:  Start Calculation Deals...", "\n")
+  cat("TestStrategy INFO:  Start Calculation Deals...", "\n")
   for (n in 1:nrow(data.state)) {
     # на первой строке рассчитываются стартовые значения
     if (n == 1) {
@@ -382,7 +382,7 @@ TestStrategy_gear <- function(data.source,
         data.state$commiss[[n]]
     }
   }
-  cat("STR_TestStrategy INFO:  Calculation Deals    OK", "\n")
+  cat("TestStrategy INFO:  Calculation Deals    OK", "\n")
   #
   # расчёт equity по корзине в data.state
   data.state$equity <- cumsum(data.state$margin - data.state$commiss)

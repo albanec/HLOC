@@ -2,7 +2,7 @@
 # Функции для анализа параметров бектеста
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Расчет временных метрик:
-EVA_DateTable <- function(states.data) {
+DateTable <- function(states.data) {
   # ----------
   # Общее описание:
   #   функция свода временных параметров работы стратегии
@@ -19,7 +19,7 @@ EVA_DateTable <- function(states.data) {
   ))
 }
 #
-EVA_CalcTradingDays <- function(from.date, to.date, calendar = "Russia/MOEX") {
+CalcTradingDays <- function(from.date, to.date, calendar = "Russia/MOEX") {
   # ----------
   # Общее описание:
   # функция возвращает количетво торговых дней за период бека по календарю биржи
@@ -39,7 +39,7 @@ EVA_CalcTradingDays <- function(from.date, to.date, calendar = "Russia/MOEX") {
 }
 #
 # Расчет коэффициентов продуктивности:
-EVA_RatioTable <- function(returns.data, returns.type) {
+RatioTable <- function(returns.data, returns.type) {
   # ----------
   # Общее описание:
   #   функция вычисления стандартного наборов метрик продуктивности результатов работы стратегий
@@ -63,14 +63,14 @@ EVA_RatioTable <- function(returns.data, returns.type) {
   # SterlingRatio
   sterling.data <- SterlingRatio(returns.data, scale = 1, geometric = FALSE)
   # формирование таблицы
-  metric.table <- cbind(EVA_TransformMetric(sharp.data, metric.name = "SharpRatio"), 
-                        EVA_TransformMetric(sortino.data, metric.name = "SortinoRatio"), 
-                        EVA_TransformMetric(calmar.data, metric.name = "CalmarRatio"),
-                        EVA_TransformMetric(sterling.data, metric.name = "SterlingRatio"))
+  metric.table <- cbind(TransformMetric(sharp.data, metric.name = "SharpRatio"), 
+                        TransformMetric(sortino.data, metric.name = "SortinoRatio"), 
+                        TransformMetric(calmar.data, metric.name = "CalmarRatio"),
+                        TransformMetric(sterling.data, metric.name = "SterlingRatio"))
   return(metric.table)
 }
 # Вспомогательные фунции:
-EVA_TransformMetric <- function(metric.data, metric.name) {
+TransformMetric <- function(metric.data, metric.name) {
   # ----------
   # Общее описание:
   #   функция трансформации данных метрик к одному виду (нужна для RatioTable)
@@ -92,7 +92,7 @@ EVA_TransformMetric <- function(metric.data, metric.name) {
   return (metric.data)
 }
 # Расчет Drawdown метрик:
-EVA_DrawdownDataSet <- function(returns.data, days = TRUE) {
+DrawdownDataSet <- function(returns.data, days = TRUE) {
   # ----------
   # Общее описание:
   # функция возращает таблицу просадок + кол-во дней в просадке (формирует ряд для анализа)
@@ -113,7 +113,7 @@ EVA_DrawdownDataSet <- function(returns.data, days = TRUE) {
   return (drawdowns)
 }
 #
-EVA_DrawdownTable <- function(returns.data, plot = FALSE, period = "15") {
+DrawdownTable <- function(returns.data, plot = FALSE, period = "15") {
   # ----------
   # Общее описание:
   # вычисляет параметры по просадкам (выводит итоговые данные)
@@ -129,7 +129,7 @@ EVA_DrawdownTable <- function(returns.data, plot = FALSE, period = "15") {
   #
   # подготовка данных
   cat("Calculating Drawdown Metric:", "Drawdown Data Set", "\n", sep = "  ")
-  drawdowns <- EVA_DrawdownDataSet(returns.data, days = TRUE)
+  drawdowns <- DrawdownDataSet(returns.data, days = TRUE)
   # max просадка
   cat("Calculating Performance Metric:", "MaxDrawdown", "\n", sep = "  ")
   max.drawdown <- as.numeric(drawdowns$Depth[1])
@@ -162,7 +162,7 @@ EVA_DrawdownTable <- function(returns.data, plot = FALSE, period = "15") {
 #
 #
 # Вывод графиков:
-EVA_BigPlot <- function(returns, MarginPlot = FALSE, ReturnsPlot = FALSE, DrawdownShadowPlot = FALSE, DrawdownPlot = FALSE, CandlePlot = FALSE, period = "15 min") {
+BigPlot <- function(returns, MarginPlot = FALSE, ReturnsPlot = FALSE, DrawdownShadowPlot = FALSE, DrawdownPlot = FALSE, CandlePlot = FALSE, period = "15 min") {
   # ----------
   # Общее описание:
   # 
@@ -190,7 +190,7 @@ EVA_BigPlot <- function(returns, MarginPlot = FALSE, ReturnsPlot = FALSE, Drawdo
     n <- n + 1
     if (drawdownShadow.plot == TRUE) {
       print(paste("Calculating Charts:", "Margin & DrawdownShadow Chart"))
-      drawdowns <- EVA_DrawdownDataSet(returns, days = FALSE)
+      drawdowns <- DrawdownDataSet(returns, days = FALSE)
       drawdowns.dates <- cbind(format(drawdowns$From),format(drawdowns$To))
       drawdowns.dates[is.na(drawdowns.dates)] <- format(index(returns)[NROW(returns)])
       drawdowns.dates <- lapply(seq_len(nrow(drawdowns.dates)), function(i) drawdowns.dates[i,])  
@@ -226,7 +226,7 @@ EVA_BigPlot <- function(returns, MarginPlot = FALSE, ReturnsPlot = FALSE, Drawdo
   if (CandlePlot == TRUE) {
     print(paste("Calculating Charts:", "Drawdown Length in Candles Chart"))
     if (drawdownShadow.plot == FALSE) {
-      drawdowns <- EVA_DrawdownDataSet(returns, days = FALSE)
+      drawdowns <- DrawdownDataSet(returns, days = FALSE)
     } 
     drawdowns <- drawdowns[order(drawdowns$From), ]
     rownames(drawdowns) <- 1:nrow(drawdowns)

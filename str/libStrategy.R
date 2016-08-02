@@ -1,5 +1,5 @@
 #
-STR_Convert_SigToState <- function(x) {
+Convert_SigToState <- function(x) {
   # ----------
   # Общее описание:
   #  функция для перехода к состояниям (фильтрация сигналов)
@@ -18,7 +18,7 @@ STR_Convert_SigToState <- function(x) {
   return (x$y)
 }
 #
-STR_CalcState_Data <- function(data) {
+CalcState_Data <- function(data) {
   # ----------
   # Общее описание:
   #  функция для перехода к состояниям (фильтрация сигналов)
@@ -39,7 +39,7 @@ STR_CalcState_Data <- function(data) {
   return(data$state)
 }
 #
-STR_CalcState_Table <- function(data) {
+CalcState_Table <- function(data) {
   # ----------
   # Общее описание:
   # генерирует таблицу сделок
@@ -51,13 +51,13 @@ STR_CalcState_Table <- function(data) {
   require(quantmod) 
   # ----------
   state.data <- 
-    data %>% STR_CalcState_Data(.) %>%
+    data %>% CalcState_Data(.) %>%
     merge(data, .) %>%
     na.omit(.)
   return(state.data)
 }
 #
-STR_CalcReturn_inXTS <- function(data, price = "Close", type = "sret") {
+CalcReturn_inXTS <- function(data, price = "Close", type = "sret") {
   # ----------
   # Общее описание:
   #  функция вычисляет return'ы по всему портфелю внутри XTS
@@ -81,7 +81,7 @@ STR_CalcReturn_inXTS <- function(data, price = "Close", type = "sret") {
   return(data)
 }
 #
-STR_NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
+NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
   # ----------
   # Общее описание:
   # Функция для расчёта стоимости тиков внутри основного листа данных
@@ -94,7 +94,7 @@ STR_NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.t
   x <- norm.data
   for (i in 1:length(names)) {
     temp.text <- paste("data$",outnames[i]," <- ",
-                       "STR_NormData_Price_byCol(data = data$",names[i],",",
+                       "NormData_Price_byCol(data = data$",names[i],",",
                                                  "norm.data = x, convert.to = \"",convert.to,"\",",
                                                  "tick.val = ",tick.val[i],",",
                                                  "tick.price = ", tick.price[i],")",
@@ -104,7 +104,7 @@ STR_NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.t
   return(data)  
 }
 #
-STR_CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
+CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
   #require()
   # расчёт суммарного параметра (согласно весам инструмента в портфеле)
   temp.text <- 
@@ -116,7 +116,7 @@ STR_CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
   return(data)
 }
 #
-STR_AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
+AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
   # ----------
   # Общее описание:
   # функция добавляет параметры инструментов (для фьючерсов: размеры ГО и курс USDRUB для пересчёта к RUB)
@@ -153,7 +153,7 @@ STR_AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
   return(data)
 }
 #
-STR_NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.price) {
+NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.price) {
   # ----------
   # Общее описание:
   # Функция для расчёта стоимости тиков
