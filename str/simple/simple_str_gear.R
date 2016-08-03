@@ -82,9 +82,23 @@ TestStrategy_gear <- function(data.source,
       # нумерация состояний внутри сигналов
       data$sig.num <- 
         abs(sign(data$diff.sig)) %>%
+        # защита от нумерации сигналов "вне рынка"
+        {
+          abs(sign(data$sig)) * . 
+        } %>%
         cumsum(.)
-      # ряд позиций и число тиков внутри позиции 
-      data$pos.num <- lag(data$sig.num)
+      # ряд номеров позиций 
+      data$pos.num <- 
+        lag(data$sig.num) %>%
+        # защита от нумераций пачек нулевых позиций
+        {
+          temp <- diff(data$pos)
+          temp[1] <- 0
+          temp <- abs(sign(temp))
+          x <- . * sign(temp + abs(data$pos))
+          remove(temp)
+          return(x)
+        }
       data$pos.num[1] <- 0 
       # выделение сигналов "$sig.add"
       data$sig.add <- 
@@ -441,7 +455,12 @@ TestStrategy_gear <- function(data.source,
         return(t)
       }      
     eval(parse(text = temp.text))
-  }    
+  }   
+  # уборка
+  data.state$sig <- NULL
+  data.state$sig.drop <- NULL
+  data.state$sig.add <- NULL
+  #
   return(list(data, data.state))    
 }   
   
