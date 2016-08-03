@@ -1,9 +1,4 @@
 #
-data.names <- 
-    grep(".Open", names(data.source)) %>%
-    names(data.source)[.] %>%
-    sub(".Open", "", .)
-#
 ###
 #' Очистка таблицы состояний от пустых сделок
 #'
@@ -197,11 +192,11 @@ CalcOneDealSummary_DF <- function(data, n, data.names) {
 #' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-CalcDealsTable_DF <- function(data, data.names) {
+CalcDealsTable_DF <- function(data, ...) {
   if (!exists("data.names")) {
     data.names <- 
       grep(".equity", names(data)) %>%
-      names(data.source)[.] %>%
+      names(data)[.] %>%
       sub(".equity", "", .)   
   }
   pos.num.list <- 

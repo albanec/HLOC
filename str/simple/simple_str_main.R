@@ -7,11 +7,12 @@ library(PerformanceAnalytics)
 # library(dplyr)
 # library(data.table)
 #
-# начальные параметры
+### начальные параметры
 source("str/libGeneric.R")
 source("str/libStrategy.R")
 source("str/simple/simple_str_gear.R")
-# входные параметры
+source("str/simple/simple_str_eva.R")
+### входные параметры
 temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
@@ -27,7 +28,7 @@ k.mm <- 0.02  # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
 commissions <- c(2, 2, 2)  # в рублях
 #
-#### загрузка и нормализация данных
+### загрузка данных
 data.source.list <- 
   {
     cat("Start Loading Data... ", "\n")
@@ -38,6 +39,7 @@ data.source.list <-
     MergeData_inList_byCol(.)  
   }
 #
+### нормализация данных
 cat("Start Normalization&Improve Data... ", "\n")
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
@@ -51,7 +53,6 @@ data.source.list[[1]] <-
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
 data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                target = "IM", basket.weights)
-#
 # расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
@@ -64,10 +65,16 @@ data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]],
 # суммирование
 data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
-# отработка тестового робота
+#
+### отработка тестового робота
 data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
                                         sma.per, add.per, k.mm, balance.start, 
                                         basket.weights, sleeps, commissions)
+### формирование таблицы сделок
+data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+deals.table <- CalcDealsTable_DF(data = data.strategy.list[[2]])
+#
+
 
 
 
