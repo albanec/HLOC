@@ -344,10 +344,12 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
 }
 #
 SubsetColumn_inXTS <- function(data, target) {
-  # выделение столбцов, с именами, содержащими target параметр
-  target.names <- 
-    names(data)[grep(target, names(data))] %>%
-    sub(target, "", target.names)
-  data <- data[, (which(colnames(data) %in% data))]
+  # выделение столбцов с именами, содержащими target параметр
+  data <-
+    colnames(data) %>%
+    grep(target, .) %>%
+    names(data)[.] %>%
+    which(colnames(data) %in% .) %>%
+    data[, .]
   return(data)
 }
