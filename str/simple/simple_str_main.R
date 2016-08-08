@@ -3,6 +3,7 @@ library(quantmod)
 library(rusquant)
 library(magrittr)
 library(PerformanceAnalytics)
+library(RQuantLib)
 #library(plyr)
 # library(dplyr)
 # library(data.table)
@@ -13,7 +14,7 @@ source("str/libStrategy.R")
 source("str/simple/simple_str_gear.R")
 source("str/simple/simple_str_eva.R")
 ### входные параметры
-temp.dir <- "data/temp"
+# temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
 period <- "15min"
@@ -32,7 +33,7 @@ commissions <- c(2, 2, 2)  # в рублях
 data.source.list <- 
   {
     cat("Start Loading Data... ", "\n")
-    GetData_Ticker_Set(tickers, from.date, to.date, period, dir = temp.dir, maxattempts = 5)
+    GetData_Ticker_Set(tickers, from.date, to.date, period, dir = "data/temp", maxattempts = 5)
   } %>%
   {
     cat("Start Merging Data... ", "\n")
@@ -73,8 +74,15 @@ data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
 ### формирование таблицы сделок
 data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
 deals.table <- CalcDealsTable_DF(data = data.strategy.list[[2]])
+# очистка мусора по target = "temp"
+CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
-
-
+### оценка perfomance-параметров
+# простые временные параметры
+datesTable <- DateTable(data, from.date, to.date, period)
+# расчёт коэффициентов
+ratioTable <- RatioTable(returns, ret.type)
+# расчёт drawdown'ов
+drawdownTable <- DrawdownTable(returns, ret.type = ret.type, peiod = period)
 
 
