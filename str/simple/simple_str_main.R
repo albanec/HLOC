@@ -3,8 +3,8 @@ library(quantmod)
 library(rusquant)
 library(magrittr)
 library(PerformanceAnalytics)
-library(RQuantLib)
-#library(plyr)
+# library(RQuantLib)
+# library(plyr)
 # library(dplyr)
 # library(data.table)
 #
@@ -79,9 +79,9 @@ CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
 # простые временные параметры
-datesTable <- DateTable(data, from.date, to.date, period)
+datesTable <- DateTable(data = data.strategy.list[[1]], from.date, to.date, period)
 # расчёт коэффициентов
-ratioTable <- RatioTable(returns, ret.type)
+ratioTable <- RatioTable(returns = data.strategy.list[[1]]$perfRet, ret.type)
 # расчёт drawdown'ов
 drawdownTable <- DrawdownTable(returns, ret.type = ret.type, peiod = period)
 

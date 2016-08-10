@@ -15,8 +15,7 @@
 #' @return drawdown.table Фрейм с данными по просадкам
 #'
 #' @export
-DrawdownTable <- function(returns,
-                          ret.type = "ret", 
+DrawdownTable <- function(equity, dd.value, 
                           # plot = FALSE, 
                           period = "15min") {
   #
@@ -103,18 +102,26 @@ DrawdownTable <- function(returns,
 #' Функция возращает таблицу данных по всем просадкам + кол-во дней в текущей просадке 
 #' (формирует ряд для дальнейшего анализа)
 #' 
-#' @param returns Данные return'ов
+#' @param data Данные equity
 #' @param days Нужно ли считать текущее количество дней в просадке
-#' @param geometric Тип сложения  
 #'
 #' @return drawdowns Таблица просадок
 #'
 #' @export
-CalcDrawdownDataSet <- function(returns, days = TRUE, geometric = TRUE) {
-  require(PerformanceAnalytics)
+CalcDrawdownDataSet <- function(data, days = TRUE, dd.value) {
   # ----------
   #
-  drawdowns <- CalcDrawdowns(returns[, 1], top = 1000000, geometric = geometric)
+  drawdowns <- CalcDrawdowns(data, dd.value)
+  n.dd <- 1:max(drawdowns$num)
+  #
+  drawdowns.table <- 
+    lapply(n.dd,
+           function (x) {
+             CalcOneDrawdownSummary_DF(data, n = x)
+           }) %>%
+    MergeData_inList_byRow(.)
+  
+
   if (days == TRUE) {
     for (i in seq(1:nrow(drawdowns))) {
       drawdowns$Days <- as.numeric(-floor(difftime(drawdowns$From, drawdowns$To, units = "days"))) 
@@ -123,47 +130,67 @@ CalcDrawdownDataSet <- function(returns, days = TRUE, geometric = TRUE) {
   return(drawdowns)
 }
 #
+CalcOneDrawdownSummary_DF <- function(data, n) {
+  dd.summary <- 
+    data[data$num == n] %>%
+    {
+      x <- .
+      from <- index(x[1])
+      to <- index(last(x))
+      depth <- min(x$dd)
+      length <- nrow(x)
+
+    }
+}
+#
 ###
 #' Функция расчёта drawdown'ов
 #'
 #' Функция возращает таблицу данных по всем просадкам 
 #' 
-#' @param R Данные return'ов
-#' @param top "Разрешение" итоговой таблицы
-#' @param digits Округление по количеству знаков после запятой
-#'
-#' @return result Таблица просадок
+#' @param data Данные equity
+#' @param dd.value Абсолютные ("abs"), дробные ("ratio") значения dd или и то, и другое ("both")
+#' 
+#' @return data XTS, солержащий данные по dd 
 #'
 #' @export
-CalcDrawdowns <- function(R, top = 5, digits = 4, geometric = TRUE) {
-  R <- 
-    checkData(R[, 1, drop = FALSE]) %>%
-    na.omit(R)
-  x <- 
-    findDrawdowns(R, geometric = geometric) %>%
-    sortDrawdowns(.)
-  ndrawdowns <- sum(x$return < 0)
-  if (ndrawdowns < top) {
-    warning(paste("Only ", ndrawdowns, " available in the data.", 
-                  sep = ""))
-    top <- ndrawdowns
+CalcDrawdowns <- function(data, dd.value = "abs") {
+  #
+  # очистка от строк c одинаковым индексом (если есть)
+  data <- data[-which(duplicated(indedata(data)))]
+  # формируем нужные столбцы
+  data$peak <- cummadata(data[, 1])
+  data$dd <- data[, 1] - data$peak 
+  data$temp <- abs(sign(data$dd))
+  data$temp.diff <- diff(data$temp)
+  data$temp.ticks <- abs(sign(data$temp + data$temp.diff))
+  #
+  data <- 
+   {
+     data <- data[-which(data$temp.diff == 0 & data$temp.ticks == 0)]
+     data$temp.diff[which(data$temp.diff == -1)] <- 0
+     return(data)
+    } %>%
+    na.omit(data)
+  data$num <- cumsum(data$temp.diff)
+  # собираем мусор
+  data <- 
+    CleanGarbage_inCols(data) %>%
+    # выкидываем equity столбец (исходные данные)
+    {
+      .[, -1]
+    }
+  if (dd.value != "abs") {
+    if (dd.value == "ratio") {
+      data$dd[data$peak == 0] <- NA
+      data$dd[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+    } else {
+      data$dd.ratio[data$peak == 0] <- NA
+      data$dd.ratio[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+    }
   }
-  result <- data.frame(time(R)[x$from[1:top]], 
-                       time(R)[x$trough[1:top]], 
-                       time(R)[x$to[1:top]], 
-                       base::round(x$return[1:top], digits), 
-                       x$length[1:top], 
-                       x$peaktotrough[1:top], 
-                       ifelse(is.na(time(R)[x$to[1:top]]), 
-                              NA, x$recovery[1:top])
-                       )
-  colnames(result) <- c("From", "Trough", "To", "Depth", "Length", "To Trough", "Recovery")
-  dummy <- TRUE
-  if (!dummy) {
-    Depth <- NULL
-  } 
-  subset(result, subset = (Depth < 0))
-  return(result)
+  #
+  return(data)
 }
 #
 

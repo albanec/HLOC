@@ -399,7 +399,8 @@ TestStrategy_gear <- function(data.source,
   cat("TestStrategy INFO:  Calculation Deals    OK", "\n")
   #
   # расчёт equity по корзине в data.state
-  data.state$equity <- cumsum(data.state$margin - data.state$commiss)
+  data.state$perfReturn <- data.state$margin - data.state$commiss
+  data.state$equity <- cumsum(data.state$perfRet)
   #
   data %<>%  
     # перенос данных по количеству контрактов корзины в data
@@ -424,7 +425,8 @@ TestStrategy_gear <- function(data.source,
     }  
   #
   # расчёт equity по корзине в data 
-  data$equity <- cumsum(data$margin - data$commiss)
+  data$perfReturn <- data$margin - data$commiss
+  data$equity <- cumsum(data$perfReturn)
   #
   # расчёт n, margin и equity по инструментам в data и data.state 
   for (i in 1:length(data.names)) {

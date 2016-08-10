@@ -348,7 +348,9 @@ SubsetColumn_inXTS <- function(data, target) {
   data <-
     colnames(data) %>%
     grep(target, .) %>%
-    data[, .]
+    {
+      data[, .]
+    }
   return(data)
 }
 #
@@ -361,4 +363,14 @@ CleanGarbage <- function(target = "temp", env = ".GlobalEnv") {
     } 
   rm(list = removeVector, envir = as.environment(env))
   cat("INFO(CleanTempData): Removing TempData..  OK", "\n")
+}
+#
+CleanGarbage_inCols <- function(x, target = "temp") {
+  x <- 
+    colnames(x) %>%
+    grep(target, .) %>%
+    {
+      x[, -.]
+    }
+  return(x)
 }
