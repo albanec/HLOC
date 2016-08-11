@@ -222,12 +222,9 @@ CalcOneDrawdownSummary_DF <- function(data, n) {
       # длина (количество периодов)
       df$Length <- nrow(.)
       # дни в просадке
-      df$Days <- 
-        difftime(df$From, df$To, units = "days") %>%
-        floor(.) %>%
-        {
-          as.numeric(-.)
-        }
+      df$Days <-
+       # as.POSIXct(.$date, origin = "1970-01-01") %>%
+        ndays(.$date) 
       return(df)
     } #%>%
     # {
@@ -254,20 +251,33 @@ CalcDrawdowns <- function(data, dd.value = "abs") {
   #
   # очистка от строк c одинаковым индексом (если есть)
   data <- data[-which(duplicated(index(data)))]
-  # формируем нужные столбцы
+  ## формируем нужные столбцы
+  # пики equity
   data$peak <- cummax(data[, 1])
+  # значения dd на каждой свече
   data$dd <- data[, 1] - data$peak 
+  # 1 - свеча в просадке, 0 - не в просадке 
   data$temp <- abs(sign(data$dd))
+  # точки перехода в/из просадки (1 - первая свеча в просадке, -1 - точка выхода из просадки, 0 - состояние не меняется)
   data$temp.diff <- diff(data$temp)
+  # 1 - если свечка относится к dd (с учётом обновления пика на выходе из просадки)
   data$temp.ticks <- abs(sign(data$temp + data$temp.diff))
   #
   data <- 
    {
-     data <- data[-which(data$temp.diff == 0 & data$temp.ticks == 0)]
-     data$temp.diff[which(data$temp.diff == -1)] <- 0
+     # индексы строк роста equity
+     tempIndex <- which(data$temp.diff == 0 & data$temp.ticks == 0)
+     # если есть такие периоды
+     if (length(tempIndex) != 0) {
+       # удаляем их
+       data <- data[-tempIndex]
+       # точки выхода из dd метим 1 (это нужно для нумирации просадок в дальнейшем)
+       data$temp.diff[which(data$temp.diff == -1)] <- 0  
+     }      
      return(data)
     } %>%
-    na.omit(data)
+    na.omit(.)
+  # нумерация просадок
   data$num <- cumsum(data$temp.diff)
   # собираем мусор
   data <- 
@@ -278,9 +288,11 @@ CalcDrawdowns <- function(data, dd.value = "abs") {
     }
   if (dd.value != "abs") {
     if (dd.value == "ratio") {
+      # вычисление только дробных значений dd 
       data$dd[data$peak == 0] <- NA
       data$dd[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
     } else {
+      # в слечае вычисления и дробных и абсолютных значений
       data$dd.ratio[data$peak == 0] <- NA
       data$dd.ratio[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
     }

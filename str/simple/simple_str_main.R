@@ -79,10 +79,11 @@ CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
 # простые временные параметры
-datesTable <- DateTable(data = data.strategy.list[[1]], from.date, to.date, period)
+datesTable <- DateTable(data = data.strategy.list[[1]], period)
 # расчёт коэффициентов
 ratioTable <- RatioTable(returns = data.strategy.list[[1]]$perfRet, ret.type)
 # расчёт drawdown'ов
 drawdownTable <- DrawdownTable(equity = data.strategy.list[[1]]$equity, dd.value = "abs")
+#
 
 
