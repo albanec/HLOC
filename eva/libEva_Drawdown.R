@@ -3,167 +3,290 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
-#' Расчёт итоговой таблицы drawdown'ов
+#' Расчёт итоговой таблицы с данными drawdown'ов
 #'
 #' Функция вычисляет параметры по просадкам (выводит итоговые данные)
 #' 
-#' @param returns Данные return'ов
-#' @param period Период свечей
-#' @param ret.type Тип return'ов (ret/sret/lret)
-#' @param TRUE/FALSE график
+#' @param equity Данные equity (после  отработки стратегии)
+#' @param dd.value Абсолютные ("abs"), дробные ("ratio") значения dd или и то, и другое ("both")
 #'
-#' @return drawdown.table Фрейм с данными по просадкам
+#' @return drawdown.table DF с данными по просадкам
 #'
 #' @export
-DrawdownTable <- function(returns,
-                          ret.type = "ret", 
-                          # plot = FALSE, 
-                          period = "15min") {
-  #
-  require(PerformanceAnalytics)
+DrawdownTable <- function(equity, dd.value) {
   # ----------
-  # определение способа суммирования
-  if (ret.type == "sret") {
-    TF <- TRUE
-  } else {
-    TF <- FALSE
-  }
-  # перевод периода в цифры
-  period <- sub("min", "", period)
   # подготовка данных
-  cat("Calculating Drawdown Metric:", "Drawdown Data Set", "\n", sep = "  ")
-  drawdowns <- CalcDrawdownDataSet(returns, days = TRUE, geometric = TF)
+  cat("INFO(DrawdownTable): Calc Drawdown Data Set", "\n")
+  drawdowns <- CalcDrawdownDataSet(data = equity, dd.value = dd.value, fullData = TRUE)
+  ### вычисление summary по data set'у
   # max просадка
-  cat("Calculating Performance Metric:", "MaxDrawdown", "\n", sep = "  ")
-  max.drawdown <- as.numeric(drawdowns$Depth[1])
+  cat("INFO(DrawdownTable): Calc MaxDrawdown", "\n")
+  if (dd.value == "ratio") {
+    max.drawdown <-
+      na.omit(drawdowns[[2]]) %>%
+      {
+        min(.$Depth)
+      } %>%
+      as.numeric(.)  
+  } else {
+    max.drawdown <- 
+      min(drawdowns[[2]]$Depth) %>%
+      as.numeric(.)
+    if (dd.value == "both") {
+      max.drawdown.ratio <-
+        na.omit(drawdowns[[1]]) %>%
+        {
+          min(.$dd.ratio)
+        } %>%
+        as.numeric(.)  
+    }
+  }
   # средняя просадка
-  cat("Calculating Performance Metric:", "MeanDrawdown", "\n", sep = "  ")
-  mean.drawdown <- as.numeric(mean(drawdowns$Depth))
+  cat("Calculating Performance Metric:  MeanDrawdown", "\n")
+  if (dd.value == "ratio") {
+    mean.drawdown <-
+      na.omit(drawdowns[[2]]) %>% 
+      {
+        mean(.$Depth)
+      } %>% 
+      as.numeric(.)
+  } else {
+    mean.drawdown <- 
+      mean(drawdowns[[2]]$Depth) %>% 
+      as.numeric(.)
+    if (dd.value == "both") {
+      mean.drawdown.ratio <-
+        na.omit(drawdowns[[1]]) %>% 
+        {
+          x <- .
+          x %<>% 
+            {
+              cummin(.$dd.ratio)
+            } %>%
+            unique(.) %>%
+            {
+              mean(.)
+            }
+          return(x)
+        } %>% 
+        as.numeric(.)
+    }
+  }
   # max длина просадки в днях
-  cat("Calculating Performance Metric:", "MaxDrawdownDays", "\n", sep = "  ")
+  cat("Calculating Performance Metric:  MaxDrawdownDays", "\n")
   max.drawdown.days <- 
-    which.max(drawdowns$Days) %>%
-    drawdowns$Days[.] %>%
+    max(drawdowns[[2]]$Days) %>%
     as.numeric(.)
   # среднее число дней в просадке
-  cat("Calculating Performance Metric:", "MeanDrawdownDays", "\n", sep = "  ")
+  cat("Calculating Performance Metric:  MeanDrawdownDays", "\n")
   mean.drawdown.days <- 
-    na.omit(drawdowns$Days) %>% 
-    mean(.) %>%
+    mean(drawdowns[[2]]$Days) %>%
     trunc(.) %>%
     as.numeric(.)
+  #
   # текущее число дней в просадке
-  cat("Calculating Performance Metric:", "NowDrawdownDays", "\n", sep = "  ")
+  cat("Calculating Performance Metric:  NowDrawdownDays", "\n")
   now.drawdown.days <- 
-    which(is.na(drawdowns$To)) %>%
-    drawdowns$Length[.] %>%
-    {
-      . * as.numeric(period)
-    } %>%
-    {
-      -floor(-(. / 60 / 24))
-    } %>%
-    as.numeric(.) %>%
-    {
-      x <- ifelse(is.na(.),
-                  0,
-                  .)
-      return(x)
-    }
+    ifelse(last(drawdowns[[1]]$dd) != 0,
+           last(drawdowns[[2]]$Days),
+           0) %>%
+    as.numeric(.)
   # текущее число свечей в просадке
-  cat("Calculating Performance Metric:", "NowDrawdownPeriods", "\n", sep = "  ")
+  cat("Calculating Performance Metric:  NowDrawdownPeriods", "\n")
   now.drawdown.periods <- 
-    which(is.na(drawdowns$To)) %>%
-    drawdowns$Length[.] %>%
-    {
-      -floor(-(.))
-    } %>%
+    ifelse(last(drawdowns[[1]]$dd) != 0,
+           last(drawdowns[[2]]$Length),
+           0) %>%
     as.numeric(.)
   # текущая просадка 
-  cat("Calculating Performance Metric:", "NowDrawdown", "\n", sep = "  ")
-  now.drawdown <- 
-    last(returns) %>%
-    DrawdownPeak(.) %>%
+  cat("Calculating Performance Metric:  NowDrawdown", "\n")
+  if (dd.value == "both") {
+    now.drawdown <- 
+      ifelse(last(drawdowns[[1]]$dd) != 0,
+             last(drawdowns[[1]]$dd),
+             0) %>%
+      as.numeric(.)
+    now.drawdown.ratio <- 
+      ifelse(last(drawdowns[[1]]$dd) != 0,
+             last(drawdowns[[1]]$dd.ratio),
+             0) %>%
+      as.numeric(.)
+  } else {
+    now.drawdown <- 
+    ifelse(last(drawdowns[[1]]$dd) != 0,
+           last(drawdowns[[1]]$dd),
+           0) %>%
     as.numeric(.)
+  }
   # формирование таблицы
-  drawdown.table <- 
-    cbind.data.frame(max.drawdown, 
-                     mean.drawdown, max.drawdown.days, mean.drawdown.days, 
-                     now.drawdown.days, now.drawdown.periods, now.drawdown) %>%
-    data.frame(.)
-  colnames(drawdown.table) <- c("MaxDrawdown", "MeanDrawdown" , 
-                                "MaxDrawdownDays", "MeanDrawdownDays", "NowDrawdownDays", 
-                                "NowDrawdownPeriods", "NowDrawdown")  
+  if (dd.value == "both") {
+    drawdown.table <- 
+      cbind(max.drawdown, max.drawdown.ratio, mean.drawdown, mean.drawdown.ratio,
+                       max.drawdown.days, mean.drawdown.days, 
+                       now.drawdown.days, now.drawdown.periods, now.drawdown, now.drawdown.ratio) %>%
+      data.frame(.)
+    colnames(drawdown.table) <- c("MaxDrawdown", "MaxDrawdownRatio", 
+                                  "MeanDrawdown", "MeanDrawdownRatio", 
+                                  "MaxDrawdownDays", "MeanDrawdownDays", "NowDrawdownDays", 
+                                  "NowDrawdownPeriods", "NowDrawdown", "NowDrawdownRatio")  
+  } else {
+    drawdown.table <- 
+      cbind(max.drawdown, mean.drawdown,
+                       max.drawdown.days, mean.drawdown.days, 
+                       now.drawdown.days, now.drawdown.periods, now.drawdown) %>%
+      data.frame(.)
+    colnames(drawdown.table) <- c("MaxDrawdown", "MeanDrawdown" , 
+                                  "MaxDrawdownDays", "MeanDrawdownDays", "NowDrawdownDays", 
+                                  "NowDrawdownPeriods", "NowDrawdown")  
+  }
+  #drawdown.table %<>% 
+   # Convert_XTStoDF(.)
+  #
   return(drawdown.table)
 }
 #
 ###
-#' Функция расчёта таблицы drawdown'ов
+#' Функция расчёта таблицы с данными по всем drawdown'ам
 #'
-#' Функция возращает таблицу данных по всем просадкам + кол-во дней в текущей просадке 
-#' (формирует ряд для дальнейшего анализа)
+#' Функция возращает df с данными по всем просадкам
 #' 
-#' @param returns Данные return'ов
-#' @param days Нужно ли считать текущее количество дней в просадке
-#' @param geometric Тип сложения  
+#' @param data Данные equity
+#' @param dd.value Абсолютные ("abs"), дробные ("ratio") значения dd или и то, и другое ("both")
 #'
-#' @return drawdowns Таблица просадок
+#' @return drawdowns Таблица просадок (или list(dd.data, drawdowns))
 #'
 #' @export
-CalcDrawdownDataSet <- function(returns, days = TRUE, geometric = TRUE) {
-  require(PerformanceAnalytics)
+CalcDrawdownDataSet <- function(data, dd.value, fullData = FALSE) {
   # ----------
+  # расчёт dd
+  dd.data <- CalcDrawdowns(data = data, dd.value = dd.value)
+  n.vec <- 1:max(dd.data$num)
+  # формирование таблицы со статистикой
+  drawdowns <- 
+    lapply(n.vec,
+           function (x) {
+             CalcOneDrawdownSummary_DF(data = dd.data, n = x)
+           }) %>%
+    MergeData_inList_byRow(.)
   #
-  drawdowns <- CalcDrawdowns(returns[, 1], top = 1000000, geometric = geometric)
-  if (days == TRUE) {
-    for (i in seq(1:nrow(drawdowns))) {
-      drawdowns$Days <- as.numeric(-floor(difftime(drawdowns$From, drawdowns$To, units = "days"))) 
-    }  
+  if (fullData == TRUE) {
+    return(list(dd.data, drawdowns))  
+  } else {
+    return(drawdowns)  
   }
-  return(drawdowns)
+  
 }
 #
 ###
-#' Функция расчёта drawdown'ов
+#' Функция параметров одного drawdown'а
 #'
-#' Функция возращает таблицу данных по всем просадкам 
+#' Функция возращает таблицу данных одному dd
 #' 
-#' @param R Данные return'ов
-#' @param top "Разрешение" итоговой таблицы
-#' @param digits Округление по количеству знаков после запятой
-#'
-#' @return result Таблица просадок
+#' @param data Данные equity
+#' @param n Номер dd
+#' 
+#' @return dd.summary df, содержащий данные по dd c номером n
 #'
 #' @export
-CalcDrawdowns <- function(R, top = 5, digits = 4, geometric = TRUE) {
-  R <- 
-    checkData(R[, 1, drop = FALSE]) %>%
-    na.omit(R)
-  x <- 
-    findDrawdowns(R, geometric = geometric) %>%
-    sortDrawdowns(.)
-  ndrawdowns <- sum(x$return < 0)
-  if (ndrawdowns < top) {
-    warning(paste("Only ", ndrawdowns, " available in the data.", 
-                  sep = ""))
-    top <- ndrawdowns
+CalcOneDrawdownSummary_DF <- function(data, n) {
+  #
+  dd.summary <- 
+    # выгружаем данные по dd с номером n
+    data[data$num == n] %>%
+    Convert_XTStoDF(.) %>%
+    {
+      df <- 
+        # создаём скелет df с нужными полями
+        data.frame(From = character(1) %>% 
+                          as.numeric(1) %>% 
+                          as.Date(1),
+                   To = character(1) %>% 
+                        as.numeric(1) %>% 
+                        as.Date(1),
+                   Depth = numeric(1),
+                   Length = numeric(1),
+                   row.names = NULL)
+      ## заполняем поля данными
+      # начало dd
+      df$From <- 
+        .$date[1] %>%
+        as.POSIXct(., origin = "1970-01-01") 
+      # конец dd
+      df$To <- 
+        {
+          .$date[nrow(.)]
+        } %>%
+        as.POSIXct(., origin = "1970-01-01") 
+      # максимальная глубина
+      df$Depth <- min(.$dd)
+      # длина (количество периодов)
+      df$Length <- nrow(.)
+      # дни в просадке
+      df$Days <- 
+        difftime(df$From, df$To, units = "days") %>%
+        floor(.) %>%
+        {
+          as.numeric(-.)
+        }
+      return(df)
+    } #%>%
+    # {
+    #   df <- .
+    #   df <- df[, -1]
+    #   return(df)
+    # }
+  #
+  return(dd.summary)
+}
+#
+###
+#' Функция расчёта drawdown'ов по equity
+#'
+#' Функция возращает xts с данными по всем просадкам 
+#' 
+#' @param data Данные equity
+#' @param dd.value Абсолютные ("abs"), дробные ("ratio") значения dd или и то, и другое ("both")
+#' 
+#' @return data XTS, солержащий данные по dd 
+#'
+#' @export
+CalcDrawdowns <- function(data, dd.value = "abs") {
+  #
+  # очистка от строк c одинаковым индексом (если есть)
+  data <- data[-which(duplicated(index(data)))]
+  # формируем нужные столбцы
+  data$peak <- cummax(data[, 1])
+  data$dd <- data[, 1] - data$peak 
+  data$temp <- abs(sign(data$dd))
+  data$temp.diff <- diff(data$temp)
+  data$temp.ticks <- abs(sign(data$temp + data$temp.diff))
+  #
+  data <- 
+   {
+     data <- data[-which(data$temp.diff == 0 & data$temp.ticks == 0)]
+     data$temp.diff[which(data$temp.diff == -1)] <- 0
+     return(data)
+    } %>%
+    na.omit(data)
+  data$num <- cumsum(data$temp.diff)
+  # собираем мусор
+  data <- 
+    CleanGarbage_inCols(data) %>%
+    # выкидываем equity столбец (исходные данные)
+    {
+      .[, -1]
+    }
+  if (dd.value != "abs") {
+    if (dd.value == "ratio") {
+      data$dd[data$peak == 0] <- NA
+      data$dd[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+    } else {
+      data$dd.ratio[data$peak == 0] <- NA
+      data$dd.ratio[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+    }
   }
-  result <- data.frame(time(R)[x$from[1:top]], 
-                       time(R)[x$trough[1:top]], 
-                       time(R)[x$to[1:top]], 
-                       base::round(x$return[1:top], digits), 
-                       x$length[1:top], 
-                       x$peaktotrough[1:top], 
-                       ifelse(is.na(time(R)[x$to[1:top]]), 
-                              NA, x$recovery[1:top])
-                       )
-  colnames(result) <- c("From", "Trough", "To", "Depth", "Length", "To Trough", "Recovery")
-  dummy <- TRUE
-  if (!dummy) {
-    Depth <- NULL
-  } 
-  subset(result, subset = (Depth < 0))
-  return(result)
+  #
+  return(data)
 }
 #
 

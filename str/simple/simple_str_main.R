@@ -83,6 +83,6 @@ datesTable <- DateTable(data = data.strategy.list[[1]], from.date, to.date, peri
 # расчёт коэффициентов
 ratioTable <- RatioTable(returns = data.strategy.list[[1]]$perfRet, ret.type)
 # расчёт drawdown'ов
-drawdownTable <- DrawdownTable(returns, ret.type = ret.type, peiod = period)
+drawdownTable <- DrawdownTable(equity = data.strategy.list[[1]]$equity, dd.value = "abs")
 
 
