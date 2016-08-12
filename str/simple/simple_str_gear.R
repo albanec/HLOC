@@ -427,6 +427,8 @@ TestStrategy_gear <- function(data.source,
   # расчёт equity по корзине в data 
   data$perfReturn <- data$margin - data$commiss
   data$equity <- cumsum(data$perfReturn)
+  # расчёт баланса
+  data$balance <- balance.start + data$equity
   #
   # расчёт n, margin и equity по инструментам в data и data.state 
   for (i in 1:length(data.names)) {

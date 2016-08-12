@@ -73,7 +73,7 @@ data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
                                         basket.weights, sleeps, commissions)
 ### формирование таблицы сделок
 data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-deals.table <- CalcDealsTable_DF(data = data.strategy.list[[2]])
+dealsTable <- CalcDealsTable_DF(data = data.strategy.list[[2]])
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
