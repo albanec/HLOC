@@ -16,11 +16,11 @@
 DrawdownTable <- function(equity, dd.value) {
   # ----------
   # подготовка данных
-  cat("INFO(DrawdownTable): Calc Drawdown Data Set", "\n")
+  #cat("INFO(DrawdownTable): Calc Drawdown Data Set", "\n")
   drawdowns <- CalcDrawdownDataSet(data = equity, dd.value = dd.value, fullData = TRUE)
   ### вычисление summary по data set'у
   # max просадка
-  cat("INFO(DrawdownTable): Calc MaxDrawdown", "\n")
+  #cat("INFO(DrawdownTable): Calc MaxDrawdown", "\n")
   if (dd.value == "ratio") {
     max.drawdown <-
       na.omit(drawdowns[[2]]) %>%
@@ -42,7 +42,7 @@ DrawdownTable <- function(equity, dd.value) {
     }
   }
   # средняя просадка
-  cat("Calculating Performance Metric:  MeanDrawdown", "\n")
+  #cat("Calculating Performance Metric:  MeanDrawdown", "\n")
   if (dd.value == "ratio") {
     mean.drawdown <-
       na.omit(drawdowns[[2]]) %>% 
@@ -73,33 +73,33 @@ DrawdownTable <- function(equity, dd.value) {
     }
   }
   # max длина просадки в днях
-  cat("Calculating Performance Metric:  MaxDrawdownDays", "\n")
+  #cat("Calculating Performance Metric:  MaxDrawdownDays", "\n")
   max.drawdown.days <- 
     max(drawdowns[[2]]$Days) %>%
     as.numeric(.)
   # среднее число дней в просадке
-  cat("Calculating Performance Metric:  MeanDrawdownDays", "\n")
+  #cat("Calculating Performance Metric:  MeanDrawdownDays", "\n")
   mean.drawdown.days <- 
     mean(drawdowns[[2]]$Days) %>%
     trunc(.) %>%
     as.numeric(.)
   #
   # текущее число дней в просадке
-  cat("Calculating Performance Metric:  NowDrawdownDays", "\n")
+  #cat("Calculating Performance Metric:  NowDrawdownDays", "\n")
   now.drawdown.days <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Days),
            0) %>%
     as.numeric(.)
   # текущее число свечей в просадке
-  cat("Calculating Performance Metric:  NowDrawdownPeriods", "\n")
+  #cat("Calculating Performance Metric:  NowDrawdownPeriods", "\n")
   now.drawdown.periods <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Length),
            0) %>%
     as.numeric(.)
   # текущая просадка 
-  cat("Calculating Performance Metric:  NowDrawdown", "\n")
+  #cat("Calculating Performance Metric:  NowDrawdown", "\n")
   if (dd.value == "both") {
     now.drawdown <- 
       ifelse(last(drawdowns[[1]]$dd) != 0,
@@ -290,11 +290,11 @@ CalcDrawdowns <- function(data, dd.value = "abs") {
     if (dd.value == "ratio") {
       # вычисление только дробных значений dd 
       data$dd[data$peak == 0] <- NA
-      data$dd[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+      data$dd[data$peak != 0] <- data$dd[data$peak != 0] * 100 / data$peak[data$peak != 0]
     } else {
       # в слечае вычисления и дробных и абсолютных значений
       data$dd.ratio[data$peak == 0] <- NA
-      data$dd.ratio[data$peak != 0] <- data$dd[data$peak != 0] / data$peak[data$peak != 0]
+      data$dd.ratio[data$peak != 0] <- data$dd[data$peak != 0] * 100 / data$peak[data$peak != 0]
     }
   }
   #

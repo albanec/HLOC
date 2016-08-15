@@ -18,7 +18,7 @@ RatioTable <- function(returns, ret.type) {
   require(PerformanceAnalytics)
   #
   # от типа используемых return'ов сильно зависят дальнейшие вычисления;
-  # функиции пакета PerfomanceAnalythics по умолчанию настроены на расчёт SR (т.е. на геометрический рассчёт)
+  # функции пакета PerfomanceAnalythics по умолчанию настроены на расчёт SR (т.е. на геометрический рассчёт)
   if (ret.type == "sret") {
     TF <- TRUE
   } else {
@@ -130,7 +130,7 @@ CalcSterlingRatio <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
   }
   annualized_return = Return.annualized(R, scale = scale, geometric = geometric)
   drawdown = abs(maxDrawdown(R, geometric = geometric) + excess)
-  result = annualized_return/drawdown
+  result = annualized_return / drawdown
   rownames(result) = paste("Sterling Ratio (Excess = ", round(excess * 100, 0), "%)", sep = "")
   return(result)
 }
@@ -148,7 +148,7 @@ CalcSterlingRatio <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
 #' @export
 TransformMetric <- function(metric.data, metric.name) {
   #
-  cat("Calculating Performance Metric:", metric.name, "\n")
+  #cat("Calculating Performance Metric:", metric.name, "\n")
   metric.data <- as.matrix(metric.data)
   # трансформация в нужный вид:
   if (nrow(metric.data) == 1) {

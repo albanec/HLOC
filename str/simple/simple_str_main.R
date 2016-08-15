@@ -78,12 +78,9 @@ dealsTable <- CalcDealsTable_DF(data = data.strategy.list[[2]])
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
-# простые временные параметры
-datesTable <- DateTable(data = data.strategy.list[[1]], period)
-# расчёт коэффициентов
-ratioTable <- RatioTable(returns = data.strategy.list[[1]]$perfRet, ret.type)
-# расчёт drawdown'ов
-drawdownTable <- DrawdownTable(equity = data.strategy.list[[1]]$equity, dd.value = "abs")
+perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                                       balance = balance.start, 
+                                       dd.value = "both", ret.type = ret.type)
 #
 
 

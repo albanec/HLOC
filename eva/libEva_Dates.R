@@ -15,21 +15,31 @@
 #' @return datesTable Таблица с временными параметрами
 #'
 #' @export
-DateTable <- function(data, period) {
+DateTable <- function(data) {
   # Зависимости:
   require(PerformanceAnalytics)
   # ----------
   #
-  cat("INFO(DateTable):  Build Date Metrics", "\n", sep = "  ")
+  # cat("INFO(DateTable):  Calc Date Metrics", "\n", sep = "  ")
   trading.days <- CalcTradingDays(data)
+  # начало торговли
   from.date <- 
     first(data) %>%
     index(.)
+  # конец торговли
   to.date <-
     last(data) %>%
     index(.)
+  # периодичность входных данных
+  period <- 
+    periodicity(data) %>%
+    {
+      paste(.[[2]], "mins")
+    }
+  ### таблица временных метрик
   datesTable <- cbind.data.frame(from.date, to.date, period, trading.days)
-  colnames(datesTable) <- c("Начальная дата", "Конечная дата", "Период", "Число торговых дней")
+  colnames(datesTable) <- c("StartDate", "EndDate", "Period", "NumTradeDays")
+  #
   return(datesTable)
 }
 #
@@ -48,6 +58,7 @@ CalcTradingDays <- function(data) {
   tradingDays <- 
     index(data) %>%
     ndays(.)
+  #
   return(tradingDays)
 }
 #
