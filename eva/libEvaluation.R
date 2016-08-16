@@ -17,7 +17,7 @@
 #' @return perfomanceTable Итоговая perfomance-таблица
 #'
 #' @export
-CalcPerfomanceTable <- function(data, balance, dd.value, ret.type, ...) {
+CalcPerfomanceTable <- function(data, balance, ret.type, ...) {
   #
   ### Расчёт метрик
   cat("INFO(CalcPerfomanceTable):  Calc PerfomanceMetrics ... Start ", "\n", sep = "  ")
@@ -29,7 +29,7 @@ CalcPerfomanceTable <- function(data, balance, dd.value, ret.type, ...) {
   profitTable <- ProfitTable(data = data, balance = balance.start)
   # расчёт drawdown'ов
   cat("INFO(CalcPerfomanceTable):  Calc DrawdownTable", "\n", sep = "  ")
-  drawdownTable <- DrawdownTable(equity = data$equity, dd.value)
+  drawdownTable <- DrawdownTable(data.balance = data$balance)
   # расчёт коэффициентов
   cat("INFO(CalcPerfomanceTable):  Calc RatioTable", "\n", sep = "  ")
   ratioTable <- RatioTable(returns = data$perfRet, ret.type)

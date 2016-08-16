@@ -22,10 +22,12 @@ ProfitTable <- function(data, balance, ...) {
   fullSR <- fullReturn * 100 / balance    
   ### доходность в годовых
   # число месяцев торговли
-  n.mouth <- 
+  fullReturn.annual <- 
     index(data) %>%
-    ndays(.) / 30
-  fullReturn.annual <- fullReturn * 12 / n.mouth    
+    ndays(.) %>%
+    {
+      fullReturn * 250 / .
+    }    
   ### разбор дней
   # статистика по дням
   trdaysStatsList <- CalcTradingDaysStats(data = data)

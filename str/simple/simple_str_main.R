@@ -80,7 +80,7 @@ CleanGarbage(target = "temp", env = ".GlobalEnv")
 ### оценка perfomance-параметров
 perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
                                        balance = balance.start, 
-                                       dd.value = "both", ret.type = ret.type)
+                                       ret.type = ret.type)
 #
 
 
