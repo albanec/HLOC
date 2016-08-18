@@ -1,25 +1,75 @@
 #
 ###
-###
-#' Очистка таблицы состояний от пустых сделок
-#'
-#' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
+#' Создание итоговой таблицы сделок
 #' 
-#' @param data Входной xts ряд состояний
-#'  
-#' @return data Очищенный xts ряд состояний
+#' @param data Входной xts ряд сделок
+#' @param data.names Вектор тикеров
+#'
+#' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-CleanStatesTable <- function(data) {
-  data %<>%
-    # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
+CalcDealsTable_DF <- function(data, ...) {
+  if (!exists("data.names")) {
+    data.names <- 
+      grep(".equity", names(data)) %>%
+      names(data)[.] %>%
+      sub(".equity", "", .)   
+  }
+  pos.num.list <- 
+    max(data$pos.num) %>%
+      1:. %>%
+    {
+      names(.) <- .
+      return(.)
+    } %>%
+    as.list(.)
+  #
+  # расчёт таблицы
+  DealsTable <- 
+    # посделочный расчёт, на выходе лист с df по каждой сделке
+    lapply(pos.num.list,
+           function (x) {
+             CalcOneDealSummary_DF(data, n = x, data.names = data.names)
+           }) %>%
+    # объединение данных внутри листа в один df
+    MergeData_inList_byRow(.) %>%
+    # вывод данных по открытию/закрытию позиций в одну строку
     {
       df <- . 
-      df <-  df[-which(df$n == 0 & df$diff.n ==0)]
+      df <- 
+        # ряд номеров позиций
+        last(df$PositionNum) %>%
+        1:. %>%
+        # перенос данных в нужные строки
+        {
+          numDeals <- .
+          # нужные столбцы (касаются закрытия)
+          colNum <-
+            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "Margin", "Equity") %>%
+            {
+              which(colnames(df) %in% .) 
+            }
+          # индексы строк открытия/закрытия
+          openRowIndex <- which((df$PositionNum %in% numDeals) & !is.na(df$OpenSignal))
+          closeRowIndex <- which((df$PositionNum %in% numDeals) & is.na(df$OpenSignal))
+          df <- 
+            # инъекция данных
+            {
+              df[openRowIndex, colNum] <- df[closeRowIndex, colNum]
+              return(df)
+            } %>%
+            # очистка ненужных данных (удаление лога закрытий)
+            {
+              df <- df[-closeRowIndex, ]
+              return(df)
+            }
+          #
+          return(df)
+        }
       return(df)
-    } 
-  return(data)
-} 
+    }
+  return(DealsTable)
+}
 #
 ###
 #' Вычисление данных по одной сделке
@@ -33,21 +83,23 @@ CleanStatesTable <- function(data) {
 #' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-CalcOneDealSummary_DF <- function(data, n, data.names) {
+CalcOneDealSummary_DF <- function(data, n, ...) {
   #
   if (!exists("data.names")) {
     data.names <- 
       grep(".Open", names(data)) %>%
-      names(data.source)[.] %>%
+      names(data)[.] %>%
       sub(".Open", "", .)   
   }
   deal.summary <- 
+    # вытаскиваем данные по сделке n
     data[data$pos.num == n] %T>%
     {
       temp.data <<- . 
     } %>%
     {
       temp.data <- .
+      # список тикеров
       data.names.list <- 
         data.names %>%
         {
@@ -56,16 +108,20 @@ CalcOneDealSummary_DF <- function(data, n, data.names) {
         } %>%
         as.list(.)
       temp.data <- 
+        # данные по каждому тикеру выкидываем в отдельный подлист
         lapply(data.names.list, 
                function(x) {
+                 # правильно прописываем названия столбцов с нужными данными (в names.set)
                  temp.text <- 
                    paste("names.set <- c(\"pos.num\", \"pos\", \"pos.add\", \"pos.drop\", ",
                          "\"",x,".n\", \"",x,".diff.n\", \"",x,".Open\", ",
-                         "\"",x,".commiss\", \"",x,".margin\", \"",x,".equity\") ;" ,
+                         "\"",x,".commiss\", \"",x,".perfReturn\", \"",x,".equity\") ;" ,
                          sep = "")
                  eval(parse(text = temp.text))
                  temp.data <- 
+                   # вытаскиваем нужные столбцы (по names.set)
                    temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
+                   # для удобства переименуем 
                    {
                      names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", "Open", 
                                    "n", "diff.n", "commiss", "margin", "equity")
@@ -169,7 +225,7 @@ CalcOneDealSummary_DF <- function(data, n, data.names) {
             as.POSIXct(., origin = "1970-01-01") 
           df$CloseValue <- ifelse(.$pos == 0 | .$pos.drop != 0, .$Open, NA)
           df$CloseCommiss <- ifelse(.$pos == 0 | .$pos.drop != 0, .$commiss, NA)
-          df$Margin <- .$margin
+          df$Margin <- .$margin 
           df$Equity <- .$equity
           return(df)
         } %>%
@@ -185,75 +241,22 @@ CalcOneDealSummary_DF <- function(data, n, data.names) {
 } 
 #
 ###
-#' Создание итоговой таблицы сделок
-#' 
-#' @param data Входной xts ряд сделок
-#' @param data.names Вектор тикеров
+#' Очистка таблицы состояний от пустых сделок
 #'
-#' @return DealsTable data.frame содержащий все сделки
+#' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
+#' 
+#' @param data Входной xts ряд состояний
+#'  
+#' @return data Очищенный xts ряд состояний
 #'
 #' @export
-CalcDealsTable_DF <- function(data, ...) {
-  if (!exists("data.names")) {
-    data.names <- 
-      grep(".equity", names(data)) %>%
-      names(data)[.] %>%
-      sub(".equity", "", .)   
-  }
-  pos.num.list <- 
-    max(data$pos.num) %>%
-    1:. %>%
-    {
-      names(.) <- .
-      return(.)
-    } %>%
-    as.list(.)
-  #
-  # расчёт таблицы
-  DealsTable <- 
-    # посделочный расчёт, на выходе лист с df по каждой сделке
-    lapply(pos.num.list,
-           function (x) {
-             CalcOneDealSummary_DF(data, n = x, data.names)
-           }) %>%
-    # объединение данных внутри листа в один df
-    MergeData_inList_byRow(.) %>%
-    # вывод данных по открытию/закрытию позиций в одну строку
+CleanStatesTable <- function(data) {
+  data %<>%
+    # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
     {
       df <- . 
-      df <- 
-        # ряд номеров позиций
-        last(df$PositionNum) %>%
-        1:. %>%
-        # перенос данных в нужные строки
-        {
-          numDeals <- .
-          # нужные столбцы (касаются закрытия)
-          colNum <-
-            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "Margin", "Equity") %>%
-            {
-              which(colnames(df) %in% .) 
-            }
-          # индексы строк открытия/закрытия
-          openRowIndex <- which((df$PositionNum %in% numDeals) & !is.na(df$OpenSignal))
-          closeRowIndex <- which((df$PositionNum %in% numDeals) & is.na(df$OpenSignal))
-          df <- 
-            # инъекция данных
-            {
-              df[openRowIndex, colNum] <- df[closeRowIndex, colNum]
-              return(df)
-            } %>%
-            # очистка ненужных данных (удаление лога закрытий)
-            {
-              df <- df[-closeRowIndex, ]
-              return(df)
-            }
-          #
-          return(df)
-        }
+      df <-  df[-which(df$n == 0 & df$diff.n ==0)]
       return(df)
-    }
-  return(DealsTable)
-}
-#
-
+    } 
+  return(data)
+} 

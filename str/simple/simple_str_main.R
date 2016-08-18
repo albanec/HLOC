@@ -58,11 +58,11 @@ data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.li
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
 data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]], 
-                                                  norm.data = data.source.list[[1]]$USDRUB, 
-                                                  names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
-                                                  outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
-                                                  tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
-                                                  convert.to = "RUB")
+                                              norm.data = data.source.list[[1]]$USDRUB, 
+                                              names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
+                                              outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
+                                              tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
+                                              convert.to = "RUB")
 # суммирование
 data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
@@ -79,8 +79,7 @@ CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
 perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                                       data.state = data.strategy.list[[2]],
                                        balance = balance.start, 
                                        ret.type = ret.type)
 #
-
-

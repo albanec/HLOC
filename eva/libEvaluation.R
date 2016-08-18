@@ -17,22 +17,23 @@
 #' @return perfomanceTable Итоговая perfomance-таблица
 #'
 #' @export
-CalcPerfomanceTable <- function(data, balance, ret.type, ...) {
+CalcPerfomanceTable <- function(data, data.state, balance, ret.type, ...) {
   #
   ### Расчёт метрик
   cat("INFO(CalcPerfomanceTable):  Calc PerfomanceMetrics ... Start ", "\n", sep = "  ")
   # простые временные метрики
   cat("INFO(CalcPerfomanceTable):  Calc DatesMetrics", "\n", sep = "  ")
-  datesTable <- DateTable(data = data)
+  datesTable <- DatesTable(data = data, data.state = data.state)
   # profit метрики
   cat("INFO(CalcPerfomanceTable):  Calc ProfitTable", "\n", sep = "  ")
-  profitTable <- ProfitTable(data = data, balance = balance.start)
+  profitTable <- ProfitTable(data = data, balance = balance.start, 
+                             nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
   # расчёт drawdown'ов
   cat("INFO(CalcPerfomanceTable):  Calc DrawdownTable", "\n", sep = "  ")
   drawdownTable <- DrawdownTable(data.balance = data$balance)
   # расчёт коэффициентов
   cat("INFO(CalcPerfomanceTable):  Calc RatioTable", "\n", sep = "  ")
-  ratioTable <- RatioTable(returns = data$perfRet, ret.type)
+  ratioTable <- RatioTable(returns = data$perfReturn, ret.type)
   #
   ### итоговая таблица
   cat("INFO(CalcPerfomanceTable):  Build PerfomanceTable", "\n", sep = "  ")

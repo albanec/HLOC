@@ -344,13 +344,13 @@ TestStrategy_gear <- function(data.source,
       data.state$n[1] <- 0
       data.state$equity[1] <- 0
     } else {
-      # основной расчёт
-      # индекс строки
+      ### основной расчёт
+      #индекс строки
       temp.index <- index(data.state$state[n])
-      # расчёт вариационки
+      ## расчёт вариационки
       data.state$margin[n] <- 
         data.state$cret[[n]] * data.state$n[[n - 1]]
-      # расчёт количества контрактов на такте
+      ## расчёт количества контрактов на такте
       # если закрытие позиции, то контрактов ноль
       if (data.state$pos[n] == 0) {
         data.state$n[n] <- 0
@@ -363,7 +363,12 @@ TestStrategy_gear <- function(data.source,
               coredata(data.source$IM[temp.index]) * 
               runif(1, 0.6, 1.4) 
             } %>%
-            round(.)
+            round(.) %>%
+            {
+              ifelse(. != 0, 
+                     ., 
+                     1)
+            }
         } else {
           # если докупка
           if (data.state$pos.add[n] == 1) {
@@ -400,7 +405,7 @@ TestStrategy_gear <- function(data.source,
   #
   # расчёт equity по корзине в data.state
   data.state$perfReturn <- data.state$margin - data.state$commiss
-  data.state$equity <- cumsum(data.state$perfRet)
+  data.state$equity <- cumsum(data.state$perfReturn)
   #
   data %<>%  
     # перенос данных по количеству контрактов корзины в data
@@ -444,7 +449,8 @@ TestStrategy_gear <- function(data.source,
           "data.state$",.,".margin <- ",
             "data.state$",.,".cret * lag(data.state$",.,".n) ; ",
           "data.state$",.,".margin[1] <- 0 ; ",
-          "data.state$",.,".equity <- cumsum(data.state$",.,".margin - data.state$",.,".commiss) ;",
+          "data.state$",.,".perfReturn <- data.state$",.,".margin - data.state$",.,".commiss ;",
+          "data.state$",.,".equity <- cumsum(data.state$",.,".perfReturn) ;",
           # расчёт для data  
           "data$",.,".n <- ", 
             "merge(data, data.state$",.,".n) %$% ",
@@ -454,7 +460,8 @@ TestStrategy_gear <- function(data.source,
           "data$",.,".margin[1] <- 0 ; ",
           "data <- merge(data, data.state$",.,".commiss) ; ",
           "data$",.,".commiss[is.na(data$",.,".commiss)] <- 0 ; ",
-          "data$",.,".equity <- cumsum(data$",.,".margin - data$",.,".commiss) ;",
+          "data$",.,".perfReturn <- data$",.,".margin - data$",.,".commiss ;",
+          "data$",.,".equity <- cumsum(data$",.,".perfReturn) ;",
            sep = "")
         return(t)
       }      
