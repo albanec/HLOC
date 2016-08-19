@@ -70,7 +70,7 @@ ProfitTable <- function(data, balance, ...) {
 #' @return profitTable.byDeals DF с данными по profit'у (по сделкам)
 #'
 #' @export
-ProfitTable_byDeals <- function(data, data.state, balance, ...) {
+ProfitTable_byDeals <- function(data.deals.list, balance, ...) {
   ### Всего сделок
   deals.num <- last(data.state$pos.num)
   ### разбор статистики

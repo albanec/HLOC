@@ -49,7 +49,7 @@ CalcDealsTables <- function(data, convert = FALSE, ...) {
       ConvertDealsTable(data.deals = ., type = "basket")
   }
   #
-  return(list(dealsTable_byTickers, dealsTable_byBasket))
+  return(list(dealsTable_byBasket, dealsTable_byTickers))
 }
 #
 ###
