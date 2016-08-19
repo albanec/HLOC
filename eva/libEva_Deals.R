@@ -3,12 +3,13 @@
 #' Создание итоговой таблицы сделок
 #' 
 #' @param data Входной xts ряд сделок
-#' @param data.names Вектор тикеров
+#' @param data.names Вектор тикеров (необязательно)
+#' @param convert Переносить открытия/закрытия в одну строку или нет (по умолчанию нет)
 #'
-#' @return DealsTable data.frame содержащий все сделки
+#' @return list List, содержащий все сделки
 #'
 #' @export
-CalcDealsTable_DF <- function(data, ...) {
+CalcDealsTables <- function(data, convert = FALSE, ...) {
   if (!exists("data.names")) {
     data.names <- 
       grep(".equity", names(data)) %>%
@@ -24,16 +25,48 @@ CalcDealsTable_DF <- function(data, ...) {
     } %>%
     as.list(.)
   #
-  # расчёт таблицы
-  DealsTable <- 
+  ### расчёт таблицы сделок (данные по каждому тикеру)
+  dealsTable_byTickers <- 
     # посделочный расчёт, на выходе лист с df по каждой сделке
     lapply(pos.num.list,
            function (x) {
-             CalcOneDealSummary_DF(data, n = x, data.names = data.names)
+             CalcOneDealSummary_DF(data, n = x, data.names = data.names, type = "tickers")
            }) %>%
     # объединение данных внутри листа в один df
-    MergeData_inList_byRow(.) %>%
-    # вывод данных по открытию/закрытию позиций в одну строку
+    MergeData_inList_byRow(.)
+  ### расчёт таблицы сделок (данные по корзине)
+  dealsTable_byBasket <- 
+    lapply(pos.num.list,
+           function (x) {
+             CalcOneDealSummary_DF(data, n = x, data.names = data.names, type = "basket")
+           }) %>%
+    MergeData_inList_byRow(.)
+  #
+  if (convert != FALSE) {
+    dealsTable_byTickers %<>%
+      ConvertDealsTable(data.deals = ., type = "tickers")
+    dealsTable_byBasket %<>%
+      ConvertDealsTable(data.deals = ., type = "basket")
+  }
+  #
+  return(list(dealsTable_byTickers, dealsTable_byBasket))
+}
+#
+###
+#' Конвертирование таблицы сделок в нужный вид
+#' 
+#' Функция производит вывод данных по открытию/закрытию позиций в одну строку
+#' 
+#' @param data.deal Данные таблицы сделок
+#' @param type Тип данных для анализа (tickers/basket)
+#'
+#' @return result Изменённая таблица данных сделок
+#'
+#' @export
+ConvertDealsTable <- function(data.deals, type = "tickers") {
+  ### вывод данных по открытию/закрытию позиций в одну строку
+  result <- 
+    data.deals %>%
     {
       df <- . 
       df <- 
@@ -44,11 +77,19 @@ CalcDealsTable_DF <- function(data, ...) {
         {
           numDeals <- .
           # нужные столбцы (касаются закрытия)
-          colNum <-
-            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "DealReturn", "Equity") %>%
-            {
-              which(colnames(df) %in% .) 
-            }
+          if (type == "tickers") {
+            colNum <-
+              c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "DealReturn", "Equity") %>%
+              {
+                which(colnames(df) %in% .) 
+              }
+          } else {
+            colNum <-
+              c("CloseSignal", "CloseDate", "CloseCommiss", "DealReturn", "Equity") %>%
+              {
+                which(colnames(df) %in% .) 
+              }
+          }
           # индексы строк открытия/закрытия
           openRowIndex <- which((df$PositionNum %in% numDeals) & !is.na(df$OpenSignal))
           closeRowIndex <- which((df$PositionNum %in% numDeals) & is.na(df$OpenSignal))
@@ -56,19 +97,23 @@ CalcDealsTable_DF <- function(data, ...) {
             # инъекция данных
             {
               df[openRowIndex, colNum] <- df[closeRowIndex, colNum]
+              df$DealReturn[openRowIndex] <- df$DealEquity[closeRowIndex]
               return(df)
             } %>%
             # очистка ненужных данных (удаление лога закрытий)
             {
               df <- df[-closeRowIndex, ]
+              df$DealEquity <- NULL
               return(df)
             }
           #
           return(df)
         }
-      return(df)
+      #
+      return(result)
     }
-  return(DealsTable)
+  #
+  return(result)
 }
 #
 ###
@@ -83,7 +128,7 @@ CalcDealsTable_DF <- function(data, ...) {
 #' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-CalcOneDealSummary_DF <- function(data, n, ...) {
+CalcOneDealSummary_DF <- function(data, type, n, ...) {
   #
   if (!exists("data.names")) {
     data.names <- 
@@ -107,136 +152,214 @@ CalcOneDealSummary_DF <- function(data, n, ...) {
           return(.)
         } %>%
         as.list(.)
-      temp.data <- 
-        # данные по каждому тикеру выкидываем в отдельный подлист
-        lapply(data.names.list, 
-               function(x) {
-                 # правильно прописываем названия столбцов с нужными данными (в names.set)
-                 temp.text <- 
-                   paste("names.set <- c(\"pos.num\", \"pos\", \"pos.add\", \"pos.drop\", ",
-                         "\"",x,".n\", \"",x,".diff.n\", \"",x,".Open\", ",
-                         "\"",x,".commiss\", \"",x,".perfReturn\", \"",x,".equity\") ;" ,
-                         sep = "")
-                 eval(parse(text = temp.text))
-                 temp.data <- 
-                   # вытаскиваем нужные столбцы (по names.set)
-                   temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
-                   # для удобства переименуем 
-                   {
-                     names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", "Open", 
-                                   "n", "diff.n", "commiss", "deal.return", "equity")
-                     return(.)
-                   } %>%
-                   # нумерация субсделок (x.0 - открытия/закрытия и x.1...n - для изменений внутри)
-                   {
-                     df <- .
-                     # субномера
-                     df$subnum <- 
-                       nrow(df) %>%
-                       { 
-                         ifelse(. < 3, 
-                                0,
-                                0.1)
-                       } %>% 
-                       as.vector
-                     # расчёт номеров
-                     df$pos.num <- 
-                       df$subnum %>%
-                       {
-                         .[1] <- 0 
-                         return(.)
-                       } %>%
-                       cumsum(.) %>%
-                       {
-                         .[nrow(.)] <- 0
-                         df$pos.num + .
-                       } 
-                     return(df)
-                   }
-                 return(temp.data)
-               }) %>%
-        MergeData_inList_byRow(.) %>%
-        Convert_XTStoDF(.) %>%
-        {
-          df <- 
-            nrow(.) %>%
-            data.frame(PositionNum = numeric(.),
-                       PositionType = character(.),
-                       Ticker = character(.),
-                       N = numeric(.),
-                       diff.N = integer(.),
-                       OpenSignal = character(.),
-                       OpenDate = character(.) %>% 
-                                  as.numeric() %>% 
-                                  as.Date(),
-                       OpenValue = integer(.),
-                       OpenCommiss = integer(.),
-                       CloseSignal = character(.),
-                       CloseDate = character(.) %>% 
-                                   as.numeric() %>% 
-                                  as.Date(),
-                       CloseValue = integer(.),
-                       CloseCommiss = integer(.),
-                       DealReturn = numeric(.),
-                       Equity = numeric(.),
-                       row.names = NULL)
-          df$PositionNum <- .$pos.num
-          df$PositionType <- ifelse(.$pos[1] == 1, 
-                                    "Длинная", 
-                                    "Короткая")
-          df$Ticker <- data.names
-          df$N <- .$n
-          df$diff.N <- .$diff.n
-          df$OpenSignal <- ifelse(.$pos == 1, 
-                                  ifelse(.$pos.add == 1, 
-                                         "ИзменПоРынку", 
-                                         ifelse(.$pos.drop == 0, 
-                                                "ОткрПозиПоРынк", 
-                                                NA)),
-                                  ifelse(.$pos == -1,
-                                         ifelse(.$pos.add == 1, 
-                                                "ИзменПоРынку1",
-                                                ifelse(.$pos.drop == 0, 
-                                                       "ОткрПозиПоРынк1",
-                                                       NA)),
-                                         NA))
-          df$OpenDate <- 
-            ifelse(.$pos != 0 & .$pos.drop == 0, 
-                   .$date, 
-                   NA) %>%
-            as.POSIXct(., origin = "1970-01-01") 
-          df$OpenValue <- ifelse(.$pos != 0 & .$pos.drop == 0, 
-                                 .$Open, 
-                                 NA)
-          df$OpenCommiss <- ifelse(.$pos != 0 & .$pos.drop == 0, 
-                                   .$commiss, 
-                                   NA)
-          df$CloseSignal <- ifelse(.$pos == 0,
-                                   ifelse(.$pos[1] == 1, 
-                                          "ЗакрПозиПоРынк", 
-                                          "ЗакрПозиПоРынк1"), 
-                                   ifelse(.$pos.drop != 0, 
-                                          ifelse(.$pos[1] == 1, 
-                                                 "ЗакрПозиПоРынк", 
-                                                 "ЗакрПозиПоРынк1"), 
-                                          NA))
-          df$CloseDate <- 
-            ifelse(.$pos == 0 | .$pos.drop != 0, .$date, NA) %>%
-            as.POSIXct(., origin = "1970-01-01") 
-          df$CloseValue <- ifelse(.$pos == 0 | .$pos.drop != 0, .$Open, NA)
-          df$CloseCommiss <- ifelse(.$pos == 0 | .$pos.drop != 0, .$commiss, NA)
-          df$DealReturn <- .$deal.return
-          df$Equity <- .$equity
-          return(df)
-        } %>%
-        {
-          df <- .
-          df <- df[, -1]
-          return(df)
-        }
+      ## расчёт данных сделок (по тикеру или корзине)
+      if (type == "tickers") {
+        temp.data <- 
+          # данные по каждому тикеру выкидываем в отдельный подлист
+          lapply(data.names.list, 
+                 function(x) {
+                   # правильно прописываем названия столбцов с нужными данными (в names.set)
+                   temp.text <- 
+                     paste("names.set <- c(\"pos.num\", \"pos\", \"pos.add\", \"pos.drop\", ",
+                           "\"",x,".n\", \"",x,".diff.n\", \"",x,".Open\", ",
+                           "\"",x,".commiss\", \"",x,".equity\", \"",x,".perfReturn\") ;" ,
+                           sep = "")                  
+                   eval(parse(text = temp.text))
+                   temp.data <- 
+                     # вытаскиваем нужные столбцы (по names.set)
+                     temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
+                     # для удобства переименуем 
+                     {
+                       names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", "Open", 
+                                     "n", "diff.n", "commiss", "equity", "deal.return") 
+                       return(.)
+                     } %>%
+                     # нумерация субсделок (x.0 - открытия/закрытия и x.1...n - для изменений внутри)
+                     {
+                       df <- .
+                       # субномера
+                       df$subnum <- 
+                         nrow(df) %>%
+                         { 
+                           ifelse(. < 3, 
+                                  0,
+                                  0.1)
+                         } %>% 
+                         as.vector
+                       # расчёт номеров
+                       df$pos.num <- 
+                         df$subnum %>%
+                         {
+                           .[1] <- 0 
+                           return(.)
+                         } %>%
+                         cumsum(.) %>%
+                         {
+                           .[nrow(.)] <- 0
+                           df$pos.num + .
+                         } 
+                       #
+                       return(df)
+                     }
+                   #
+                   return(temp.data)
+                 }
+                ) %>%
+                MergeData_inList_byRow(.)
+      } else {
+        temp.text <- 
+          paste("names.set <- c(\"pos.num\", \"pos\", \"pos.add\", \"pos.drop\", ",
+                                "\"n\", \"diff.n\", ",
+                                "\"commiss\", \"equity\", \"perfReturn\") ;" ,
+                                sep = "")  
+        eval(parse(text = temp.text))
+        temp.data <- 
+          temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
+          {
+            names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", 
+                          "n", "diff.n", "commiss", "equity", "deal.return") 
+            return(.)
+          } %>%
+          {
+            df <- .
+            df$subnum <- 
+              nrow(df) %>%
+              { 
+                ifelse(. < 3, 
+                       0,
+                       0.1)
+              } %>% 
+              as.vector
+            df$pos.num <- 
+              df$subnum %>%
+              {
+                .[1] <- 0 
+                return(.)
+              } %>%
+              cumsum(.) %>%
+              {
+                .[nrow(.)] <- 0
+                df$pos.num + .
+              } 
+            #
+            return(df)
+          } 
+      }
       #
-      return(temp.data)
+      return (temp.data)
+    } %>%
+    # конвертируем таблицу в DF      
+    Convert_XTStoDF(.) %>%
+    ### расчёт итогового DF
+    {
+      df <- 
+        nrow(.) %>%
+        # форомирование скелета DF
+        data.frame(PositionNum = numeric(.),
+                   PositionType = character(.),
+                   Ticker = character(.),
+                   N = numeric(.),
+                   diff.N = integer(.),
+                   OpenSignal = character(.),
+                   OpenDate = character(.) %>% 
+                              as.numeric() %>% 
+                              as.Date(),
+                   OpenValue = integer(.),
+                   OpenCommiss = integer(.),
+                   CloseSignal = character(.),
+                   CloseDate = character(.) %>% 
+                               as.numeric() %>% 
+                               as.Date(),
+                   CloseValue = integer(.),
+                   CloseCommiss = integer(.),
+                   DealReturn = numeric(.),
+                   DealEquity = numeric(.),
+                   Equity = numeric(.),
+                   row.names = NULL)
+      ## номера позиций
+      df$PositionNum <- .$pos.num
+      ## тип позиции
+      df$PositionType <- ifelse(.$pos[1] == 1, 
+                                "Длинная", 
+                                "Короткая")
+      ## имя тикера
+      if (type == "tickers") {
+        df$Ticker <- data.names
+      } else {
+        df$Ticker <- "basket"
+      }
+      ## количество контрактов тикера
+      df$N <- .$n
+      ## изменения контрактов тикера на текущей сделке
+      df$diff.N <- .$diff.n
+      ## сигнал открытия
+      df$OpenSignal <- ifelse(.$pos == 1, 
+                              ifelse(.$pos.add == 1, 
+                                     "ИзменПоРынку", 
+                                     ifelse(.$pos.drop == 0, 
+                                            "ОткрПозиПоРынк", 
+                                            NA)),
+                              ifelse(.$pos == -1,
+                                     ifelse(.$pos.add == 1, 
+                                            "ИзменПоРынку1",
+                                            ifelse(.$pos.drop == 0, 
+                                                   "ОткрПозиПоРынк1",
+                                                   NA)),
+                                     NA))
+      # дата открытия позиции
+      df$OpenDate <- 
+        ifelse(.$pos != 0 & .$pos.drop == 0, 
+               .$date, 
+               NA) %>%
+        as.POSIXct(., origin = "1970-01-01") 
+      ## цена тикера на открытии (не используется в "basket" режиме)
+      if (type == "tickers") {
+        df$OpenValue <- ifelse(.$pos != 0 & .$pos.drop == 0, 
+                               .$Open, 
+                               NA)
+      }
+      ## комиссия на закрытии
+      df$OpenCommiss <- ifelse(.$pos != 0 & .$pos.drop == 0, 
+                               .$commiss, 
+                               NA)
+      ## сигнал закрытия
+      df$CloseSignal <- ifelse(.$pos == 0,
+                               ifelse(.$pos[1] == 1, 
+                                      "ЗакрПозиПоРынк", 
+                                      "ЗакрПозиПоРынк1"), 
+                               ifelse(.$pos.drop != 0, 
+                                      ifelse(.$pos[1] == 1, 
+                                             "ЗакрПозиПоРынк", 
+                                               "ЗакрПозиПоРынк1"), 
+                                        NA))
+      ## дата закрытия
+      df$CloseDate <- 
+        ifelse(.$pos == 0 | .$pos.drop != 0, .$date, NA) %>%
+        as.POSIXct(., origin = "1970-01-01") 
+      ## цена тикера на закрытии (не используется в "basket" режиме)
+      if (type == "tickers") {
+        df$CloseValue <- ifelse(.$pos == 0 | .$pos.drop != 0, .$Open, NA)
+        }
+      ## коммиссия на закрытии
+      df$CloseCommiss <- ifelse(.$pos == 0 | .$pos.drop != 0, .$commiss, NA)
+      ## return позиции
+      df$DealReturn <- .$deal.return
+      ## equity внутри сделки
+      df$DealEquity <- cumsum(.$deal.return)
+      ## изменения equity тикера
+      df$Equity <- .$equity
+      #
+      return(df)
+    } %>%
+    {
+      df <- .
+      df <- df[, -1]
+      return(df)
     }
+  #   #
+  #   return(temp.data)
+  # }
+  # #
   return(deal.summary)
 } 
 #
@@ -255,7 +378,9 @@ CleanStatesTable <- function(data) {
     # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
     {
       df <- . 
-      df <-  df[-which(df$n == 0 & df$diff.n ==0)]
+      if ((df$n == 0 && df$diff.n ==0) != FALSE) {
+        df <- df[-which(df$n == 0 & df$diff.n ==0)]
+      }
       return(df)
     } 
   return(data)

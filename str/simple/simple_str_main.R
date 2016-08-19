@@ -24,7 +24,7 @@ ret.type <- "ret"
 sma.per <- 9
 add.per <- 10
 basket.weights <- c(1,1,1) # количество инструментов в портфеле
-balance.start <- 10000000
+balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
 sleeps <- c(6, 20, 0.06) # в пунктах
 commissions <- c(2, 2, 2)  # в рублях
@@ -71,9 +71,13 @@ data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.
 data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
                                         sma.per, add.per, k.mm, balance.start, 
                                         basket.weights, sleeps, commissions)
+#
 ### формирование таблицы сделок
+## чистим от лишних записей
 data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-dealsTable <- CalcDealsTable_DF(data = data.strategy.list[[2]])
+## лист с данными по сделкам (по тикерам и за всю корзину)
+dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]])
+#
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
