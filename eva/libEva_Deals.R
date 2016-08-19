@@ -45,7 +45,7 @@ CalcDealsTable_DF <- function(data, ...) {
           numDeals <- .
           # нужные столбцы (касаются закрытия)
           colNum <-
-            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "Margin", "Equity") %>%
+            c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "DealReturn", "Equity") %>%
             {
               which(colnames(df) %in% .) 
             }
@@ -124,7 +124,7 @@ CalcOneDealSummary_DF <- function(data, n, ...) {
                    # для удобства переименуем 
                    {
                      names(.) <- c("pos", "pos.num", "pos.add", "pos.drop", "Open", 
-                                   "n", "diff.n", "commiss", "margin", "equity")
+                                   "n", "diff.n", "commiss", "deal.return", "equity")
                      return(.)
                    } %>%
                    # нумерация субсделок (x.0 - открытия/закрытия и x.1...n - для изменений внутри)
@@ -177,7 +177,7 @@ CalcOneDealSummary_DF <- function(data, n, ...) {
                                   as.Date(),
                        CloseValue = integer(.),
                        CloseCommiss = integer(.),
-                       Margin = numeric(.),
+                       DealReturn = numeric(.),
                        Equity = numeric(.),
                        row.names = NULL)
           df$PositionNum <- .$pos.num
@@ -225,7 +225,7 @@ CalcOneDealSummary_DF <- function(data, n, ...) {
             as.POSIXct(., origin = "1970-01-01") 
           df$CloseValue <- ifelse(.$pos == 0 | .$pos.drop != 0, .$Open, NA)
           df$CloseCommiss <- ifelse(.$pos == 0 | .$pos.drop != 0, .$commiss, NA)
-          df$Margin <- .$margin 
+          df$DealReturn <- .$deal.return
           df$Equity <- .$equity
           return(df)
         } %>%
