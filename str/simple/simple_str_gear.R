@@ -451,6 +451,7 @@ TestStrategy_gear <- function(data.source,
           "data.state$",.,".margin[1] <- 0 ; ",
           "data.state$",.,".perfReturn <- data.state$",.,".margin - data.state$",.,".commiss ;",
           "data.state$",.,".equity <- cumsum(data.state$",.,".perfReturn) ;",
+          "data.state$",.,".balance <- balance.start + data.state$",.,"equity ;",
           # расчёт для data  
           "data$",.,".n <- ", 
             "merge(data, data.state$",.,".n) %$% ",
@@ -462,6 +463,7 @@ TestStrategy_gear <- function(data.source,
           "data$",.,".commiss[is.na(data$",.,".commiss)] <- 0 ; ",
           "data$",.,".perfReturn <- data$",.,".margin - data$",.,".commiss ;",
           "data$",.,".equity <- cumsum(data$",.,".perfReturn) ;",
+          "data$",.,".balance <- balance.start + data$",.,"equity ;",
            sep = "")
         return(t)
       }      

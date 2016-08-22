@@ -76,14 +76,14 @@ data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
 ## чистим от лишних записей
 data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
 ## лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]])
-#
+dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
 perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
                                        data.state = data.strategy.list[[2]],
+                                       dealsTable = dealsTable.list,
                                        balance = balance.start, 
                                        ret.type = ret.type)
 #

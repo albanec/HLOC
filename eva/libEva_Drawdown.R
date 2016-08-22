@@ -120,7 +120,6 @@ CalcDrawdownDataSet <- function(data, fullData = FALSE) {
   } else {
     return(drawdowns)  
   }
-  
 }
 #
 ###
