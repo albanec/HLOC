@@ -2,17 +2,20 @@
 library(quantmod)
 library(rusquant)
 library(magrittr)
+library(tidyr)
 library(PerformanceAnalytics)
 # library(RQuantLib)
-# library(plyr)
 # library(dplyr)
 # library(data.table)
 #
 ### начальные параметры
-source("str/libGeneric.R")
 source("str/libStrategy.R")
-source("str/simple/simple_str_gear.R")
+source("str/simple/simple_str_gen.R")
 source("str/simple/simple_str_eva.R")
+#
+# движок стратегии
+source("str/simple/simple_str_gear.R")
+#
 ### входные параметры
 # temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
