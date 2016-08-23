@@ -3,6 +3,84 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
+#' Функция чтения XTS рядов из .csv файлов (выгрузки из Finam)
+#' 
+#' @param filename Название файла (без расширения .csv)
+#' @param period Указать в название период свечей
+#' @param tframe Указать в названии номер тайм-фрейма во FrameList'е
+#' @param sep Тип разделителя
+#'
+#' @return data XTS ряд, полученный из файла
+#'
+#' @export
+Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
+  #
+  ## считывание .csv
+  data <- Read_CSVtoDF(file.path = filename, sep = ",")
+  #
+  if (length(data) != 0) {
+    cat("INFO(Read_CSVtoXTS_FinamQuotes):  Load file ... ",filename, "\n", sep = "")
+  } 
+  ## проверка полей-заголовков
+  colNames.temp <- data[1, ]
+  data <- data[-1, ]
+  #
+  if ("<TICKER>" %in% colNames.temp) {
+    ticker.name <- 
+      which(colNames.temp %in% "<TICKER>") %>%
+      data[1, .]
+  } else {
+    ticker.name <- "Unkown ticker"
+  }
+  cat("INFO(Read_CSVtoXTS_FinamQuotes):  Export ticker ... \"",ticker.name,"\" data", "\n", sep = "")
+  #
+  if ("<PER>" %in% colNames.temp) {
+    per <-  
+      which(colNames.temp %in% "<TICKER>") %>%
+      data[1, .]
+    if (per <= 10 && per != 0) {  
+      per <- 
+        c("tick", "1min", "5min", "10min", "15min", "30min", "hour", "day", "week", "month") %>%
+        .[per]
+    } else {
+      per <- "Unkown period"
+    }
+  } else {
+    per <- "Unkown period"
+  }
+  cat("INFO(Read_CSVtoXTS_FinamQuotes):  Data period ... \"",per,"\"", "\n", sep = "")
+  # выделение данных
+  data <- 
+    c("<DATE>","<TIME>","<OPEN>","<HIGH>","<LOW>","<CLOSE>","<VOL>") %>%
+    {
+      which(colNames.temp %in% .) 
+    } %>%
+    { 
+      x <- 
+        data[, .] %>%
+        {
+          apply(as.matrix(.), 2, as.numeric)
+        } %>%
+        as.data.frame(.)
+      #regular.names <- c("date", "time", "Open", "High", "Low", "Close", "Volume")
+      #colnames(x) <- regular.names[.]
+      colnames(x) <- c("date", "time", "Open", "High", "Low", "Close", "Volume")
+      return(x)
+    } %>%
+    unite(., "Date", date, time, sep = " ")
+  # преобразование в XTS
+  data %<>% 
+    {
+      xts(.[, -1], 
+          as.POSIXct(strptime(.$Date, "%Y%m%d %H%M%S")), 
+          src = "finam", 
+          updated = Sys.time())
+    } 
+  #
+  return(data)
+}
+#
+###
 #' Функция считывания простых .csv
 #' 
 #' @param file.path Путь к файлу
@@ -13,7 +91,7 @@
 #' @export
 Read_CSVtoDF <- function(file.path, sep = ";") {
   #
-  file <- read.table(file=file.path, header=F, sep = ";", as.is=T) 
+  file <- read.table(file=file.path, header=F, sep = sep, as.is=T) 
   #
   return(file)
 }
@@ -22,8 +100,8 @@ Read_CSVtoDF <- function(file.path, sep = ";") {
 #' Функция чтения XTS рядов из .csv файлов
 #' 
 #' @param filename Название файла (без расширения .csv)
-#' @param period Указать в название период свечей
-#' @param tframe Указать в названии номер тайм-фрейма во FrameList'е
+#' @param period В названии исходного файла период свечей
+#' @param tframe В названии исходного файла номер тайм-фрейма во FrameList'е
 #' @param sep Тип разделителя
 #'
 #' @return data XTS ряд, полученный из файла
@@ -41,6 +119,7 @@ Read_CSVtoXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ",") {
   filename <- paste(filename, tframe, sep = ".")
   }
   filename <- paste(filename, "csv", sep = ".")
+  #
   data <- read.csv(file = filename, sep = sep)
   data <- xts(data[,-1], order.by = as.POSIXct(data$Index))
   cat("Read OK :  ", file.path(getwd(), filename), "\n")

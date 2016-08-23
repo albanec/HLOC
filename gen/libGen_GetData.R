@@ -181,7 +181,7 @@ ExpandData_toPeriod <- function(data.list, frames, period) {
 #' @return data XTS массив
 #'
 #' @export
-GetData_Ticker_One <- function(ticker, period = "15min", 
+GetData_Ticker_One <- function(ticker, period = "15min", loadFrom = "Finam",
                                from.date, to.date = Sys.Date(), 
                                rename = FALSE) {
   # Зависимости:
@@ -190,7 +190,7 @@ GetData_Ticker_One <- function(ticker, period = "15min",
   #
   cat("INFO(GetData_Ticker_One):  ", "Download Source Data...", "\n")
   # загрузка данных
-  data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = "Finam", auto.assign = FALSE)
+  data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = loadFrom, auto.assign = FALSE)
   # проверка на правильность загруженных данных
   if (is.xts(data) !=  TRUE) {
     stop(paste("ERROR(GetData_Ticker_One):  ticker ",ticker," not present!!!", sep = ""))
