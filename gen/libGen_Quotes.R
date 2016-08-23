@@ -77,21 +77,53 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
 }
 #
 ###
-#' Функция для расчёта стоимости тиков
+#' Функция для расчёта стоимости тиков внутри основного листа данных
 #' 
 #' @param data Данные котировок
+#' @names Список тикеров для конвертирования 
 #' @param norm.data Данные USDRUB_TOM
+#' @convert.to Валюта конвертации
+#' @tick.val Шаг тика
+#' @tick.price Цена тика
+#' @outnames Имя столбца, в который будут направлены данные
 #'
 #' @return data Основной xts
 #'
 #' @export
-NormData_Price_byCol <- function(data, norm.data, convert.to) {
-  # 
+NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
+  # ----------
+  x <- norm.data
+  for (i in 1:length(names)) {
+    temp.text <- paste("data$",outnames[i]," <- ",
+                       "NormData_Price_byCol(data = data$",names[i],",",
+                                                 "norm.data = x, convert.to = \"",convert.to,"\",",
+                                                 "tick.val = ",tick.val[i],",",
+                                                 "tick.price = ", tick.price[i],")",
+                       sep = "")
+    eval(parse(text = temp.text))  
+  }
+  return(data)  
+}
+#
+###
+#' Функция для расчёта стоимости тиков
+#' 
+#' @param data Данные котировок
+#' @param norm.data Данные USDRUB_TOM
+#' @convert.to Валюта конвертации
+#' @tick.val Шаг тика
+#' @tick.price Цена тика
+#'
+#' @return data Основной xts
+#'
+#' @export
+NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.price) {
+  # ----------
   if (convert.to == "RUB") {
-    data <- data * norm.data
+    data <- (data * tick.price / tick.val) * norm.data
   }
   if (convert.to == "USD") {
-    data <- data / norm.data  
+    data <- (data * tick.price / tick.val) / norm.data  
   }
   #
   return(data)
@@ -109,12 +141,13 @@ NormData_Price_byCol <- function(data, norm.data, convert.to) {
 #' @return data XTS ряд, с добавленными параметрами
 #'
 #' @export
-AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
+AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
   # 
+  old.dir <- getwd()
+  setwd(dir) 
   # загрузка ГО
   data.names <- names(data)[grep("Close", names(data))]
   data.names <- sub(".Close", "", data.names)
-  setwd(im.wd) 
   temp.data <- xts()
   for (i in 1:length(data.names)) {
     temp.text <- paste("temp.data <- Read_CSVtoXTS(filename = \"",data.names[i],".IM\") ; ",
@@ -124,14 +157,16 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, im.wd) {
                sep="")
     eval(parse(text = temp.text))
   }
-  remove(temp.text); remove(data.names); 
+  remove(temp.text)
+  remove(data.names)
   # загрузка котировок USDRUB_TOM
-  data.USDRUB <- GetData_Ticker_One(ticker="USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
+  data.USDRUB <- GetData_Ticker_One(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
   data$USDRUB <- data.USDRUB$Close
   remove(data.USDRUB)
   data$USDRUB <- na.locf(data$USDRUB)
   # очистка от NA (на данном этапе na.omit полезным данным не навредит)
   data <- na.omit(data)
+  setwd(old.dir)
   #
   return(data)
 }
