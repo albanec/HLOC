@@ -49,32 +49,56 @@ Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
     per <- "Unkown period"
   }
   cat("INFO(Read_CSVtoXTS_FinamQuotes):  Data period ... \"",per,"\"", "\n", sep = "")
-  # выделение данных
+  ### формирование XTS
   data <- 
-    c("<DATE>","<TIME>","<OPEN>","<HIGH>","<LOW>","<CLOSE>","<VOL>") %>%
+    ## выделяем полезные данные
+    c("<DATE>", "<TIME>", "<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>", "<VOL>") %>%
     {
       which(colNames.temp %in% .) 
-    } %>%
-    { 
-      x <- 
-        data[, .] %>%
-        {
-          apply(as.matrix(.), 2, as.numeric)
-        } %>%
-        as.data.frame(.)
-      #regular.names <- c("date", "time", "Open", "High", "Low", "Close", "Volume")
-      #colnames(x) <- regular.names[.]
-      colnames(x) <- c("date", "time", "Open", "High", "Low", "Close", "Volume")
-      return(x)
-    } %>%
-    unite(., "Date", date, time, sep = " ")
-  # преобразование в XTS
-  data %<>% 
+    } %>%  
+    data[, .] %>%
+    ## обработка
     {
-      xts(.[, -1], 
-          as.POSIXct(strptime(.$Date, "%Y%m%d %H%M%S")), 
-          src = "finam", 
-          updated = Sys.time())
+      x <- .
+      ## выделение и обработка котировок
+      quotes <- 
+        c("<OPEN>", "<HIGH>", "<LOW>", "<CLOSE>", "<VOL>") %>%
+        {
+          which(colNames.temp %in% .) 
+        } %>%
+        x[, .] %>%
+        # конвертирование котировок в numeric
+        {
+          apply(as.matrix(.), 2, as.numeric) 
+        } %>%
+        # переименование столбцов
+        {
+          colnames(.) <- c("Open", "High", "Low", "Close", "Volume")
+          return(.) 
+        }
+      ## формирование временного ряда
+      ts <-
+        c("<DATE>", "<TIME>") %>%
+        {
+          which(colNames.temp %in% .) 
+        } %>%
+        x[, .] %>%
+        ## конвертирование в integer
+        {
+          result <- apply(as.matrix(.), 2, as.integer)
+          colnames(result) <- c("date", "time")
+          return(result)
+        } %>%
+        # конвертация в DF и объеденение столбцов даты и времени в один 
+        as.data.frame(.) %>%
+        unite(., "trueTime", date, time, sep = " ")    
+      ## результирующий XTS
+      result <- xts(quotes, 
+                    order.by = strptime(ts$trueTime, "%Y%m%d %H%M%S") %>%
+                               as.POSIXct(.), 
+                    src = "finam", 
+                    updated = Sys.time())
+      return(result)
     } 
   #
   return(data)
@@ -91,7 +115,7 @@ Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
 #' @export
 Read_CSVtoDF <- function(file.path, sep = ";") {
   #
-  file <- read.table(file=file.path, header=F, sep = sep, as.is=T) 
+  file <- read.table(file=file.path, header=F, stringsAsFactors = F, sep = sep, as.is=T) 
   #
   return(file)
 }

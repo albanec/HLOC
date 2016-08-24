@@ -87,20 +87,20 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
 #' Функция выделения данных по tf и временному интервалу
 #'
 #' @param data.list Лист с котировками в XTS
-#' @param frames .csv (или вектор), сожержащий список нужных временных интервалов (в виде '2014-12-01/2014-12-31')
+#' @param frames .csv (или вектор), сожержащий список нужных временных интервалов (в виде '2014-12-01::2014-12-31')
 #' @param period Вектор, содержащий нужные периоды свечей (в порядке возрастания); или один период
 #' 
 #' @return 
 #'
 #' @export
-ExpandData_toPeriod <- function(data.list, frames, period) {
+ExpandData <- function(data.list, frames, period) {
   # 
   ## проверка, в файле данные по периоду или нет
   if (any(grepl(".csv", frames)) == TRUE) {
-    cat("INFO(ExpandData_toPeriod):  Loading FrameList: ", frames, "\n")
+    cat("INFO(ExpandData):  Loading FrameList: ", frames, "\n")
     frames <- read.csv(frames, header = F, stringsAsFactors = F)
     frames <- frames[, 1]    
-    cat("(ExpandData_toPeriod):  Loading FrameList: OK", "\n")
+    cat("(ExpandData):  Loading FrameList: OK", "\n")
   } 
   # количество нужных временных интервалов
   n.frame <- length(frames)
@@ -109,56 +109,27 @@ ExpandData_toPeriod <- function(data.list, frames, period) {
   # количество нужных свечных периодов
   n.period <- length(period)
   period.min <- period[1]
-  ## цикл по тикерам
+  ## цикл по тикерам внутри листа
   for (i in 1:n.ticker) {
     # выгрузка нужного xts
     data <- data.list[[i]]
     # имя тикера
     data.name <- names(data)[grep("Close", names(data))]
     data.name <- sub(".Close", "", data.name)
-    cat( "INFO(ExpandData_toPeriod):  Processing Data:  ", data.name, "\n")
+    cat( "INFO(ExpandData):  Processing Data:  ", data.name, "\n")
     ## выделение данных по нужным временным периодам
     for (n in 1:n.frame) {
-      cat ("INFO(ExpandData_toPeriod):  Expand...  ", data.name, "for TimeFrame ", frames[n], "\n")
+      cat ("INFO(ExpandData):  Expand...  ", data.name, "for TimeFrame ", frames[n], "\n")
       window <- frames[n] 
       ## для каждого временного периода выделяются по нужным периодам свечей
       for (t in 1:n.period) {
         p <- period[t]
-        cat ("INFO(ExpandData_toPeriod):  Expand...  ", data.name, "for Period ", p, "\n")
-        if (p == "5min") { 
-          p1 <- "mins"
-          k <- 5
-        }
-        if (p == "10min") {
-          p1 <- "mins"
-          k <- 10
-        }
-        if (p == "15min") {
-          p1 <- "mins"
-          k <- 15
-        }
-        if (p == "30min") {
-          p1 <- "mins"
-          k <- 30
-        }
-        if (p == "1hour") {
-          p1 <- "hours"
-          k <- 1
-        }
-        if (p == "1day") {
-          p1 <- "days"
-          k <- 1
-        }
+        cat ("INFO(ExpandData):  Expand...  ", data.name, "for Period ", p, "\n")
         data.temp <- 
           # выделение данных по временному периоду
           data[window] %>%
-          {
-            # расстановка endpoint'ов по периоду свечи 
-            ends <- endpoints(., p1, k)
-            # выделение данных с нужным периодом свечи
-            result <- .[ends]
-            return(result)
-          }
+          # выделение данных по периоду свечи
+          ExpandData_toPeriod(., per = p)
         # сохранение данных
         Save_XTStoCSV(data = data.temp, filename = data.name, period = p, tframe = n)
       }
@@ -167,6 +138,60 @@ ExpandData_toPeriod <- function(data.list, frames, period) {
       remove(data)
     }
   }
+}
+#
+###
+#' Функция выделения данных по периодам свечей
+#'
+#' @param x XTS с данными
+#' @param per Период свечей ("5min" "10min" "15min" "30min" "1hour" "1day")
+#' 
+#' @return x XTS с данными (с новым периодом)
+#'
+#' @export
+ExpandData_toPeriod <- function(x, per) {
+  # подготовка данных по периоду
+  if (per == "5min") { 
+    p1 <- "mins"
+    k <- 5
+  }
+  if (per == "10min") {
+    p1 <- "mins"
+    k <- 10
+  }
+  if (per == "15min") {
+    p1 <- "mins"
+    k <- 15
+  }
+   if (per == "30min") {
+    p1 <- "mins"
+    k <- 30
+  }
+  if (per == "1hour") {
+    p1 <- "hours"
+    k <- 1
+  }
+  if (per == "1day") {
+    p1 <- "days"
+    k <- 1
+  }
+  ## subset
+  x %<>%
+    {
+      # расстановка endpoint'ов по периоду свечи 
+      ends <- 
+        endpoints(., on = p1, k = k) %>%
+        {
+          ind <- 1:(length(.) - 1)
+          .[ind] <- .[ind] +1
+          return(.)
+        }
+      # выделение данных с нужным периодом свечи
+      result <- .[ends, ]
+      return(result)
+    } 
+  #
+  return(x)
 }
 #
 ###
@@ -181,7 +206,7 @@ ExpandData_toPeriod <- function(data.list, frames, period) {
 #' @return data XTS массив
 #'
 #' @export
-GetData_Ticker_One <- function(ticker, period = "15min", loadFrom = "Finam",
+GetData_Ticker_One <- function(ticker, period = "15min", 
                                from.date, to.date = Sys.Date(), 
                                rename = FALSE) {
   # Зависимости:
@@ -190,7 +215,8 @@ GetData_Ticker_One <- function(ticker, period = "15min", loadFrom = "Finam",
   #
   cat("INFO(GetData_Ticker_One):  ", "Download Source Data...", "\n")
   # загрузка данных
-  data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = loadFrom, auto.assign = FALSE)
+  data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = "Finam", 
+                     auto.assign = FALSE, warning = FALSE)
   # проверка на правильность загруженных данных
   if (is.xts(data) !=  TRUE) {
     stop(paste("ERROR(GetData_Ticker_One):  ticker ",ticker," not present!!!", sep = ""))
