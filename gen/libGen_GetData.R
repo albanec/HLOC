@@ -139,6 +139,8 @@ ExpandData <- function(data.list, frames, period) {
     }
   }
 }
+  
+
 #
 ###
 #' Функция выделения данных по периодам свечей
@@ -175,21 +177,39 @@ ExpandData_toPeriod <- function(x, per) {
     p1 <- "days"
     k <- 1
   }
-  ## subset
-  x %<>%
+  #
+  colNames <- colnames(x)
+  ## Выборка нужных индексов для свечей
+  ind <- 
+    # расстановка endpoint'ов по периоду свечи 
+    endpoints(x = x, on = p1, k = k) %>%
+    # модификация
     {
-      # расстановка endpoint'ов по периоду свечи 
-      ends <- 
-        endpoints(., on = p1, k = k) %>%
+      x <- .
+      x <- 
+        x[-length(x)] %>%
         {
-          ind <- 1:(length(.) - 1)
-          .[ind] <- .[ind] +1
-          return(.)
+          . + 1 
         }
-      # выделение данных с нужным периодом свечи
-      result <- .[ends, ]
-      return(result)
-    } 
+      return(x)
+    } %>%
+    # вычисление индексов
+    x[., ] %>%
+    index(.)
+  ## subset 
+  x <- 
+    # расчёт свечей
+    to.period(x = x, period = p1, k = k) %>%
+    # замена индексов на нужные
+    {
+      if (nrow(.) == length(ind)) {
+        index(.) <- ind 
+      } else {
+        stop("ERROR(ExpandData_toPeriod): ")
+      }
+      return(.)
+    }
+  colnames(x) <- colNames
   #
   return(x)
 }

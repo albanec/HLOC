@@ -129,6 +129,7 @@ ConvertDealsTable <- function(data.deals, type = "tickers") {
 #' @param data Входной xts ряд сделок
 #' @param n Номер сделки
 #' @param data.names Вектор тикеров
+#' @type Считать по тикерам или по портфелю
 #'
 #' @return DealsTable data.frame содержащий все сделки
 #'
@@ -189,7 +190,11 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                          { 
                            ifelse(. < 3, 
                                   0,
-                                  0.1)
+                                  ifelse(. > 9,
+                                         0.01,
+                                         ifelse(. > 10,
+                                                0.001,
+                                                0.1)))
                          } %>% 
                          as.vector
                        # расчёт номеров
@@ -226,11 +231,15 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
             df <- .
             df$subnum <- 
               nrow(df) %>%
-              { 
-                ifelse(. < 3, 
-                       0,
-                       0.1)
-              } %>% 
+                { 
+                  ifelse(. < 3, 
+                         0,
+                         ifelse(. > 9,
+                                0.01,
+                                ifelse(. > 10,
+                                       0.001,
+                                       0.1))) 
+                } %>%
               as.vector
             df$pos.num <- 
               df$subnum %>%
