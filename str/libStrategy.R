@@ -93,5 +93,12 @@ CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
   return(data)
 }
 #
-
+CalcSMA <- function(x, per, digits = 0, ...) {
+  #
+  x <- 
+    SMA(x = x, n = per) %>%
+    round(., digits = digits)
+  #
+  return(x)
+}
 #

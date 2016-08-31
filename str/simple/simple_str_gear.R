@@ -44,7 +44,8 @@ TestStrategy_gear <- function(data.source,
       data <- xts()
       cat("TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
       # тикер-индикатор: SI        
-      data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
+      #data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
+      data$sma <- CalcSMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
                           ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
@@ -356,7 +357,8 @@ TestStrategy_gear <- function(data.source,
         data.state$n[n] <- 0
       } else {
         # если открытие позиции, то
-        if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
+        #if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
+        if (data.state$pos.ticks[n] == 0) {
           data.state$n[n] <-
             {
               data.state$balance[[n - 1]] * k.mm / 

@@ -26,6 +26,13 @@ DrawdownTable <- function(data.balance) {
   max.drawdown.percent <-
     min(drawdowns[[2]]$DepthPercent) %>%
     as.numeric(.)  
+  ## день max просадки
+  max.dd.day <- 
+    drawdowns[[1]][drawdowns[[1]]$dd == max.drawdown] %>%
+    {
+      index(.) 
+    } %>%
+    as.POSIXct(., origin = "1970-01-01")
   ## средняя просадка
   #cat("Calculating Performance Metric:  MeanDrawdown", "\n")
   mean.drawdown <- 
@@ -75,19 +82,37 @@ DrawdownTable <- function(data.balance) {
   #
   ### формирование таблицы
   drawdown.table <- 
-    cbind(max.drawdown, max.drawdown.percent, 
-          mean.drawdown, mean.drawdown.percent,
-          max.drawdown.days, mean.drawdown.days, 
-          now.drawdown.days, now.drawdown.periods, 
-          now.drawdown, now.drawdown.percent) %>%
-    data.frame(.)
-  colnames(drawdown.table) <- c("MaxDrawdown", "MaxDrawdownPercent", 
-                                "MeanDrawdown", "MeanDrawdownPercent", 
-                                "MaxDrawdownDays", "MeanDrawdownDays", 
-                                "NowDrawdownDays", "NowDrawdownPeriods", 
-                                "NowDrawdown", "NowDrawdownPercent")  
-  #drawdown.table %<>% 
-   # Convert_XTStoDF(.)
+    {
+      df <-
+        data.frame(MaxDrawdownDay = character(1) %>% 
+                                    as.numeric(.) %>% 
+                                    as.Date(.),
+                   MaxDrawdown = as.numeric(1),
+                   MaxDrawdownPercent = as.numeric(1),
+                   MeanDrawdown = as.numeric(1),
+                   MeanDrawdownPercent = as.numeric(1),
+                   MaxDrawdownDays = as.numeric(1),
+                   MeanDrawdownDays = as.numeric(1),
+                   NowDrawdownDays = as.numeric(1),
+                   NowDrawdownPeriods = as.numeric(1),
+                   NowDrawdown = as.numeric(1),
+                   NowDrawdownPercent = as.numeric(1)
+                   )     
+    } %>%
+    {
+      .$MaxDrawdownDay <- max.dd.day
+      .$MaxDrawdown <- max.drawdown
+      .$MaxDrawdownPercent <- max.drawdown.percent
+      .$MeanDrawdown <- mean.drawdown
+      .$MeanDrawdownPercent <- mean.drawdown.percent
+      .$MaxDrawdownDays <- max.drawdown.days
+      .$MeanDrawdownDays <- mean.drawdown.days
+      .$NowDrawdownDays <- now.drawdown.days
+      .$NowDrawdownPeriods <- now.drawdown.periods
+      .$NowDrawdown <- now.drawdown
+      .$NowDrawdownPercent <- now.drawdown.percent
+      return(.)
+    }
   #
   return(drawdown.table)
 }
