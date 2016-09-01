@@ -118,8 +118,8 @@ TestStrategy_gear <- function(data.source,
                 MergeData_inList_byRow(.) %T>%
                 {
                     # ветвим и проставляем тики позиций (добаляем напрямую в data)
-                    data$pos.ticks <<- lag(.)
-                    data$pos.ticks[1] <<- 0
+                    data$pos.bars <<- lag(.)
+                    data$pos.bars[1] <<- 0
                 } %>%
                 {
                     . %/% add.per
@@ -188,6 +188,7 @@ TestStrategy_gear <- function(data.source,
         {
             data <- .
             cat("TestStrategy INFO:  Split SwitchPosition...", "\n")
+            # индекс строки-переворота
             temp.ind <- index(data[data$action == 2 | data$action == -2])
             if (length(temp.ind) == 0) {
                 cat("No Switch Position there", "\n")
@@ -210,6 +211,9 @@ TestStrategy_gear <- function(data.source,
                     # x$state[temp.ind] <- sign(x$action[temp.ind])
                     x$action[temp.ind] <- abs(sign(x$action[temp.ind]))
                     x$pos.num[temp.ind] <- x$pos.num[temp.ind] - 1
+                    # правильное заполнение поля $pos.bars
+                    temp.ind.num <- x[temp.ind, which.i=TRUE]
+                    x$pos.bars[temp.ind] <- x$pos.bars[temp.ind.num - 1] 
                     return(x)
                 }
                 data <- rbind(data, temp)   
@@ -344,7 +348,7 @@ TestStrategy_gear <- function(data.source,
             } else {
                 # если открытие позиции, то
                 #if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
-                if (data.state$pos.ticks[n] == 0) {
+                if (data.state$pos.bars[n] == 0) {
                     data.state$n[n] <- 4
                 } else {
                     # если докупка

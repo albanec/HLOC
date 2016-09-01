@@ -116,16 +116,16 @@ ProfitTable_byDeals_oneTicker <- function(data, ticker.name, ...) {
     data$DealReturnPercent[badDeal.index] %>%
     mean(.)
   ### Среднее баров на сделку
-  meanDealTicks <- 
-    mean(data$PositionTicks) %>%
+  meanDealBars <- 
+    mean(data$PositionBars) %>%
     trunc(.)
   ### Среднее баров на прибыльную сделку
-  meanGoodDealTicks <- 
-    mean(data$PositionTicks[goodDeal.index]) %>%
+  meanGoodDealBars <- 
+    mean(data$PositionBars[goodDeal.index]) %>%
     trunc(.)
   ### Среднее баров на убыточную сделку
-  meanBadDealTicks <- 
-    mean(data$PositionTicks[badDeal.index]) %>%
+  meanBadDealBars <- 
+    mean(data$PositionBars[badDeal.index]) %>%
     trunc(.)
   ### Средний П/У на сделку
   meanDealReturn <- mean(data$DealReturn)
@@ -145,9 +145,9 @@ ProfitTable_byDeals_oneTicker <- function(data, ticker.name, ...) {
                        MeanGoodDealReturnPercent = meanGoodDealReturnPercent,
                        MeanBadDealReturn = meanBadDealReturn,
                        MeanBadDealReturnPercent = meanBadDealReturnPercent,
-                       MeanDealTicks = meanDealTicks,
-                       MeanGoodDealTicks = meanGoodDealTicks,
-                       MeanBadDealTicks = meanBadDealTicks,
+                       MeanDealBars = meanDealBars,
+                       MeanGoodDealBars = meanGoodDealBars,
+                       MeanBadDealBars = meanBadDealBars,
                        MeanDealReturn = meanDealReturn,
                        MeanDealReturnPercent = meanDealReturn,
                        ProfitFactorDeals = pf.deals,

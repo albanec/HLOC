@@ -1,3 +1,7 @@
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Функции для расчёта perfomance-метрик 
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
 # source("libEva_Dates.R")
 # source("libEva_Deals.R")
 # source("libEva_Drawdown.R")
@@ -33,8 +37,8 @@ CalcPerfomanceTable <- function(data, data.state, dealsTable,
   ## profit метрики
   cat("INFO(CalcPerfomanceTable):  Calc ProfitTable", "\n")
   profitTable <- ProfitTable(data = data, dealsTable = dealsTable, drawdownTable = drawdownTable,
-                                  balance = balance.start, 
-                                  nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
+                             balance = balance.start, 
+                             nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
   ## расчёт коэффициентов
   cat("INFO(CalcPerfomanceTable):  Calc RatioTable", "\n")
   ratioTable <- RatioTable(returns = data$perfReturn, ret.type)

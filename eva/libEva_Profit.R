@@ -51,11 +51,11 @@ ProfitTable <- function(data, dealsTable, balance, ...) {
                row.names = NULL) %>%
     {
       x <- .
-      if (exists("nbar") && exists("nbar.trade") == TRUE ) {
-        fullReturn.bar <- fullReturn / nbar
-        fullReturn.nbar.trade <- fullReturn / nbar.trade
-        #cat(nbar)
-        #cat(nbar.trade)
+      args <- list(...) 
+      args.names <- names(args)
+      if (("nbar" %in% args.names) && ("nbar.trade" %in% args.names) == TRUE ) {
+        fullReturn.bar <- fullReturn / args$nbar
+        fullReturn.nbar.trade <- fullReturn / args$nbar.trade
         x <- cbind(x, ReturnBar = fullReturn.bar, ReturnBarTrade = fullReturn.nbar.trade)
       }
       return(x)

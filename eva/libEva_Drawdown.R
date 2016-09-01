@@ -233,12 +233,12 @@ CalcDrawdowns <- function(data) {
   # точки перехода в/из просадки (1 - первая свеча в просадке, -1 - точка выхода из просадки, 0 - состояние не меняется)
   data$temp.diff <- diff(data$temp)
   # 1 - если свечка относится к dd (с учётом обновления пика на выходе из просадки)
-  data$temp.ticks <- abs(sign(data$temp + data$temp.diff))
+  data$temp.bars <- abs(sign(data$temp + data$temp.diff))
   #
   data <- 
    {
      # индексы строк роста balance
-     tempIndex <- which(data$temp.diff == 0 & data$temp.ticks == 0)
+     tempIndex <- which(data$temp.diff == 0 & data$temp.bars == 0)
      # если есть такие периоды
      if (length(tempIndex) != 0) {
        # удаляем их

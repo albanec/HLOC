@@ -1,3 +1,6 @@
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Функции для вычисления таблицы сделок
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
 #' Создание итоговой таблицы сделок
@@ -79,7 +82,7 @@ ConvertDealsTable <- function(data.deals, type = "tickers") {
           # нужные столбцы (касаются закрытия)
           if (type == "tickers") {
             colNum <-
-              c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "DealReturn", "Equity", "PositionTicks") %>%
+              c("CloseSignal", "CloseDate", "CloseValue", "CloseCommiss", "DealReturn", "Equity", "PositionBars") %>%
               {
                 which(colnames(df) %in% .) 
               }
@@ -88,7 +91,7 @@ ConvertDealsTable <- function(data.deals, type = "tickers") {
               c("CloseSignal", "CloseDate", "CloseCommiss", 
                 "DealReturn", "DealReturnPercent", 
                 "DealEquity", "DealEquityPercent", "Equity", 
-                "PositionTicks") %>%
+                "PositionBars") %>%
               {
                 which(colnames(df) %in% .) 
               }
@@ -166,7 +169,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                  function(x) {
                    # правильно прописываем названия столбцов с нужными данными (в names.set)
                    temp.text <- 
-                     paste("names.set <- c(\"pos\", \"pos.num\", \"pos.ticks\", \"pos.add\", \"pos.drop\", ",
+                     paste("names.set <- c(\"pos\", \"pos.num\", \"pos.bars\", \"pos.add\", \"pos.drop\", ",
                            "\"",x,".n\", \"",x,".diff.n\", \"",x,".Open\", ",
                            "\"",x,".commiss\", \"",x,".equity\", \"",x,".perfReturn\") ;" ,
                            sep = "")                  
@@ -176,7 +179,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                      temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
                      # для удобства переименуем 
                      {        
-                       names(.) <- c("pos", "pos.num", "pos.ticks", "pos.add", "pos.drop", "Open", "n", "diff.n",  
+                       names(.) <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "Open", "n", "diff.n",  
                                      "commiss", "deal.return", "equity") 
                        return(.)
                      } %>%
@@ -207,7 +210,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                          {
                            .[nrow(.)] <- 0
                            df$pos.num + .
-                         } 
+                         }
                        #
                        return(df)
                      }
@@ -217,12 +220,12 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                 ) %>%
                 MergeData_inList_byRow(.)
       } else {
-        names.set <- c("pos", "pos.num", "pos.ticks", "pos.add", "pos.drop", "balance", 
+        names.set <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "balance", 
                          "n", "diff.n", "commiss", "equity", "perfReturn") 
         temp.data <- 
           temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
           {
-            names(.) <- c("pos", "pos.num", "pos.ticks", "pos.add", "pos.drop", "balance",
+            names(.) <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "balance",
                           "n", "diff.n", "commiss", "equity", "deal.return") 
             return(.)
           } %>%
@@ -287,7 +290,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                    DealEquity = numeric(.),
                    DealEquityPercent = numeric(.),
                    Equity = numeric(.),
-                   PositionTicks = numeric(.),
+                   PositionBars = numeric(.),
                    row.names = NULL)
       ## номера позиций
       df$PositionNum <- .$pos.num
@@ -377,7 +380,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
       ## изменения equity тикера
       df$Equity <- .$equity
       ## тики позиций
-      df$PositionTicks <- .$pos.ticks
+      df$PositionBars <- .$pos.bars
       #
       return(df)
     } %>%

@@ -40,17 +40,18 @@ DatesTable <- function(data, data.state) {
       paste(.[[2]], "mins")
     }
   ### всего баров
-  nbar <- nrow(data)
+  nbar <- 
+    index(data) %>%
+    unique(.) %>%
+    length(.)
   ### бары в рынке
   nbar.trade <-
-    index(data.state) %>%
+    data.state[data.state$pos.bars != 0] %>%
     {
-      data.state[duplicated(.) == FALSE]
+      which(!duplicated(.$pos.num, fromLast = TRUE))    
     } %>%
     {
-      x <- .
-      temp.index <- which(!duplicated(x$pos.num, fromLast = TRUE))    
-      result <- x[temp.index]$pos.ticks
+      data.state[.]$pos.bars
     } %>%
     sum(.)
   ### бары вне рынка
