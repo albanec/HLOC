@@ -164,7 +164,6 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
           # данные по каждому тикеру выкидываем в отдельный подлист
           lapply(data.names.list, 
                  function(x) {
-
                    # правильно прописываем названия столбцов с нужными данными (в names.set)
                    temp.text <- 
                      paste("names.set <- c(\"pos\", \"pos.num\", \"pos.ticks\", \"pos.add\", \"pos.drop\", ",
@@ -176,9 +175,9 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
                      # вытаскиваем нужные столбцы (по names.set)
                      temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
                      # для удобства переименуем 
-                     {
-                       names(.) <- c("pos", "pos.num", "pos.ticks", "pos.add", "pos.drop", "Open", 
-                                     "n", "diff.n", "commiss", "equity", "deal.return") 
+                     {        
+                       names(.) <- c("pos", "pos.num", "pos.ticks", "pos.add", "pos.drop", "Open", "n", "diff.n",  
+                                     "commiss", "deal.return", "equity") 
                        return(.)
                      } %>%
                      # нумерация субсделок (x.0 - открытия/закрытия и x.1...n - для изменений внутри)

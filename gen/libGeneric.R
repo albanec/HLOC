@@ -104,4 +104,7 @@ CleanGarbage <- function(target = "temp", env = ".GlobalEnv") {
     } 
   rm(list = removeVector, envir = as.environment(env))
   cat("INFO(CleanTempData): Removing TempData..  OK", "\n")
+  cat("INFO(CleanTempData): Garbage Collect..  Start", "\n")
+  gc()
+  cat("INFO(CleanTempData): Garbage Collect..  OK", "\n")
 }
