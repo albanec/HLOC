@@ -1,7 +1,7 @@
 TestStrategy_gear <- function(data.source,
-                             sma.per, add.per, 
-                             k.mm, balance.start, 
-                             basket.weights, sleeps, commissions) {
+                              sma.per, add.per, 
+                              k.mm, balance.start, 
+                              basket.weights, sleeps, commissions) {
   # ----------
   # Общее описание:
   # тестовый робот
