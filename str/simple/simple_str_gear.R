@@ -104,7 +104,7 @@ TestStrategy_gear <- function(data.source,
       # выделение сигналов "$sig.add"
       data$sig.add <- 
         # вектор, содержащий номера состояний сигналов
-        seq(1:max(data$sig.num)) %>%
+        unique(data$sig.num) %>%
         # нумерация тиков внутри состояний сигналов
         sapply(., 
                function(x) {
@@ -121,7 +121,14 @@ TestStrategy_gear <- function(data.source,
           . %/% add.per
         } %>%        
         {
-          sign(.) * abs(sign(diff(.)))
+          temp.length <- 
+            which(. != 0) %>%
+            length(. )
+          result <- ifelse(temp.length == 0,
+                           .,
+                           sign(.) * abs(sign(diff(.)))
+                          )
+          return(result)   
         }
       data$sig.add[1] <- 0  
       return(data)
@@ -142,8 +149,7 @@ TestStrategy_gear <- function(data.source,
       data$pos.add.num <- NA
       data$pos.drop.num <- NA
       data.temp <- 
-        seq(1:max(data$sig.num)) %>%
-        c(0, .) %>%
+        unique(data$pos.num) %>%
         sapply(., 
                function(x) {
                  merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
