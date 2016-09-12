@@ -112,14 +112,18 @@ TestStrategy_gear <- function(data.source,
         # вектор, содержащий номера состояний сигналов
         unique(data$sig.num) %>%
         # нумерация тиков внутри состояний сигналов
-        sapply(., 
-               function(x) {
-                 temp <- abs(sign(which(data$sig.num == x)))
-                 temp[1] <- 0
-                 xts(x = cumsum(temp), 
-                     order.by = index(data$sig.num[data$sig.num == x]))
-               }) %>% 
-        MergeData_inList_byRow(.) %T>%
+        {
+          ifelse(length(.) == 1,
+                 .,
+                 sapply(., 
+                        function(x) {
+                          temp <- abs(sign(which(data$sig.num == x)))
+                          temp[1] <- 0
+                          xts(x = cumsum(temp), 
+                              order.by = index(data$sig.num[data$sig.num == x]))
+                        }) %>% 
+                 MergeData_inList_byRow(.))
+        } %T>%
         {
           # ветвим и проставляем тики позиций (добаляем напрямую в data)
           data$pos.bars <<- lag(.)
@@ -157,22 +161,33 @@ TestStrategy_gear <- function(data.source,
       data <- . 
       data$pos.add.num <- NA
       data$pos.drop.num <- NA
+      cat("222", "\n")
       data.temp <- 
         unique(data$pos.num) %>%
-        #.[-1] %>%
-        sapply(., 
-               function(x) {
-                 merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% 
-                                      index(.)),
-                       xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% 
-                                      index(.))
-                      )
-               }) %>%
-        MergeData_inList_byRow(.)
-      data$pos.add.num <- data.temp$pos.add
-      data$pos.drop.num <- data.temp$pos.drop
+        {
+          ifelse(length(.) == 1,
+                 0,
+                 sapply(.,
+                  function(x) {
+                     merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
+                               order.by = data$pos.num[data$pos.num == x] %>% 
+                                          index(.)),
+                           xts(cumsum(data$pos.drop[data$pos.num == x]), 
+                               order.by = data$pos.num[data$pos.num == x] %>% 
+                                          index(.))
+                          )
+                 }) %>%
+                 MergeData_inList_byRow(.)
+                )
+        }
+      cat("333", "\n")
+      if (length(data.temp) != 1) {
+        data$pos.add.num <- data.temp$pos.add
+        data$pos.drop.num <- data.temp$pos.drop  
+      } else {
+        data$pos.add.num <- 0
+        data$pos.drop.num <- 0
+      }
       # удаляем мусор
       remove(data.temp); #remove(num.vector)
       data$diff.sig <- NULL

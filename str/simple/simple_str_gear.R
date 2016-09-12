@@ -153,9 +153,12 @@ TestStrategy_gear <- function(data.source,
         sapply(., 
                function(x) {
                  merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% index(.)),
+                           order.by = data$pos.num[data$pos.num == x] %>% 
+                                      index(.)),
                        xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% index(.)))
+                           order.by = data$pos.num[data$pos.num == x] %>% 
+                                      index(.))
+                      )
                }) %>%
         MergeData_inList_byRow(.)
       data$pos.add.num <- data.temp$pos.add
