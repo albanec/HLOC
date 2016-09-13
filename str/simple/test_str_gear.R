@@ -57,17 +57,29 @@ TestStrategy_gear <- function(data.source,
                         )
       return(data)
     } %>%   
-    na.omit(.) %>%
+    na.omit(.) %>%  
     # 1.2 т.к. позиции корзины зависят только от SMA, то добавляем их 
     {
       data <- .
       data$pos <- lag(data$sig)
       data$pos[1] <- 0
       return(data)
-    } %>%
-    # позиции по каждому из инструментов корзины описаны позднее
-    # в этой стратегии позиции по BR обратны позициям по Si (т.к. инструменты обратно коррелированы)
-    #
+    }
+  # позиции по каждому из инструментов корзины описаны позднее
+  # в этой стратегии позиции по BR обратны позициям по Si (т.к. инструменты обратно коррелированы)
+  #   
+  # после простановки сигналов и позиций это должны быть ненулевые ряды
+  temp.lenght <- 
+    data$pos %>%
+    which(. != 0) %>%
+    length(.)
+  if (temp.lenght == 0) {
+    # если это условие не выполняется, то отработка робота д.б. завершена с нулувым триггером
+    cat("WARNING(TestStrategy_gear): No Deals Here!!!")
+    return(list(NA, NA))
+  }
+  #
+  data %<>%  
     # 1.3 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
     { 
       # 1.3.1 расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
@@ -144,57 +156,72 @@ TestStrategy_gear <- function(data.source,
         }
       data$sig.add[1] <- 0  
       return(data)
-    } %>%
-    # 1.3.3 расчёт позиций drop/add
+    }
+  temp.length <- 
     {
-      data <- .
-      cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
-      data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
-      data$pos.add <- lag(data$pos.add)
-      data$pos.add[is.na(data$pos.add)] <- 0
-      data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
-      data$pos.drop[1] <- 0
-      return(data)    
+      which(data$sig.add != 0 | data$sig.drop != 0)
     } %>%
-    # 1.3.4 нумерация drop/add действий
-    {
-      data <- . 
-      data$pos.add.num <- NA
-      data$pos.drop.num <- NA
-      cat("222", "\n")
-      data.temp <- 
-        unique(data$pos.num) %>%
-        {
-          ifelse(length(.) == 1,
-                 0,
-                 sapply(.,
-                  function(x) {
-                     merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                               order.by = data$pos.num[data$pos.num == x] %>% 
-                                          index(.)),
-                           xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                               order.by = data$pos.num[data$pos.num == x] %>% 
-                                          index(.))
-                          )
-                 }) %>%
-                 MergeData_inList_byRow(.)
-                )
+    lenght(.)  
+  if (temp.length != 0) {
+    data %<>% 
+      # 1.3.3 расчёт позиций drop/add
+      {
+        data <- .
+        cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
+        data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
+        data$pos.add <- lag(data$pos.add)
+        data$pos.add[is.na(data$pos.add)] <- 0
+        data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
+        data$pos.drop[1] <- 0
+        return(data)    
+      } %>%
+      # 1.3.4 нумерация drop/add действий
+      {
+        data <- . 
+        data$pos.add.num <- NA
+        data$pos.drop.num <- NA
+        cat("222", "\n")
+        data.temp <- 
+          unique(data$pos.num) %>%
+          {
+            ifelse(length(.) == 1,
+                   0,
+                   sapply(.,
+                          function(x) {
+                            merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
+                                      order.by = data$pos.num[data$pos.num == x] %>% 
+                                                 index(.)
+                                      ),
+                                  xts(cumsum(data$pos.drop[data$pos.num == x]), 
+                                      order.by = data$pos.num[data$pos.num == x] %>% 
+                                      index(.)
+                                      )
+                                  )
+                          }) %>%
+                          MergeData_inList_byRow(.)
+                  )
+          }
+        cat("333", "\n")
+        if (length(data.temp) != 1) {
+          data$pos.add.num <- data.temp$pos.add
+          data$pos.drop.num <- data.temp$pos.drop  
+        } else {
+          data$pos.add.num <- 0
+          data$pos.drop.num <- 0
         }
-      cat("333", "\n")
-      if (length(data.temp) != 1) {
-        data$pos.add.num <- data.temp$pos.add
-        data$pos.drop.num <- data.temp$pos.drop  
-      } else {
-        data$pos.add.num <- 0
-        data$pos.drop.num <- 0
+        # удаляем мусор
+        remove(data.temp); #remove(num.vector)
+        data$diff.sig <- NULL
+        data$sig.num <- NULL
+        return(data)
       }
-      # удаляем мусор
-      remove(data.temp); #remove(num.vector)
-      data$diff.sig <- NULL
-      data$sig.num <- NULL
-      return(data)
-    } %>%
-    # 1.3.5 ряд  учёта транзакций 
+  } else {
+    data$pos.add.num <- 0
+    data$pos.drop.num <- 0
+  } 
+  #!!!!!!!!!!!!!!!!!!!!
+  # 1.3.5 ряд  учёта транзакций
+  data %<>%   
     {
       data <- .
       data$action <- data$pos - lag(data$pos)
