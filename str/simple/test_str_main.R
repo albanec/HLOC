@@ -51,7 +51,7 @@ data.source.list[[1]] <-
   CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
 # суммарное ГО по корзине 
 data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
-                                                               target = "IM", basket.weights)
+                                                           target = "IM", basket.weights)
 ## расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
@@ -68,7 +68,7 @@ data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
 ## чистим от лишних записей
 data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
 ## лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = FALSE)#TRUE
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
