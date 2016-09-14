@@ -17,7 +17,7 @@
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-SimpleStrategy_gear <- function(data.source,
+SimpleStr_gear <- function(data.source,
                                 sma.per, add.per, 
                                 k.mm, balance.start, 
                                 basket.weights, sleeps, commissions) {

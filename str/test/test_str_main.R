@@ -12,6 +12,7 @@ library(PerformanceAnalytics)
 source("str/libStrategy.R")
 source("str/test/test_str_gen.R")
 source("str/test/test_str_eva.R")
+source("str/test/test_str_opt.R")
 #
 # движок стратегии
 source("str/test/test_str_gear.R")
@@ -60,7 +61,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 #
 ### один прогон вычислений 
 ### отработка тестового робота
-data.strategy.list <- TestStrategy_gear(data.source = data.source.list[[1]],
+data.strategy.list <- TestStr_gear(data.source = data.source.list[[1]],
                                         sma.per, add.per, k.mm, balance.start, 
                                         basket.weights, sleeps, commissions)
 #

@@ -1,37 +1,61 @@
 #source("str/libStrategy.R")
 ## простой перебор с sma.per = 1:100
-rep <- 1:100
-system.time({
-  x <- lapply(rep, OneTradeProbe(smaPer = rep))
-})
+#rep <- 1:100
+#system.time({
+#  x <- lapply(rep, TestStr_OneTradeProbe(smaPer = rep))
+#})
 #
-OneTradeProbe <- function(dataSource = data.source.list[[1]], 
-                          smaPer = sma.per, addPer = add.per, kMM = k.mm, 
-                          basketWeights = basket.weights, sleeps. = sleeps, commissions. = commissions,
-                          balance. = balance.start) {
-  ### один прогон вычислений 
-  ### отработка тестового робота
-  data.strategy.list <- TestStrategy_gear(data.source = dataSource,
-                                          sma.per = smaPer, add.per = addPer, k.mm = kMM, 
-                                          basket.weights = basketWeights, sleeps = sleeps., commissions = commissions.,
-                                          balance.start = balance.)
-  
-  ### формирование таблицы сделок
-  ## чистим от лишних записей
-  data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-  ## лист с данными по сделкам (по тикерам и за всю корзину)
-  dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-  # очистка мусора по target = "temp"
-  CleanGarbage(target = "temp", env = ".GlobalEnv")
-  #
-  ### оценка perfomance-параметров
-  perfomanceTable <- 
-   CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                       data.state = data.strategy.list[[2]],
-                       dealsTable = dealsTable.list,
-                        balance = balance.start, 
-                        ret.type = ret.type) %>%
+###
+#' Функция одного прогона вычислений движка test стратегии
+#' 
+#' @param data.souce Лист с котировками
+#' @param sma.per Периоды SMA
+#' @param add.per Период докупок
+#' @param k.mm Коэффициент MM
+#' @param basket.weights Веса корзины (вектор)
+#' @param sleeps Слипы (вектор)
+#' @param commissions Комиссии (вектор)
+#' @param balance.start Стартовый баланс
+#'
+#' @return list(data, data.state) Лист с данными отработки и данные сделок
+#'
+#' @export
+TestStr_OneTradeProbe <- function(data.source = data.source.list[[1]], 
+                                  sma.per, add.per, k.mm, basket.weights, 
+                                  sleeps, commissions,
+                                  balance.start, ret.type) {
+  ### 
+  ## Отработка тестового робота
+  data.strategy.list <- TestStr_gear(data.source, sma.per, add.per, k.mm, 
+                                          basket.weights, sleeps, commissions,
+                                          balance.start)
+  ## Анализ perfomanc'ов
+  # для стратегий, у которых нет сделок
+  if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
+    perfomanceTable <- 
+      rep(NA, 66) %>%
+      data.frame(.) %>%
+      t(.)
+  } else {
+    ### Формирование таблицы сделок
+    ## чистим от лишних записей
+    data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+    ## лист с данными по сделкам (по тикерам и за всю корзину)
+    dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+    # очистка мусора по target = "temp"
+    CleanGarbage(target = "temp", env = ".GlobalEnv")
+    #
+    ### оценка perfomance-параметров
+    perfomanceTable <- 
+      CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                          data.state = data.strategy.list[[2]],
+                          dealsTable = dealsTable.list,
+                          balance = balance.start, 
+                          ret.type)  
+  }
+  perfomanceTable %<>%
     # добавление использованных параметров
     cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
+  #
   return(perfomanceTable)
 }

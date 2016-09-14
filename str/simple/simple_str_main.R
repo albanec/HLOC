@@ -71,7 +71,7 @@ data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.
                                                                  target = "cret", basket.weights)
 #
 ### отработка тестового робота
-data.strategy.list <- SimpleStrategy_gear(data.source = data.source.list[[1]],
+data.strategy.list <- SimpleStr_gear(data.source = data.source.list[[1]],
                                           sma.per, add.per, k.mm, balance.start, 
                                           basket.weights, sleeps, commissions)
 #

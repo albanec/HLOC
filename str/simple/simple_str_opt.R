@@ -5,7 +5,7 @@ system.time({
   x <- lapply(rep, OneTradeProbe(smaPer = rep))
 })
 #
-OneTradeProbe <- function(dataSource = data.source.list[[1]], 
+SimpleStr_OneTradeProbe <- function(dataSource = data.source.list[[1]], 
                           smaPer = sma.per, addPer = add.per, kMM = k.mm, 
                           basketWeights = basket.weights, sleeps. = sleeps, commissions. = commissions,
                           balance. = balance.start) {
