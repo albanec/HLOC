@@ -1,23 +1,29 @@
-  # ----------
-  # Общее описание:
-  # тестовый робот
-  # Входные данные:
-  # data.souce - с котировками
-  # sma.per, add.per - периоды SMA и докупок
-  # k.mm, balance.start - коэффициент MM и стартовый баланс
-  # basket.weights, sleeps, commissions - параметры корзины (веса, слипы и комиссии)
-  # Выходные данные:
-  # list(data, data.state) - лист с данными отработки и данные сделок
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Движок тестовой стратегии:
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
+###
+#' Функция движка тестовой стратегии
+#' 
+#' @param data.souce Лист с котировками
+#' @param sma.per Периоды SMA
+#' @param add.per Период докупок
+#' @param k.mm Коэффициент MM
+#' @param balance.start Стартовый баланс
+#' @param basket.weights Веса корзины (вектор)
+#' @param sleeps Слипы
+#' @param commissions Комиссии (вектор)
+#'
+#' @return list(data, data.state) Лист с данными отработки и данные сделок
+#'
+#' @export
 TestStrategy_gear <- function(data.source,
                               sma.per, add.per, 
                               k.mm, balance.start, 
                               basket.weights, sleeps, commissions) {
   # Зависимости:
   require(quantmod)
-  # ----------
-  '
-  '
+  # 
   # >>>
   ### 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
   # (открытие позиции "ОткрПозиПоРынку" ($sig | $pos = 1/-1: long/short); 
@@ -57,22 +63,18 @@ TestStrategy_gear <- function(data.source,
         data$sma < data.source$SPFB.SI.Close, 
         1, 
         ifelse(
-          data$sma > data.source$SPFB.SI.Close, 
-          -1, 
-          0
+          data$sma > data.source$SPFB.SI.Close, -1, 0
         )
       )
       return(data)
     } %>%   
     na.omit(.) %>%  
-    ## 1.2 т.к. позиции корзины зависят только от SMA, то добавляем их 
+    ## 1.2 добавляем позиции
     {
       data <- .
       data$pos <- lag(data$sig)
       data$pos[1] <- 0
       return(data)
-      # позиции по каждому из инструментов корзины описаны позднее
-      # в этой стратегии позиции по RST и BR обратны позициям по Si (т.к. инструменты обратно коррелированы)
     } 
   #  
   # после простановки сигналов и позиций это должны быть ненулевые ряды
@@ -102,8 +104,7 @@ TestStrategy_gear <- function(data.source,
           ((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
           ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))
         ) & (data$sig == data$pos), 
-        1, 
-        0
+        1, 0
       )
       return(data)
     }
@@ -281,8 +282,8 @@ TestStrategy_gear <- function(data.source,
   # индекс строки-переворота
   temp.ind <- index(data[data$action == 2 | data$action == -2])
   if (length(temp.ind) == 0) {
-        cat("TestStrategy INFO: No Switch Position there", "\n")
-        remove(temp.ind)
+    cat("TestStrategy INFO: No Switch Position there", "\n")
+    remove(temp.ind)
   } else {
     data %<>% 
       {

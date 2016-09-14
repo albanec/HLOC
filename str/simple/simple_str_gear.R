@@ -1,25 +1,35 @@
-TestStrategy_gear <- function(data.source,
-                              sma.per, add.per, 
-                              k.mm, balance.start, 
-                              basket.weights, sleeps, commissions) {
-  # ----------
-  # Общее описание:
-  # тестовый робот
-  # Входные данные:
-  # data.souce - с котировками
-  # sma.per, add.per - периоды SMA и докупок
-  # k.mm, balance.start - коэффициент MM и стартовый баланс
-  # basket.weights, sleeps, commissions - параметры корзины (веса, слипы и комиссии)
-  # Выходные данные:
-  # list(data, data.state) - лист с данными отработки и данные сделок
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Движок simple стратегии:
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+###
+#' Функция движка simple стратегии
+#' 
+#' @param data.souce Лист с котировками
+#' @param sma.per Периоды SMA
+#' @param add.per Период докупок
+#' @param k.mm Коэффициент MM
+#' @param balance.start Стартовый баланс
+#' @param basket.weights Веса корзины (вектор)
+#' @param sleeps Слипы
+#' @param commissions Комиссии (вектор)
+#'
+#' @return list(data, data.state) Лист с данными отработки и данные сделок
+#'
+#' @export
+SimpleStrategy_gear <- function(data.source,
+                                sma.per, add.per, 
+                                k.mm, balance.start, 
+                                basket.weights, sleeps, commissions) {
   # Зависимости:
   require(quantmod)
-  # ----------
-  # 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
+  #
+  # >>>
+  ### 1 Расчёт и добавление индикаторов, сигналов и позиций (+ прочие хар-ки)
   # (открытие позиции "ОткрПозиПоРынку" ($sig | $pos = 1/-1: long/short); 
   # закрытие позиций "ЗакрПозиПоРынку" рассчитывается с тблице сделок (пункт ;;) )
   #
-  # вектор имён инсрументов внутри торгуемой корзины
+  ## Вектор имён инструментов внутри торгуемой корзины
   data.names <- 
     grep(".Close", names(data.source)) %>%
     names(data.source)[.] %>%
@@ -27,7 +37,6 @@ TestStrategy_gear <- function(data.source,
   #
   # расчёт суммарной комиссии по корзине
   basket.commiss <- sum(basket.weights * commissions)
-  #
   cat("TestStrategy INFO:  Start TestStrategy with parameters:", "\n",
       "    TickersInBasket:     ",data.names, "\n",
       "    SMA period:          ",sma.per, "\n",
@@ -37,9 +46,11 @@ TestStrategy_gear <- function(data.source,
       "    BasketWeights:       ",basket.weights, "\n")
   # 
   cat("TestStrategy INFO:  Start StrategyData Calculation...", "\n")
-  # Расчёт индикаторов и позиций
+  # 
+  # >>>
+  ### Расчёт индикаторов и позиций
+  ## 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
   data %<>%  
-    # 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
     {
       data <- xts()
       cat("TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
@@ -47,34 +58,59 @@ TestStrategy_gear <- function(data.source,
       #data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
       data$sma <- CalcSMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
-      data$sig <- ifelse((data$sma < data.source$SPFB.SI.Close), 1, 
-                          ifelse(data$sma > data.source$SPFB.SI.Close, -1, 0))
+      data$sig <- ifelse(
+        data$sma < data.source$SPFB.SI.Close, 1, 
+        ifelse(
+          data$sma > data.source$SPFB.SI.Close, -1, 0
+        )
+      )
       return(data)
     } %>%   
     na.omit(.) %>%
-    # 1.2 т.к. позиции корзины зависят только от SMA, то добавляем их 
+    ## 1.2 т.к. позиции корзины зависят только от SMA, то добавляем их 
     {
       data <- .
       data$pos <- lag(data$sig)
       data$pos[1] <- 0
       return(data)
-    } %>%
-    # позиции по каждому из инструментов корзины описаны позднее
+      # позиции по каждому из инструментов корзины описаны позднее
       # в этой стратегии позиции по BR обратны позициям по Si (т.к. инструменты обратно коррелированы)
-    #
-    # 1.3 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
-    { 
-      # 1.3.1 расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
+    } 
+  #
+  # после простановки сигналов и позиций это должны быть ненулевые ряды
+  temp.length <- 
+    data$pos %>%
+    {
+      which(. != 0)
+    } %>%
+    length(.)
+  if (temp.length == 0) {
+    # если это условие не выполняется, то отработка робота д.б. завершена с нулувым триггером
+    message("WARNING(TestStrategy_gear): No Deals Here!!!", "\n")
+    remove(temp.length)
+    return(list(NA, NA))
+  }
+  remove(temp.length)
+  #
+  # >>>
+  ## 1.3 расчёт сигналов на изменения внутри позиции "ИзменПоРынку"
+  # 1.3.1 расчет сигналов на сброс лотов ($sig.drop - продажа по рынку)
+  data %<>%   
+    {    
       data <- .
       cat("TestStrategy INFO:  Calculate $sig.drop...", "\n")
-      data$sig.drop <- ifelse((((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
-                               ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))) & 
-                              (data$sig == data$pos), 
-                              1, 0)
+      data$sig.drop <- ifelse(
+        (
+          ((data$sma > data.source$SPFB.SI.Low) & (data$sig == 1)) | 
+          ((data$sma < data.source$SPFB.SI.High) & (data$sig == -1))
+        ) & (data$sig == data$pos), 
+        1, 0
+      )
       return(data)
-    } %>%
+    } 
+  # 1.3.2 расчет сигналов на добор лотов ($sig.add - докупка по рынку)
+  data %<>%  
     {  
-      # 1.3.2 расчет сигналов на добор лотов ($sig.add - докупка по рынку)
       data <- .
       cat("TestStrategy INFO:  Calculate $sig.add...", "\n")
       # точки смены сигнала
@@ -106,12 +142,22 @@ TestStrategy_gear <- function(data.source,
         # вектор, содержащий номера состояний сигналов
         unique(data$sig.num) %>%
         # нумерация тиков внутри состояний сигналов
-        sapply(., 
-               function(x) {
-               xts(x = cumsum(abs(sign(which(data$sig.num == x)))) , 
-                   order.by = index(data$sig.num[data$sig.num == x]))
-               }) %>% 
-        MergeData_inList_byRow(.) %T>%
+        {
+          if (length(.) == 1) {
+            .
+          } else {
+            sapply(
+              ., 
+              function(x) {
+                temp <- abs(sign(which(data$sig.num == x)))
+                temp[1] <- 0
+                xts(x = cumsum(temp), order.by = index(data$sig.num[data$sig.num == x])
+                )
+              }
+            ) %>% 
+            MergeData_inList_byRow(.)
+          }
+        } %T>%
         {
           # ветвим и проставляем тики позиций (добаляем напрямую в data)
           data$pos.bars <<- lag(.)
@@ -122,53 +168,95 @@ TestStrategy_gear <- function(data.source,
         } %>%        
         {
           temp.length <- 
-            which(. != 0) %>%
-            length(. )
-          result <- ifelse(temp.length == 0,
-                           .,
-                           sign(.) * abs(sign(diff(.)))
-                          )
+            {
+              which(. != 0)
+            } %>%
+            length(.)
+          if (temp.length == 0) {
+            result <- .  
+          } else {
+            result <- sign(.) * abs(sign(diff(.)))
+          }
           return(result)   
         }
       data$sig.add[1] <- 0  
       return(data)
-    } %>%
-    # 1.3.3 расчёт позиций drop/add
+    } 
+  # 
+  temp.length <- 
     {
-      data <- .
-      cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
-      data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
-      data$pos.add[1] <- 0
-      data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
-      data$pos.drop[1] <- 0
-      return(data)      
+      which(data$sig.add != 0 | data$sig.drop != 0)
     } %>%
-    # 1.3.4 нумерация drop/add действий
-    {
-      data <- . 
-      data$pos.add.num <- NA
-      data$pos.drop.num <- NA
-      data.temp <- 
-        unique(data$pos.num) %>%
-        sapply(., 
-               function(x) {
-                 merge(xts(cumsum(data$pos.add[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% 
-                                      index(.)),
-                       xts(cumsum(data$pos.drop[data$pos.num == x]), 
-                           order.by = data$pos.num[data$pos.num == x] %>% 
-                                      index(.))
-                      )
-               }) %>%
-        MergeData_inList_byRow(.)
-      data$pos.add.num <- data.temp$pos.add
-      data$pos.drop.num <- data.temp$pos.drop
-      # удаляем мусор
-      remove(data.temp); #remove(num.vector)
-      data$diff.sig <- NULL; data$sig.num <- NULL
-      return(data)
-    } %>%
-    # 1.3.5 ряд  учёта транзакций 
+    length(.)      
+  if (temp.length != 0) {
+    data %<>%
+      # 1.3.3 расчёт позиций drop/add
+      {
+        data <- .
+        cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
+        data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
+        data$pos.add <- lag(data$pos.add)
+        data$pos.add[is.na(data$pos.add)] <- 0
+        data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
+        data$pos.drop[1] <- 0
+        return(data)      
+      } %>%
+      # 1.3.4 нумерация drop/add действий
+      {
+        data <- . 
+        data$pos.add.num <- NA
+        data$pos.drop.num <- NA
+        data.temp <- 
+          unique(data$pos.num) %>%
+          {
+            if (length(.) == 1) {
+              0
+            } else {
+              sapply(
+                .,
+                function(x) {
+                  merge(
+                    xts(
+                      cumsum(data$pos.add[data$pos.num == x]), 
+                      order.by = 
+                        data$pos.num[data$pos.num == x] %>% 
+                        index(.)
+                    ),
+                    xts(
+                      cumsum(data$pos.drop[data$pos.num == x]), 
+                      order.by = 
+                        data$pos.num[data$pos.num == x] %>% 
+                        index(.)
+                    )
+                  )
+                }
+              ) %>%
+              MergeData_inList_byRow(.)
+            }
+          }
+        if (length(data.temp) != 1) {
+          data$pos.add.num <- data.temp$pos.add
+          data$pos.drop.num <- data.temp$pos.drop  
+        } else {
+          data$pos.add.num <- 0
+          data$pos.drop.num <- 0
+        }
+        # удаляем мусор
+        remove(data.temp); #remove(num.vector)
+        data$diff.sig <- NULL
+        data$sig.num <- NULL
+        return(data)
+      } 
+    remove(temp.length)
+  } else {
+    data$pos.add.num <- 0
+    data$pos.drop.num <- 0
+    remove(temp.length)
+  } 
+  #
+  # >>>
+  # 1.3.5 ряд  учёта транзакций 
+  data %<>%
     {
       data <- .
       data$action <- data$pos - lag(data$pos)
@@ -187,15 +275,20 @@ TestStrategy_gear <- function(data.source,
           return(data$state)
         }
       return(data)  
-    } %>% 
-    # 1.5 расщепление переворотов в позициях (расщепление строк с $action = +/-2)
-    {
-      data <- .
-      cat("TestStrategy INFO:  Split SwitchPosition...", "\n")
-      temp.ind <- index(data[data$action == 2 | data$action == -2])
-      if (length(temp.ind) == 0) {
-        cat("No Switch Position there", "\n")
-      } else {
+    }  
+  #
+  # >>>
+  # 1.5 расщепление переворотов в позициях (расщепление строк с $action = +/-2)
+  # индекс строки-переворота
+  temp.ind <- index(data[data$action == 2 | data$action == -2])
+  if (length(temp.ind) == 0) {
+    cat("TestStrategy INFO: No Switch Position there", "\n")
+    remove(temp.ind)
+  } else {
+    data %<>% 
+      {
+        data <- .
+        cat("TestStrategy INFO:  Split SwitchPosition...", "\n") 
         # temp копия нужных строк (строки начала новой сделки)
         temp <- 
           data[temp.ind] %>% 
@@ -220,11 +313,13 @@ TestStrategy_gear <- function(data.source,
             return(x)
           }
         data <- rbind(data, temp)   
-      }
-      return(data)
-    } 
+        return(data)
+      } 
+    remove(temp.ind)
+  }
   #
-  ## 2.расчет результатов отработки робота
+  # >>>
+  ### 2.расчет результатов отработки робота
   #
   ## 2.1 выгрузка данных по инструментам
   # индексы данных (строк) data
@@ -245,7 +340,7 @@ TestStrategy_gear <- function(data.source,
   # 2.1.3 добавление нужных исходных данных в data и data.state 
   #
   # Выгружаем и рассчитываем уникальные данные по инструментам (Open, ret, cret, pos)
-    # все действия проходят внутри одного цикла перебера имён инструментов
+  # все действия проходят внутри одного цикла перебера имён инструментов
   #
   # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
     # котировки берём из data.source
@@ -388,7 +483,7 @@ TestStrategy_gear <- function(data.source,
           if (data.state$pos.add[n] == 1) {
             data.state$n[n] <- 
               {
-                1.5 * data.state$n[[n - 1]]
+                2 * data.state$n[[n - 1]]
               } %>%
               round(.)
           }
