@@ -62,8 +62,8 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ### один прогон вычислений 
 ### отработка тестового робота
 data.strategy.list <- TestStr_gear(data.source = data.source.list[[1]],
-                                        sma.per, add.per, k.mm, balance.start, 
-                                        basket.weights, sleeps, commissions)
+                                   sma.per, add.per, k.mm, balance.start, 
+                                   basket.weights, sleeps, commissions)
 #
 ### формирование таблицы сделок
 ## чистим от лишних записей

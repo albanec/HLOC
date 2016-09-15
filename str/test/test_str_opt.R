@@ -1,9 +1,19 @@
 #source("str/libStrategy.R")
 ## простой перебор с sma.per = 1:100
-#rep <- 1:100
-#system.time({
-#  x <- lapply(rep, TestStr_OneTradeProbe(smaPer = rep))
-#})
+# system.time({
+#   x <- 
+#     1:2 %>%
+#     lapply(., function(x){
+#                 TestStr_OneTradeProbe(data.source = data.source.list[[1]],
+#                                       sma.per = x, add.per, k.mm, balance.start, 
+#                                       basket.weights, sleeps, commissions, ret.type)
+#               }
+#     ) %>%
+#     {
+#       .[!is.na(.)]
+#     } %>%
+#     MergeData_inList_byRow(.)
+# })
 #
 ###
 #' Функция одного прогона вычислений движка test стратегии
@@ -27,15 +37,36 @@ TestStr_OneTradeProbe <- function(data.source = data.source.list[[1]],
   ### 
   ## Отработка тестового робота
   data.strategy.list <- TestStr_gear(data.source, sma.per, add.per, k.mm, 
-                                          basket.weights, sleeps, commissions,
-                                          balance.start)
+                                     basket.weights, sleeps, commissions,
+                                     balance.start)
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
   if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
-    perfomanceTable <- 
-      rep(NA, 66) %>%
-      data.frame(.) %>%
-      t(.)
+    # perfomanceTable <- 
+    #   rep(NA, 66) %>%
+    #   data.frame(., row.names = NULL) %>% 
+    #   t(.) %>%
+    #   {
+    #     colnames(.) <- c(
+    #       "StartDate", "EndDate", "Period", "NumTradeDays", "NumBars", "NumBarsTrade", 
+    #       "NumBarsNoTrade", "SharpRatio", "SortinoRatio", "CalmarRatio", "SterlingRatio", 
+    #       "RecoveryFactor", "WinRatio", "MaxDrawdownDay", "MaxDrawdown", "MaxDrawdownPercent", 
+    #       "MeanDrawdown", "MeanDrawdownPercent", "MaxDrawdownDays", "MeanDrawdownDays", 
+    #       "NowDrawdownDays", "NowDrawdownPeriods", "NowDrawdown", "NowDrawdownPercent", 
+    #       "Return", "ReturnPercent", "ReturnAnnual", "ReturnMonthly", "ReturnBar", 
+    #       "ReturnBarTrade", "BestDay", "BestDayReturn", "BestDayReturnPercent", "MeanGoodDayReturn", 
+    #       "MeanGoodDayReturnPercent", "NumGoogDay", "NumGoogDayPercent", "MaxGoodDays", 
+    #       "FullGoodDayReturn", "WorstDay", "WorstDayReturn", "WorstDayReturnPercent", 
+    #       "MeanBadDayReturn", "MeanBadDayReturnPercent", "NumBadDay", "NumBadDayPercent", 
+    #       "MaxBadDays", "FullBadDayReturn", "ProfitFactorDaily", "DealsNum", "NumGoogDeals", 
+    #       "NumBadDeals", "MaxGoodDeals", "MaxBadDeals", "FullGoodDealReturn", "FullBadDealReturn", 
+    #       "MeanGoodDealReturn", "MeanGoodDealReturnPercent", "MeanBadDealReturn", 
+    #       "MeanBadDealReturnPercent", "MeanDealBars", "MeanGoodDealBars", "MeanBadDealBars", 
+    #       "MeanDealReturn", "MeanDealReturnPercent", "ProfitFactorDeals"
+    #     )
+    #     return(.)
+    #   }
+    return()
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
