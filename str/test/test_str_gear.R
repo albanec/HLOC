@@ -180,6 +180,8 @@ TestStr_gear <- function(data.source,
           return(result)          
         }
       data$sig.add[1] <- 0  
+      data$sig.add <- lag(data$sig.add)
+      data$sig.add[1] <- 0  
       return(data)
     } 
   #
@@ -195,7 +197,7 @@ TestStr_gear <- function(data.source,
         data <- .
         cat("TestStrategy INFO:  Calculate $pos.add and $pos.drop...", "\n")
         data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
-        data$pos.add <- lag(data$pos.add)
+        #data$pos.add <- lag(data$pos.add)
         data$pos.add[is.na(data$pos.add)] <- 0
         data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
         data$pos.drop[1] <- 0

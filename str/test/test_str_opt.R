@@ -1,19 +1,43 @@
 #source("str/libStrategy.R")
-## простой перебор с sma.per = 1:100
-# system.time({
-#   x <- 
-#     1:2 %>%
-#     lapply(., function(x){
-#                 TestStr_OneTradeProbe(data.source = data.source.list[[1]],
-#                                       sma.per = x, add.per, k.mm, balance.start, 
-#                                       basket.weights, sleeps, commissions, ret.type)
-#               }
-#     ) %>%
-#     {
-#       .[!is.na(.)]
-#     } %>%
-#     MergeData_inList_byRow(.)
-# })
+#
+###
+#' Тупая функция оптимизации одного параметра движка test стратегии (на одном ядре)
+#' 
+#' @param var.begin Стартовое значение оптимизации
+#' @param var.end Конечное значение оптимизации
+#' @param data.souce Лист с котировками
+#' @param sma.per Периоды SMA
+#' @param add.per Период докупок
+#' @param k.mm Коэффициент MM
+#' @param basket.weights Веса корзины (вектор)
+#' @param sleeps Слипы (вектор)
+#' @param commissions Комиссии (вектор)
+#' @param balance.start Стартовый баланс
+#'
+#' @return result DF с perfomance'ами по всем итерациям цикла 
+#'
+#' @export
+TestStr_StupidOptimiser <- function(var.begin, var.end,
+                                    data.source, add.per, k.mm, balance.start, 
+                                    basket.weights, sleeps, commissions, ret.type) {
+  system.time({
+   result <- 
+     var.begin:var.end %>%
+     lapply(., function(x){
+                 TestStr_OneTradeProbe(data.source = data.source.list[[1]],
+                                       sma.per = x, add.per, k.mm, balance.start, 
+                                       basket.weights, sleeps, commissions, ret.type)
+               }
+     ) %>%
+     {
+       .[!is.na(.)]
+     } %>%
+     MergeData_inList_byRow(.)
+  })  
+  return(result)
+}
+
+
 #
 ###
 #' Функция одного прогона вычислений движка test стратегии

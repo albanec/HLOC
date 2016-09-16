@@ -126,7 +126,10 @@ ProfitTable_byDeals_oneTicker <- function(data, ticker.name, ...) {
   ### Среднее баров на убыточную сделку
   meanBadDealBars <- 
     mean(data$PositionBars[badDeal.index]) %>%
-    trunc(.)
+    trunc(.) %>%
+    {
+      ifelse(. == 0, 1, .)
+    }
   ### Средний П/У на сделку
   meanDealReturn <- mean(data$DealReturn)
   ### Средний П/У на сделку в %
