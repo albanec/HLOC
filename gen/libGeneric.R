@@ -7,6 +7,7 @@
 # source("libGen_GetData.R")
 # source("libGen_Data.R")
 # source("libGen_Quotes.R")
+# source("libGen_Perfomance.R")
 #
 ###
 #' Функция загружает, устанавливает и подключает необходимые пакеты 
