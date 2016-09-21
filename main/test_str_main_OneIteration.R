@@ -9,13 +9,13 @@ library(PerformanceAnalytics)
 # library(data.table)
 #
 ### начальные параметры
-source("str/libStrategy.R")
-source("str/test/test_str_gen.R")
-source("str/test/test_str_eva.R")
-source("str/test/test_str_opt.R")
+source("lib/str/libStrategy.R")
+source("lib/str/test/test_str_gen.R")
+source("lib/str/test/test_str_eva.R")
+source("lib/str/test/test_str_opt.R")
 #
 # движок стратегии
-source("str/test/test_str_gear.R")
+source("lib/str/test/test_str_gear.R")
 #
 ### входные параметры
 # temp.dir <- "data/temp"

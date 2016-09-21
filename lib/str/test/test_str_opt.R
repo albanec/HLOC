@@ -1,4 +1,6 @@
-#source("str/libStrategy.R")
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Функции для оптимизации test стратегии:
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
 #' Тупая функция оптимизации одного параметра движка test стратегии (multithread)
@@ -9,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_ParallelOptimiser <- function(var.begin, var.end, ...) {
+TestStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
   #
   require(parallel)
   # запуск кластера
@@ -38,7 +40,6 @@ TestStr_ParallelOptimiser <- function(var.begin, var.end, ...) {
     )
   )
   #
-  #system.time({
   result <- 
     var.begin:var.end %>%
     parLapply(
@@ -54,7 +55,6 @@ TestStr_ParallelOptimiser <- function(var.begin, var.end, ...) {
       .[!is.na(.)]
     } %>%
     MergeData_inList_byRow(.)
-  #})
   #
   if(!is.null(parallel_cluster)) {
     parallel::stopCluster(parallel_cluster)
@@ -81,23 +81,24 @@ TestStr_ParallelOptimiser <- function(var.begin, var.end, ...) {
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_StupidOptimiser <- function(var.begin, var.end,
-                                    data.source, add.per, k.mm, balance.start, 
-                                    basket.weights, sleeps, commissions, ret.type) {
+TestStr_BruteForceOpt <- function(var.begin, var.end,
+                                  data.source, add.per, k.mm, balance.start, 
+                                  basket.weights, sleeps, commissions, ret.type) {
   #
-  system.time({
-    result <- 
-      var.begin:var.end %>%
-      lapply(., function(x){
-                  TestStr_OneThreadRun(data.source = data.source.list[[1]],
-                                       sma.per = x, add.per, k.mm, balance.start, 
-                                       basket.weights, sleeps, commissions, ret.type)
-               }
-      ) %>%
-      {
-        .[!is.na(.)]
-      } %>%
-      MergeData_inList_byRow(.)
+  result <- 
+    var.begin:var.end %>%
+    lapply(
+      ., 
+      function(x){
+        TestStr_OneThreadRun(data.source = data.source.list[[1]],
+                             sma.per = x, add.per, k.mm, balance.start, 
+                             basket.weights, sleeps, commissions, ret.type)
+      }
+    ) %>%
+    {
+      .[!is.na(.)]
+    } %>%
+    MergeData_inList_byRow(.)
   })  
   #
   return(result)

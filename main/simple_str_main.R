@@ -9,12 +9,12 @@ library(PerformanceAnalytics)
 # library(data.table)
 #
 ### начальные параметры
-source("str/libStrategy.R")
-source("str/simple/simple_str_gen.R")
-source("str/simple/simple_str_eva.R")
+source("lib/str/libStrategy.R")
+source("lib/str/simple/simple_str_gen.R")
+source("lib/str/simple/simple_str_eva.R")
 #
 # движок стратегии
-source("str/simple/simple_str_gear.R")
+source("lib/str/simple/simple_str_gear.R")
 #
 ### входные параметры
 # temp.dir <- "data/temp"
@@ -69,24 +69,4 @@ data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]],
 # суммирование
 data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
-#
-### отработка тестового робота
-data.strategy.list <- SimpleStr_gear(data.source = data.source.list[[1]],
-                                          sma.per, add.per, k.mm, balance.start, 
-                                          basket.weights, sleeps, commissions)
-#
-### формирование таблицы сделок
-## чистим от лишних записей
-data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-## лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-# очистка мусора по target = "temp"
-CleanGarbage(target = "temp", env = ".GlobalEnv")
-#
-### оценка perfomance-параметров
-perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                                       data.state = data.strategy.list[[2]],
-                                       dealsTable = dealsTable.list,
-                                       balance = balance.start, 
-                                       ret.type = ret.type)
 #
