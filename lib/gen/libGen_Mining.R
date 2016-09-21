@@ -106,7 +106,7 @@ MergeData_inList_byRow <- function(data.list) {
 #' @return data XTS ряд, очищенный от NA (по всем тикерам)
 #'
 #' @export
-SubsetColumn_inXTS <- function(data, target) {
+SubsetCol_inXTS_byTarget <- function(data, target) {
   #
   data <-
     colnames(data) %>%
@@ -134,3 +134,53 @@ CleanGarbage_inCols <- function(x, target = "temp") {
     }
   return(x)
 }
+#
+###
+#' Функция вычисление лучших / худших значений (на основе квантиля) 
+#' 
+#' @param data Данные 
+#' @param var Столбец данных с качественной характеристикой
+#' @param q.hi Уровень квантиля для вычисления лучших значений (берётся всё, что выше квантиля)
+#' @param q.low Уровень квантиля для вычисления худших значений (берётся всё, что ниже квантиля)
+#' @param low Вычисляем худшие значения (классический квантиль) 
+#' @param hi Вычисляем лучшие значения (всё, что больше квантиля) 
+#' @param two Вычисляем "середину" между двумя уровнями
+#' @param abs Eсли нужно, задать абсолютное значение квантиля (вычисленное ранее)
+#'
+#' @return data Отфильтрованные данные
+#'
+#' @export 
+CalcQuantile <- function(data, var, q.hi = 0, q.low = 0, 
+                         two = FALSE, low = FALSE, hi = FALSE, abs = FALSE) {
+  #
+  if (two == TRUE) {
+    # подготовка данных
+    data <- data[order(-data[[var]]), ]
+    # вычисление квантилей
+    ifelse(abs == FALSE, 
+           q.hi.value <- quantile(data[[var]], q.hi),
+           q.hi.value <- as.numeric(q.hi))
+    n.hi <- which(data[, var] < q.hi.value)
+    ifelse(abs == FALSE, 
+           q.low.value <- quantile(data[[var]], q.low), 
+           q.low.value <- as.numeric(q.low)) 
+    data <- data[n.hi, ]
+    n.low <- which(data[, var] > q.low.value )
+    data <- data[n.low, ]
+    } 
+  if (hi == TRUE) {
+    data <- data[order(-data[[var]]), ]
+    ifelse(abs == FALSE, q.hi.value <- quantile(data[[var]], q.hi), q.hi.value <- as.numeric(q.hi))
+    n.hi <- which( data[, var] > q.hi.value )  
+    data <- data[n.hi, ]
+    }
+  if (low==TRUE) {
+    data <- data[order(-data[[var]]), ]
+    ifelse (abs == FALSE, q.low.value <- as.numeric(quantile(data[[var]], q.low)), q.low.value <- as.numeric(q.low)) 
+    n.low <- which( data[, var] < q.low.value )
+    data <- data[n.low, ]
+    }
+  #  
+  return(data)
+}
+#

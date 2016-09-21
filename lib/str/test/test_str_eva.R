@@ -1,12 +1,12 @@
 #
 ### пути к нужным для оценки параметров библиотекам
-source("eva/libEva_Dates.R")
-source("eva/libEva_Deals.R")
-source("eva/libEva_Drawdown.R")
-source("eva/libEva_Profit.R")
-source("eva/libEva_ProfitDays.R")
-source("eva/libEva_ProfitDeals.R")
-source("eva/libEva_Ratio.R")
-source("eva/libEvaluation.R")
+source("lib/eva/libEva_Dates.R")
+source("lib/eva/libEva_Deals.R")
+source("lib/eva/libEva_Drawdown.R")
+source("lib/eva/libEva_Profit.R")
+source("lib/eva/libEva_ProfitDays.R")
+source("lib/eva/libEva_ProfitDeals.R")
+source("lib/eva/libEva_Ratio.R")
+source("lib/eva/libEvaluation.R")
 #
 
