@@ -19,7 +19,8 @@
 #'
 #' @export
 CalcKmean_DataPreparation <- function(data, n.mouth ,
-                                      low = FALSE, hi = TRUE, q.hi = 0.5, q.low = 0,
+                                      hi = TRUE, q.hi = 0.5, 
+                                      low = FALSE, q.low = 0,
                                       one.scale = FALSE) {
   #
   # выделение столбцов с переменными
@@ -43,7 +44,7 @@ CalcKmean_DataPreparation <- function(data, n.mouth ,
       colnames(df) %>%
       length(.) %>% 
       {
-        CalcQuantile(data = df, var = ., hi, q.hi)
+        CalcQuantile(data = df, var = ., hi = hi, q.hi = q.hi)
       }
   }
   if (one.scale == TRUE) {
@@ -95,7 +96,11 @@ CalcKmean_Parameters <- function(data, test.range = 30, iter.max = 100, plusplus
                       Pct.Exp = p.exp)
   # вычисление оптимального количества кластеров
   # byVar: опт. число кластеров определяется как min число, описывающее 90% пространства
-  n.byVar <- min(which(p.exp > 0.9) )
+  n.byVar <- 
+    {
+      min(which(ss.df$Pct.Exp > 0.9))
+    } %>%
+    ss.df$Num.Of.Clusters[.]
   # byElbow: опт. число определяется "методом локтя"
   #n.byElbow <- FindMaxDistancePoint(ss.df$p.exp[-1]) + 1
   #n <- c(n.byVar, n.byElbow)

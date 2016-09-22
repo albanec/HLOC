@@ -43,20 +43,20 @@ data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret
 data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret 
 #
 #
-### BruteForce оптимизация 
-system.time(
-  {
-    perfamanceTable.one <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
-                                                   data.source = data.source.list[[1]], 
-                                                   add.per, k.mm, balance.start, 
-                                                   basket.weights, sleeps, commissions, ret.type)
-  }
-)
+### BruteForce оптимизация (в один поток)
+# system.time(
+#   {
+#     perfamanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
+#                                                    data.source = data.source.list[[1]], 
+#                                                    add.per, k.mm, balance.start, 
+#                                                    basket.weights, sleeps, commissions, ret.type)
+#   }
+# )
 #
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    perfamanceTable.two <- TestStr_Parallel_BruteForceOpt(
+    perfamanceTable <- TestStr_Parallel_BruteForceOpt(
       var.begin = 1, var.end = 100,
       data.source = data.source.list[[1]], 
       add.per, k.mm, balance.start, 
@@ -64,3 +64,18 @@ system.time(
     )
   }
 )
+### КА
+## Подготовка к КА
+data_for_cluster <- CalcKmean_DataPreparation(data = perfamanceTable, n.mouth = 12, 
+                                              hi = TRUE, q.hi = 0.5, 
+                                              one.scale = TRUE)
+data_for_cluster$profit <- NULL
+data_for_cluster$draw <- NULL
+## Вычисление параметров кластеризации 
+clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
+                                      plusplus = FALSE, test.range = 30)
+## Вычисление самох кластеров
+clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
+                            plusplus = FALSE, var.digits = 2)
+# вывод данных
+#print(clustFull.data[2])
