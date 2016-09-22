@@ -2,13 +2,12 @@
 # Функции для расчёта perfomance-метрик 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-# source("libEva_Dates.R")
-# source("libEva_Deals.R")
-# source("libEva_Drawdown.R")
-# source("libEva_Profit.R")
-# source("libEva_ProfitDays.R")
-# source("libEva_ProfitDeals.R")
-# source("libEva_Ratio.R")
+### Загрузка дочерних библиотек
+source("lib/evaluation/evaluation_dates.R")
+source("lib/evaluation/evaluation_deals.R")
+source("lib/evaluation/evaluation_drawdown.R")
+source("lib/evaluation/evaluation_profit.R")
+source("lib/evaluation/evaluation_ratio.R")
 #
 ###
 #' Расчет perfomance-метрик 

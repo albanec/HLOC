@@ -1,20 +1,5 @@
-# подгрузка пакетов
-library(quantmod)
-library(rusquant)
-library(magrittr)
-library(tidyr)
-library(PerformanceAnalytics)
-# library(RQuantLib)
-# library(dplyr)
-# library(data.table)
-#
-### начальные параметры
-source("lib/str/libStrategy.R")
-source("lib/str/simple/simple_str_gen.R")
-source("lib/str/simple/simple_str_eva.R")
-#
-# движок стратегии
-source("lib/str/simple/simple_str_gear.R")
+# Загрузка библиотек
+source("main/simple/linker.R")
 #
 ### входные параметры
 # temp.dir <- "data/temp"

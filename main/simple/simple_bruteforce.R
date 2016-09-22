@@ -1,22 +1,7 @@
-# подгрузка пакетов
-library(quantmod)
-library(rusquant)
-library(magrittr)
-library(tidyr)
-library(PerformanceAnalytics)
-# library(RQuantLib)
-# library(dplyr)
-# library(data.table)
+# Загрузка библиотек
+source("main/simple/linker.R")
 #
-### начальные параметры
-source("lib/str/libStrategy.R")
-source("lib/str/simple/simple_str_gen.R")
-source("lib/str/simple/simple_str_eva.R")
-#
-# движок стратегии
-source("lib/str/simple/simple_str_gear.R")
-#
-### входные параметры
+### Входные параметры
 # temp.dir <- "data/temp"
 from.date <- Sys.Date() - 300
 to.date <- Sys.Date()
@@ -69,4 +54,26 @@ data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]],
 # суммирование
 data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
+#
+### BruteForce оптимизация 
+system.time(
+  {
+    perfamanceTable.one <- SimpleStr_BruteForceOpt(var.begin = 1, var.end = 100,
+                                                   data.source = data.source.list[[1]], 
+                                                   add.per, k.mm, balance.start, 
+                                                   basket.weights, sleeps, commissions, ret.type)
+  }
+)
+#
+### Parallel BruteForce оптимизация 
+system.time(
+  {
+    perfamanceTable.two <- SimpleStr_Parallel_BruteForceOpt(
+      var.begin = 1, var.end = 100,
+      data.source = data.source.list[[1]], 
+      add.per, k.mm, balance.start, 
+      basket.weights, sleeps, commissions, ret.type
+    )
+  }
+)
 #

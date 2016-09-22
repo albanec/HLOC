@@ -2,12 +2,12 @@
 # Общеупотребительные функции
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-### Линковка
-# source("libGen_Mining.R")
-# source("libGen_GetData.R")
-# source("libGen_Data.R")
-# source("libGen_Quotes.R")
-# source("libGen_Perfomance.R")
+### Загрузка дочерних библиотек
+source("lib/generic/generic_mining.R")
+source("lib/generic/generic_getdata.R")
+source("lib/generic/generic_data.R")
+source("lib/generic/generic_quotes.R")
+source("lib/generic/generic_perfomance.R")
 #
 ###
 #' Функция загружает, устанавливает и подключает необходимые пакеты 
