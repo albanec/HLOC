@@ -10,7 +10,7 @@ source("lib/evaluation/evaluation_profit.R")
 source("lib/evaluation/evaluation_ratio.R")
 #
 ###
-#' Расчет perfomance-метрик 
+#' Расчет perfomance-метрик (полный набор)
 #'
 #' Расчитывает perfomance-метрики (статистика по временным метрикам (datesTable) + доходности (profitTable) + 
 #' просадкам (drawdownTable) + коэффициентам продуктивности (ratioTable)) 
@@ -23,9 +23,29 @@ source("lib/evaluation/evaluation_ratio.R")
 #'
 #' @export
 CalcPerfomanceTable <- function(data, data.state, dealsTable,
-                                balance, ret.type, ...) {
+                                balance, ret.type, fast = FALSE, ...) {
   #
-  ### Расчёт метрик
+  ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
+  if (fast == TRUE) {
+    # вычисление максимальной просадки (в процентах)
+    drawdowns <- CalcDrawdownDataSet(data = data$balance, fullData = TRUE)
+    # max.drawdown <- 
+    #   min(drawdowns[[2]]$Depth) %>%
+    #   as.numeric(.)
+    max.drawdown.percent <-
+      min(drawdowns[[2]]$DepthPercent) %>%
+      as.numeric(.)  
+    remove(drawdowns)
+    # вычисление итоговой доходности (в процентах)
+    fullReturn <- 
+      last(data$equity) %>%
+      as.numeric(.)
+    fullReturn.percent <- fullReturn * 100 / balance   
+    #
+    perfomanceTable <- data.frame(profit = fullReturn.percent, draw = max.drawdown.percent)
+    return(perfomanceTable)
+  }
+  ### Есди расчёт полных метрик:
   cat("INFO(CalcPerfomanceTable):  Calc PerfomanceMetrics ... Start", "\n")
   ## простые временные метрики
   cat("INFO(CalcPerfomanceTable):  Calc DatesMetrics", "\n", sep = "  ")

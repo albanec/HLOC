@@ -11,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
+TestStr_BruteForceOpt_Parallel <- function(var.begin, var.end, rolling_opt = FALSE, ...) {
   #
   require(parallel)
   # запуск кластера
@@ -44,18 +44,19 @@ TestStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
       function(x){
         TestStr_OneThreadRun(data.source = data.source.list[[1]],
                              sma.per = x, add.per, k.mm, balance.start, 
-                             basket.weights, sleeps, commissions, ret.type)
+                             basket.weights, sleeps, commissions, ret.type,
+                             rolling_opt)
       }
-    ) %>% 
+    ) %T>%
+    {
+      parallel::stopCluster(parallel_cluster)
+      parallel_cluster <- c()  
+    } %>%
+  #result %<>%  
     {
       .[!is.na(.)]
     } %>%
     MergeData_inList_byRow(.)
-  #
-  if(!is.null(parallel_cluster)) {
-    parallel::stopCluster(parallel_cluster)
-    parallel_cluster <- c()
-  }
   #  
   return(result)
 }
@@ -77,9 +78,10 @@ TestStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt <- function(var.begin, var.end,
-                                  data.source, add.per, k.mm, balance.start, 
-                                  basket.weights, sleeps, commissions, ret.type) {
+TestStr_BruteForceOpt_Simple <- function(var.begin, var.end,
+                                         data.source, add.per, k.mm, balance.start, 
+                                         basket.weights, sleeps, commissions, ret.type,
+                                         rolling_opt = FALSE) {
   #
   result <- 
     var.begin:var.end %>%
@@ -88,7 +90,8 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
       function(x){
         TestStr_OneThreadRun(data.source = data.source.list[[1]],
                              sma.per = x, add.per, k.mm, balance.start, 
-                             basket.weights, sleeps, commissions, ret.type)
+                             basket.weights, sleeps, commissions, ret.type,
+                             rolling_opt)
       }
     ) %>%
     {
@@ -117,7 +120,8 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 TestStr_OneThreadRun <- function(data.source = data.source.list[[1]], 
                                  sma.per, add.per, k.mm, basket.weights, 
                                  sleeps, commissions,
-                                 balance.start, ret.type) {
+                                 balance.start, ret.type, 
+                                 rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
   data.strategy.list <- TestStr_gear(data.source, sma.per, add.per, k.mm, 
@@ -152,21 +156,31 @@ TestStr_OneThreadRun <- function(data.source = data.source.list[[1]],
     #   }
     return()
   } else {
-    ### Формирование таблицы сделок
-    ## чистим от лишних записей
-    data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-    ## лист с данными по сделкам (по тикерам и за всю корзину)
-    dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-    # очистка мусора по target = "temp"
-    CleanGarbage(target = "temp", env = ".GlobalEnv")
-    #
-    ### оценка perfomance-параметров
-    perfomanceTable <- 
-      CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                          data.state = data.strategy.list[[2]],
-                          dealsTable = dealsTable.list,
-                          balance = balance.start, 
-                          ret.type)  
+    if (rolling_opt == TRUE) {
+      ### оценка perfomance-параметров
+      perfomanceTable <- 
+        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                            data.state = 0,
+                            dealsTable = 0,
+                            balance = balance.start, ret.type = 0, 
+                            fast = TRUE)  
+    } else {
+      ### Формирование таблицы сделок
+      ## чистим от лишних записей
+      data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+      ## лист с данными по сделкам (по тикерам и за всю корзину)
+      dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+      # очистка мусора по target = "temp"
+      CleanGarbage(target = "temp", env = ".GlobalEnv")
+      #
+      ### оценка perfomance-параметров
+      perfomanceTable <- 
+        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                            data.state = data.strategy.list[[2]],
+                            dealsTable = dealsTable.list,
+                            balance = balance.start, 
+                            ret.type)  
+    }
   }
   perfomanceTable %<>%
     # добавление использованных параметров
