@@ -1,47 +1,115 @@
 # data XTS 
 # period Период окна скольжения 
-# “microseconds”, “milliseconds”, “seconds”, “mins”, “hours”, “days”, “weeks”, “months”, “quarters”, and “years”
+# 'microseconds', 'milliseconds', 'seconds', 'mins', 'hours', 'days', 'weeks', 'months', 'quarters', and 'years'
 #
 RollingApply_forXTS <- function(data, start_date, end_date, period = NULL, 
-                                width, by = NULL, FUN = NULL, lookback = TRUE) {
+                                width, by = NULL, FUN = NULL, align = c('left', 'right'),
+                                lookback = TRUE) {
+  ## подготовка
+  n_rows <- nrow(data)
+  n_cols <- ncol(data)
+  # проверка на правильность условий
+  stopifnot(width > 0, width <= n_rows)
   #
-  nr <- nrow(data)
-  stopifnot(width > 0, width <= nr)
-  # выделение старт/стоп индексов
-  startstop_ind <- paste(start_date,"::",end_date)
+  FUN <- match.fun(FUN)
+  # индкесы исходных данных
+  data_ind <- index(data)
+  # интервал анализа
+  startstop_interval <- paste(start_date,'::',end_date, sep = "")
+  #
   if (is.null(by)) {
     by <- width  
   }
-  # если период == NULL, то окна считаются по периодам свечей 
-  if (is.null(period)) {
-     <- 
+  ## определения сдвига (зависит от направления окна)
+  offset <- 
+    match.arg(align) %>%
+    switch(.,    
+           'left' = { width - 1 },
+           'right' = { 0 }
+          )
+  # 
+  ## если период == NULL, то окна считаются по периодам свечей 
+  if (is.null(period) | (period == freq$units)) {
+    # выделение старт/стоп номеров строк
+    startstop_row_nums <- 
+      data[startstop_interval] %>%
+      index(.) %>%
+      {
+        which(data_ind %in% .)
+      }
+    ## подготовка данных для анализа
+    # ряд расширяется, если lookback == TRUE  
     if (lookback == TRUE) {
-      # вычисление нужного временного ряда
       temp_subset <- 
-        data[startstop_ind] %>%
-        index(.) %>%
-        {
-          which(. %in% index(data))
-        } %>%
-        {
-          (first(.) - width + 1):last(.)
-        } %>%
-        data[., ]
+        (first(startstop_row_nums) - width + 1):last(startstop_row_nums) %>%
+        data[., ]   
     } else {
-      temp_subset <- data[startstop_ind]
+      temp_subset <- data[startstop_row_nums, ]
     }
-    # добавление нужного интервала окна 
+    # точки "обозрения"
+    view_points_row <- 
+      nrow(temp_subset) %>%
+      {
+        seq((width - offset), (. - offset), by = by) 
+      }
+    #
     result <- 
-      length(temp_subset) %>%
-      seq(1, . - width + 1, by = by) %>% 
-      lapply(., 
+      lapply(view_points_row, 
              function(x) {
-               x:(x + width - 1)
-             })    
-  }
+             FUN(.subset_xts(temp_subset, (x - width + 1):x), ...)
+             }) #%>%
+      #MergeData_inList_byRow(.)
+    #  
+  } else {
+    ## если period != NULL, то окна считаются по указанным периодам
+    offset <- 
+      match.arg(period) %>%
+      switch(.,    
+             'seconds' = seconds(x),
+             'mins' = minutes(x),
+             'hours' = hours(x),
+             'days' = days(x),
+             'weeks' = weeks(x),
+             'months' = days(x),             
+             'years' = years(x)
+            )
+    # выделение старт/стоп номеров строк
+    startstop_row_nums <- 
+      data[startstop_interval] %>%
+      index(.) %>%
+      {
+        which(data_ind %in% .)
+      }
+    ## выделение нужного для анализа интервала
+    if (lookback == TRUE) {
+      temp_subset <- 
+        first(startstop_row_nums) %>%
+        data[., ] %>%
+        {
+          index(.)  - offset(x = width)
+        } %>%
+        # проверить!!!
+        paste(.,'::',end_date, sep = "") %>%
+        data[.]
+        
+
+        {
+          end <- endpoints(data, on = period, k = width)
+          .$end[end] <- 1
+          return(.)
+        }
+      
+
+    }
+    # простановка enpoint'ов
+    
+
+   
+    
+  } 
 
   # функция
-  FUN <- match.fun(FUN)
+  
   OUT <- lapply(SEQ2, function(a) FUN(x[a], ...))
   #
   return
