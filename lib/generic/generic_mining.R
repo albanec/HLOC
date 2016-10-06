@@ -184,3 +184,172 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
   return(data)
 }
 #
+###
+#' Функция скользящей нарезки периодов
+#' 
+#' @param data Данные XTS
+#' @param start_date Стартавая дата (гг-мм-дд) анализа
+#' @param end_date Конечная дата анализа
+#' @param period Период окна скольжения ('seconds', 'mins', 'hours', 'days', 'weeks', 'months', 'quarters', 'years')
+#' если == NULL - посвечный период
+#' @param width Глубина окна скольжения  
+#' @param by Шаг окна скольжения 
+#' @param align "Выравнивание" индекса результата, ставить = right (на данный момент не используется)
+#' @param lookback "Заглядывание" за дату начала анализа (на данный момент не используется)
+#'
+#' @return result Лист с данными, разложенными по индексам окон
+#'
+#' @export 
+RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 
+                                     width, by = NULL, align = c('left', 'right'),
+                                     lookback = FALSE) {
+  ## подготовка
+  n_rows <- nrow(data)
+  n_cols <- ncol(data)
+  freq <- periodicity(data) 
+  # проверка на правильность условий
+  stopifnot(width > 0, width <= n_rows)
+  #
+  #FUN <- match.fun(FUN)
+  #
+  # индкесы исходных данных
+  data_ind <- index(data)
+  # интервал анализа
+  interval <- paste(start_date,'::',end_date, sep = "")
+  #
+  if (is.null(by)) {
+    by <- width  
+  }
+  ## определения сдвига (зависит от направления окна)
+  offset <- 
+    match.arg(align) %>%
+    switch(.,    
+           'left' = { width - 1 },
+           'right' = { 0 }
+          )
+  # 
+  ## если период == NULL, то окна считаются по периодам свечей 
+  if (is.null(period) == TRUE || (period == freq$units)  == TRUE) {
+    # выделение старт/стоп номеров строк
+    row_nums <- 
+      data[interval] %>%
+      index(.) %>%
+      {
+        which(data_ind %in% .)
+      }
+    remove(data_ind)
+    ## подготовка данных для анализа
+    # ряд расширяется, если lookback == TRUE  
+    if (lookback == TRUE) {
+      temp_subset <- 
+        (first(row_nums) - width + 1):last(row_nums) %>%
+        data[., ]   
+    } else {
+      temp_subset <- data[row_nums, ]
+    }
+    # индекс для выходных данных (пока не используется)
+    result_ind <- 
+      nrow(temp_subset) %>%
+      {
+        seq((width - offset), (. - offset), by = by) 
+      } %>%
+      {
+        index(temp_subset)[.]
+      }
+    # индексы окон
+    ind <- 
+      nrow(temp_subset) %>%
+      seq.int(width, ., by)
+    #
+    result <- 
+      lapply(ind, 
+             function(x) {
+               .subset_xts(temp_subset, (x - width + 1):x)
+             })
+    #  
+  } else {
+    ## если period != NULL, то окна считаются по указанным периодам
+    #
+    # offset <- 
+    #   match.arg(period) %>%
+    #   switch(.,    
+    #          'seconds' = seconds(x),
+    #          'mins' = minutes(x),
+    #          'hours' = hours(x),
+    #          'days' = days(x),
+    #          'weeks' = weeks(x),
+    #          'months' = days(x),             
+    #          'years' = years(x)
+    #         )
+    #
+    # выделение старт/стоп номеров строк 
+    row_nums <- 
+      data[interval] %>%
+      index(.) %>%
+      {
+        which(data_ind %in% .)
+      }
+    remove(data_ind)
+    ## выделение нужного для анализа интервала
+    #
+    # if (lookback == TRUE) {
+    #   temp_subset <- 
+    #     first(row_nums) %>%
+    #     data[., ] %>%
+    #     {
+    #       index(.)  - offset(x = width)
+    #     } %>%
+    #     # проверить!!!
+    #     paste(.,'::',end_date, sep = "") %>%
+    #     data[.]
+    # } elxe {
+    #
+      temp_subset <- data[interval] 
+      # простановка enpoint'ов 
+      endpoints_ <- 
+        endpoints(x = temp_subset, on = period, k = 1) %>%
+        {
+          temp_subset$endpoint <- NA
+          temp_subset$endpoint[.] <- 1
+          temp_subset$endpoint[.] <- cumsum(temp_subset$endpoint[.])
+          return(temp_subset$endpoint)
+        } %>%
+        na.locf(.) %>%
+        na.locf(., fromLast = TRUE)
+      # 
+      result_ind <- 
+        unique(coredata(endpoints_)) %>%
+        max(.) %>%
+        {
+          seq((width - offset), (. - offset), by = by) 
+        } %>%
+        {
+          index(temp_subset)[.]
+        }
+      # индексы окон
+      ind <- 
+        unique(coredata(endpoints_)) %>%
+        max(.) %>%
+        {
+          seq.int(width, ., by)
+        }
+      #
+      result <- lapply(ind, 
+                       function(x) {
+                         win_start <- 
+                           {
+                             x - width + 1
+                           } %>%
+                           {
+                             first(which(endpoints_ == .))
+                           } 
+                         win_end <- last(which(endpoints_ == x))
+                         #
+                         result <- .subset_xts(temp_subset, win_start:win_end)
+                         return(result)
+                       })
+    #}  
+  } 
+  #
+  return(result)
+}
