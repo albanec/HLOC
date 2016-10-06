@@ -47,14 +47,14 @@ RollingApply_forXTS <- function(data, start_date, end_date, period = NULL,
       temp_subset <- data[startstop_row_nums, ]
     }
     # точки "обозрения"
-    view_points_row <- 
+    points_row <- 
       nrow(temp_subset) %>%
       {
         seq((width - offset), (. - offset), by = by) 
       }
     #
     result <- 
-      lapply(view_points_row, 
+      lapply(points_row, 
              function(x) {
              FUN(.subset_xts(temp_subset, (x - width + 1):x), ...)
              }) #%>%
@@ -62,18 +62,18 @@ RollingApply_forXTS <- function(data, start_date, end_date, period = NULL,
     #  
   } else {
     ## если period != NULL, то окна считаются по указанным периодам
-    offset <- 
-      match.arg(period) %>%
-      switch(.,    
-             'seconds' = seconds(x),
-             'mins' = minutes(x),
-             'hours' = hours(x),
-             'days' = days(x),
-             'weeks' = weeks(x),
-             'months' = days(x),             
-             'years' = years(x)
-            )
-    # выделение старт/стоп номеров строк
+    # offset <- 
+    #   match.arg(period) %>%
+    #   switch(.,    
+    #          'seconds' = seconds(x),
+    #          'mins' = minutes(x),
+    #          'hours' = hours(x),
+    #          'days' = days(x),
+    #          'weeks' = weeks(x),
+    #          'months' = days(x),             
+    #          'years' = years(x)
+    #         )
+    # выделение старт/стоп номеров строк 
     startstop_row_nums <- 
       data[startstop_interval] %>%
       index(.) %>%
@@ -81,27 +81,41 @@ RollingApply_forXTS <- function(data, start_date, end_date, period = NULL,
         which(data_ind %in% .)
       }
     ## выделение нужного для анализа интервала
-    if (lookback == TRUE) {
-      temp_subset <- 
-        first(startstop_row_nums) %>%
-        data[., ] %>%
+    # if (lookback == TRUE) {
+    #   temp_subset <- 
+    #     first(startstop_row_nums) %>%
+    #     data[., ] %>%
+    #     {
+    #       index(.)  - offset(x = width)
+    #     } %>%
+    #     # проверить!!!
+    #     paste(.,'::',end_date, sep = "") %>%
+    #     data[.]
+    # } elxe {
+      temp_subset <- data[startstop_interval] 
+      temp_subset$endpoint <- 
+        temp_subset %>%
+        # простановка enpoint'ов 
         {
-          index(.)  - offset(x = width)
+          .$endpoint <- NA
+          end <- endpoints(x = temp_subset, on = period, k = 1)
+          .$endpoint[end] <- 1
+          return(.$endpoint)
         } %>%
-        # проверить!!!
-        paste(.,'::',end_date, sep = "") %>%
-        data[.]
-        
-
-        {
-          end <- endpoints(data, on = period, k = width)
-          .$end[end] <- 1
-          return(.)
-        }
-      
-
-    }
-    # простановка enpoint'ов
+        #endpoints(x = temp_subset, on = period, k = 1) %>%
+        # модификация
+        # {
+        #   x <- .
+        #   x <- 
+        #     x[-length(x)] %>%
+        #     {
+        #       . + 1 
+        #     }
+        #   return(x)
+        # } %>%
+        cumsum(.)  
+    #}
+    
     
 
    

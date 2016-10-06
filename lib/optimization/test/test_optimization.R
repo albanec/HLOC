@@ -11,7 +11,9 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt_Parallel <- function(var.begin, var.end, rolling_opt = FALSE, ...) {
+TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
+                                           add.per_begin, add.per_end, add.per_step,
+                                           rolling_opt = FALSE, ...) {
   #
   require(parallel)
   # запуск кластера
@@ -31,19 +33,35 @@ TestStr_BruteForceOpt_Parallel <- function(var.begin, var.end, rolling_opt = FAL
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
       "data.source.list", 
-      "add.per", "k.mm", "balance.start", 
+      # "add.per",
+      "k.mm", "balance.start", 
       "basket.weights", "sleeps", "commissions", "ret.type"
     )
   )
+  # Формирование параметров оптимизации
+  sma_vector <- seq(sma_begin, sma_end, by = sma_step)
+  add.per_vector <- seq(add.per_begin, add.per_end, by = add.per_step)
+  vars <- 
+    lapply(add.per, 
+           function(x) {
+             result <- data.frame(sma, x)
+             return(result)
+           }) %>%
+    MergeData_inList_byRow(.) %>%
+    {
+      list(.[, 1], .[, 2])
+    }
+  remove(sma_vector)
+  remove(add.per_vector)
   #
   result <- 
-    var.begin:var.end %>%
+    vars %>%
     parLapply(
       parallel_cluster,
       ., 
       function(x){
         TestStr_OneThreadRun(data.source = data.source.list[[1]],
-                             sma.per = x, add.per, k.mm, balance.start, 
+                             sma.per = x[[1]], add.per = x[[2]], k.mm, balance.start, 
                              basket.weights, sleeps, commissions, ret.type,
                              rolling_opt)
       }
