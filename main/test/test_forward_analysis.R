@@ -3,8 +3,8 @@ source("main/test/linker.R")
 #
 ### входные параметры
 # temp.dir <- "data/temp"
-from.date <- "2016-02-01"
-to.date <- "2016-02-02"
+from.date <- '2016-02-01'
+to.date <- '2016-02-28'
 period <- "15min"
 tickers <- c("SPFB.Si")
 im.dir <- "data/im"
@@ -21,7 +21,9 @@ commissions <- c(10, 0, 0)  # в рублях
 # загрузка данных из .csv Финама
 data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/F_SI_08-28.07.16_1min.csv")
 # выделение нужного периода
-data.source <- data.source["2016-02-01::2016-02-28"]
+data.source <- 
+  paste(from.date,'::',to.date, sep = "") %>%
+  data.source[.]
 # переход к нужному периоду свечей
 data.source <- ExpandData_toPeriod(x = data.source, per = "15min")
 data.source.list <- list(data.source)
@@ -43,30 +45,34 @@ data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret
 data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret 
 #
 #
-### BruteForce оптимизация (в один поток)
-# system.time(
-#   {
-#     perfamanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
-#                                                    data.source = data.source.list[[1]], 
-#                                                    add.per, k.mm, balance.start, 
-#                                                    basket.weights, sleeps, commissions, ret.type)
-#   }
-# )
-#
-
-
-### Parallel BruteForce оптимизация 
+## нарезка временных интервалов для обучения/торговли
 system.time(
   {
-    perfamanceTable <- TestStr_Parallel_BruteForceOpt(
-      var.begin = 1, var.end = 100,
-      data.source = data.source.list[[1]], 
-      add.per, k.mm, balance.start, 
-      basket.weights, sleeps, commissions, ret.type,
-      rolling_opt = TRUE
-    )
+    data.source.slices <- RollingTimeSlicer_forXTS(data = data.source.list[[1]], start_date = from.date, 
+                                                   end_date = to.date, period = "months", 
+                                                   width = 6, by = 3, align = 'right',
+                                                   add_bySlice = TRUE)
+ }
+)
+
+## bf-оптимизация на обучающих данных 
+system.time(
+  {
+    perfamanceTable.list <- lapply(data.slices$widthSlice, 
+                                   function(x) {
+                                     temp_data.slices <<- x 
+                                     TestStr_BruteForceOpt_Parallel(input_data = 'data.source.list',
+                                                                    sma_begin = 10, sma_end = 100, sma_step = 1,
+                                                                    rolling_opt = TRUE)
+                                   }) 
   }
 )
+system.time(
+  {
+
+  }
+)
+
 ### КА
 ## Подготовка к КА
 data_for_cluster <- CalcKmean_DataPreparation(data = perfamanceTable, n.mouth = 12, 

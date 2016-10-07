@@ -55,20 +55,20 @@ data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]],
 data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
 #
-### BruteForce оптимизация 
-system.time(
-  {
-    perfamanceTable.one <- SimpleStr_BruteForceOpt(var.begin = 1, var.end = 100,
-                                                   data.source = data.source.list[[1]], 
-                                                   add.per, k.mm, balance.start, 
-                                                   basket.weights, sleeps, commissions, ret.type)
-  }
-)
+# ## BruteForce оптимизация 
+# system.time(
+#   {
+#     perfamanceTable.one <- SimpleStr_BruteForceOpt(var.begin = 1, var.end = 100,
+#                                                    data.source = data.source.list[[1]], 
+#                                                    add.per, k.mm, balance.start, 
+#                                                    basket.weights, sleeps, commissions, ret.type)
+#   }
+# )
 #
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    perfamanceTable.two <- SimpleStr_Parallel_BruteForceOpt(
+    perfamanceTable <- SimpleStr_Parallel_BruteForceOpt(
       var.begin = 1, var.end = 100,
       data.source = data.source.list[[1]], 
       add.per, k.mm, balance.start, 
@@ -76,4 +76,6 @@ system.time(
     )
   }
 )
+#
+perfamanceTable <- MergeData_inList_byRow(perfamanceTable)
 #

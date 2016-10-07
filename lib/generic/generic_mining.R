@@ -195,9 +195,10 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @param width Глубина окна скольжения  
 #' @param by Шаг окна скольжения 
 #' @param align "Выравнивание" индекса результата, ставить = right (на данный момент не используется)
+#' @param add_bySlice Нужно ли добавить в выходные данные нарезку с by-периодами 
 #' @param lookback "Заглядывание" за дату начала анализа (на данный момент не используется)
 #'
-#' @return result Лист с данными, разложенными по индексам окон
+#' @return result.list Лист с данными, разложенными по индексам окон
 #'
 #' @export 
 RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 

@@ -8,12 +8,17 @@
 #' @param var.begin Стартовое значение оптимизации
 #' @param var.end Конечное значение оптимизации
 #'
-#' @return result DF с perfomance'ами по всем итерациям цикла 
+#' @return result Лист с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
-                                           add.per_begin, add.per_end, add.per_step,
-                                           rolling_opt = FALSE, ...) {
+ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list', 
+                                            sma_begin, sma_end, sma_step,
+                                            # add.per_begin, add.per_end, add.per_step,
+                                            rolling_opt = FALSE, ...) {
+                                   #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
+                                   #         add.per_begin, add.per_end, add.per_step,
+                                   #         rolling_opt = FALSE, ...) {
+                                  
   #
   require(parallel)
   # запуск кластера
@@ -32,27 +37,28 @@ TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      "data.source.list", 
-      # "add.per",
+      'data.source.list', 
+      "add.per",
       "k.mm", "balance.start", 
       "basket.weights", "sleeps", "commissions", "ret.type"
     )
   )
   # Формирование параметров оптимизации
   sma_vector <- seq(sma_begin, sma_end, by = sma_step)
-  add.per_vector <- seq(add.per_begin, add.per_end, by = add.per_step)
-  vars <- 
-    lapply(add.per, 
-           function(x) {
-             result <- data.frame(sma, x)
-             return(result)
-           }) %>%
-    MergeData_inList_byRow(.) %>%
-    {
-      list(.[, 1], .[, 2])
-    }
-  remove(sma_vector)
-  remove(add.per_vector)
+  # add.per_vector <- seq(add.per_begin, add.per_end, by = add.per_step)
+  vars <- sma_vector
+  #   lapply(add.per, 
+  #          function(x) {
+  #            result <- data.frame(sma, x)
+  #            return(result)
+  #          }) %>%
+  #   MergeData_inList_byRow(.) %>%
+  #   {
+  #     list(.[, 1], .[, 2])
+  #   }
+  # remove(sma_vector)
+  # remove(add.per_vector)
+    sma_vector
   #
   result <- 
     vars %>%
@@ -61,7 +67,7 @@ TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
       ., 
       function(x){
         TestStr_OneThreadRun(data.source = data.source.list[[1]],
-                             sma.per = x[[1]], add.per = x[[2]], k.mm, balance.start, 
+                             sma.per = x, add.per = 10, k.mm, balance.start, 
                              basket.weights, sleeps, commissions, ret.type,
                              rolling_opt)
       }
@@ -73,8 +79,12 @@ TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
   #result %<>%  
     {
       .[!is.na(.)]
-    } %>%
-    MergeData_inList_byRow(.)
+    } #%>%
+    # MergeData_inList_byRow(.)
+  if(!is.null(parallel_cluster)) {
+    parallel::stopCluster(parallel_cluster)
+    parallel_cluster <- c()
+  }
   #  
   return(result)
 }
@@ -93,13 +103,13 @@ TestStr_BruteForceOpt_Parallel <- function(sma_begin, sma_end, sma_step,
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
-#' @return result DF с perfomance'ами по всем итерациям цикла 
+#' @return result Лист с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt_Simple <- function(var.begin, var.end,
-                                         data.source, add.per, k.mm, balance.start, 
-                                         basket.weights, sleeps, commissions, ret.type,
-                                         rolling_opt = FALSE) {
+TestStr_BruteForceOpt <- function(var.begin, var.end,
+                                  data.source, add.per, k.mm, balance.start, 
+                                  basket.weights, sleeps, commissions, ret.type,
+                                  rolling_opt = FALSE) {
   #
   result <- 
     var.begin:var.end %>%
@@ -114,8 +124,8 @@ TestStr_BruteForceOpt_Simple <- function(var.begin, var.end,
     ) %>%
     {
       .[!is.na(.)]
-    } %>%
-    MergeData_inList_byRow(.)  
+    } # %>%
+    # MergeData_inList_byRow(.)  
   #
   return(result)
 }

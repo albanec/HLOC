@@ -30,7 +30,7 @@ DrawdownTable <- function(data.balance) {
   max.dd.day <- 
     drawdowns[[1]][drawdowns[[1]]$dd == max.drawdown] %>%
     {
-      index(.) 
+      index(first(.)) 
     } %>%
     as.POSIXct(., origin = "1970-01-01")
   ## средняя просадка
@@ -222,7 +222,7 @@ CalcOneDrawdownSummary_DF <- function(data, n) {
 CalcDrawdowns <- function(data) {
   #
   # очистка от строк c одинаковым индексом (если есть)
-  data <- data[-which(duplicated(index(data)))]
+  data <- data[which(!duplicated(index(data)))]
   ## формируем нужные столбцы
   # пики balance
   data$peak <- cummax(data[, 1])
