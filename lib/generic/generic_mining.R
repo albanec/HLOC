@@ -202,7 +202,7 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @export 
 RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 
                                      width, by = NULL, align = c('left', 'right'),
-                                     lookback = FALSE) {
+                                     add_bySlice = FALSE, lookback = FALSE) {
   ## подготовка
   n_rows <- nrow(data)
   n_cols <- ncol(data)
@@ -218,7 +218,7 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
   interval <- paste(start_date,'::',end_date, sep = "")
   #
   if (is.null(by)) {
-    by <- width  
+    by <- width
   }
   ## определения сдвига (зависит от направления окна)
   offset <- 
@@ -232,7 +232,13 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
   if (is.null(period) == TRUE || (period == freq$units)  == TRUE) {
     # выделение старт/стоп номеров строк
     row_nums <- 
-      data[interval] %>%
+      {
+        if (add_bySlice == FALSE) {
+          data[interval]
+        } else {
+          data
+        }
+      } %>%
       index(.) %>%
       {
         which(data_ind %in% .)
@@ -261,12 +267,21 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
       nrow(temp_subset) %>%
       seq.int(width, ., by)
     #
-    result <- 
-      lapply(ind, 
-             function(x) {
-               .subset_xts(temp_subset, (x - width + 1):x)
-             })
-    #  
+    result.list <- lapply(ind, 
+                     function(x) {
+                       .subset_xts(temp_subset, (x - width + 1):x)
+                     })
+    #
+    if (add_bySlice == TRUE) {
+      temp_subset <- 
+        nrow(temp_subset) %>%
+        (width + 1):. %>%
+        temp_subset[., ]
+      bySlice.list <- RollingTimeSlicer_forXTS(data = temp_subset, start_date, end_date, period = NULL, 
+                                               width = by, by = NULL, align,
+                                               add_bySlice = FALSE, lookback = FALSE)
+      result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+    } 
   } else {
     ## если period != NULL, то окна считаются по указанным периодам
     #
@@ -306,19 +321,28 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
     #
       temp_subset <- data[interval] 
       # простановка enpoint'ов 
-      endpoints_ <- 
+      ends_ <- 
         endpoints(x = temp_subset, on = period, k = 1) %>%
+        # модификация (перенос endpoint'ов на начало периода)
+        {
+          x <- .
+          x <- 
+            x[-length(x)] %>%
+            {
+              . + 1 
+            }
+          return(x)
+        } %>% 
         {
           temp_subset$endpoint <- NA
           temp_subset$endpoint[.] <- 1
           temp_subset$endpoint[.] <- cumsum(temp_subset$endpoint[.])
           return(temp_subset$endpoint)
         } %>%
-        na.locf(.) %>%
-        na.locf(., fromLast = TRUE)
+        na.locf(.) 
       # 
       result_ind <- 
-        unique(coredata(endpoints_)) %>%
+        unique(coredata(ends_)) %>%
         max(.) %>%
         {
           seq((width - offset), (. - offset), by = by) 
@@ -328,28 +352,45 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
         }
       # индексы окон
       ind <- 
-        unique(coredata(endpoints_)) %>%
+        unique(coredata(ends_)) %>%
         max(.) %>%
         {
           seq.int(width, ., by)
         }
       #
-      result <- lapply(ind, 
+      result.list <- lapply(ind, 
                        function(x) {
                          win_start <- 
                            {
                              x - width + 1
                            } %>%
                            {
-                             first(which(endpoints_ == .))
+                             first(which(ends_ == .))
                            } 
-                         win_end <- last(which(endpoints_ == x))
+                         win_end <- last(which(ends_ == x))
                          #
                          result <- .subset_xts(temp_subset, win_start:win_end)
                          return(result)
                        })
     #}  
+    if (add_bySlice == TRUE) {
+      temp_subset <- 
+        {
+          last(which(ends_ == width))
+        } %>%
+        {
+          text <- index(ends_[.])
+          paste(text,"::", sep = "")
+        } %>%
+        temp_subset[.] %>%
+        .[-1, ]
+      bySlice.list <- RollingTimeSlicer_forXTS(data = temp_subset, start_date, end_date, period, 
+                                               width = by, by = NULL, align,
+                                               add_bySlice = FALSE, lookback = FALSE)
+      result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+    }
   } 
+   
   #
-  return(result)
+  return(result.list)
 }
