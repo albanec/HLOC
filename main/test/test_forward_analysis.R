@@ -1,14 +1,14 @@
 # Загрузка библиотек
-source("main/test/linker.R")
+source('main/test/linker.R')
 #
 ### входные параметры
-# temp.dir <- "data/temp"
-from.date <- '2016-02-01'
+# temp.dir <- 'data/temp'
+from.date <- '2015-01-01'
 to.date <- '2016-02-28'
-period <- "15min"
-tickers <- c("SPFB.Si")
-im.dir <- "data/im"
-ret.type <- "ret"
+period <- '15min'
+tickers <- c('SPFB.Si')
+im.dir <- 'data/im'
+ret.type <- 'ret'
 sma.per <- 100
 add.per <- 10
 basket.weights <- c(1,0,0) # количество инструментов в портфеле
@@ -19,26 +19,26 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/F_SI_08-28.07.16_1min.csv")
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = 'data/temp/F_SI_08-28.07.16_1min.csv')
 # выделение нужного периода
 data.source <- 
-  paste(from.date,'::',to.date, sep = "") %>%
+  paste(from.date,'::',to.date, sep = '') %>%
   data.source[.]
 # переход к нужному периоду свечей
-data.source <- ExpandData_toPeriod(x = data.source, per = "15min")
+data.source <- ExpandData_toPeriod(x = data.source, per = '15min')
 data.source.list <- list(data.source)
-colnames(data.source.list[[1]]) <- c("SPFB.SI.Open", "SPFB.SI.High", "SPFB.SI.Low","SPFB.SI.Close", "SPFB.SI.Volume")
+colnames(data.source.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
 #
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
+  NormData_NA_inXTS(data = data.source.list[[1]], type = 'full') %>%
   # добавляем ГО и данные по USDRUB
   AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
-  CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
+  CalcReturn_inXTS(data = ., price = 'Open', type = ret.type)
 # суммарное ГО по корзине 
 data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
-                                                           target = "IM", basket.weights)
+                                                           target = 'IM', basket.weights)
 ## расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
@@ -48,43 +48,52 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ## нарезка временных интервалов для обучения/торговли
 system.time(
   {
-    data.source.slices <- RollingTimeSlicer_forXTS(data = data.source.list[[1]], start_date = from.date, 
-                                                   end_date = to.date, period = "months", 
-                                                   width = 6, by = 3, align = 'right',
-                                                   add_bySlice = TRUE)
+    date_slices <- RollingTimeSlicer_forXTS(data = data.source.list[[1]], start_date = from.date, 
+                                            end_date = to.date, period = 'months', 
+                                            width = 6, by = 3, align = 'right',
+                                            add_bySlice = TRUE)
  }
 )
-
-## bf-оптимизация на обучающих данных 
+# ## bf-оптимизация на обучающих данных 
+# system.time(
+#   {
+#     perfamanceTable_learning <- lapply(date_slices$widthSlice, 
+#                                        function(x) {
+#                                          temp_slice <<- list(x) 
+#                                          Parallel_test(input_data = 'temp_slice',
+#                                                        sma_begin = 10, sma_end = 100, sma_step = 1,
+#                                                        rolling_opt = TRUE)
+#                                        }) 
+#   }
+# )
+# ### КА
+# system.time(
+#   {
+#     cluster_data <- lapply(
+#       perfamanceTable_learning,
+#       function(x) {
+#         ## Подготовка к КА
+#         data_for_cluster <- CalcKmean_DataPreparation(data = x, n.mouth = 6, 
+#                                                       hi = TRUE, q.hi = 0.5, 
+#                                                       one.scale = FALSE)
+#         data_for_cluster$profit <- NULL
+#         data_for_cluster$draw <- NULL 
+#         ## Вычисление параметров кластеризации 
+#         clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
+#                                               plusplus = FALSE, test.range = 30)
+#         ## Вычисление самох кластеров
+#         clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
+#                                     plusplus = FALSE, var.digits = 2)
+#       } 
+#     )  
+#   }
+# )
 system.time(
   {
-    perfamanceTable.list <- lapply(data.slices$widthSlice, 
-                                   function(x) {
-                                     temp_data.slices <<- x 
-                                     TestStr_BruteForceOpt_Parallel(input_data = 'data.source.list',
-                                                                    sma_begin = 10, sma_end = 100, sma_step = 1,
-                                                                    rolling_opt = TRUE)
-                                   }) 
+    learning_data <- TestStr_RollerOpt(date_slices,sma_begin = 10, sma_end = 100, sma_step = 1,
+                                       rolling_opt = TRUE)
   }
 )
-system.time(
-  {
-
-  }
-)
-
-### КА
-## Подготовка к КА
-data_for_cluster <- CalcKmean_DataPreparation(data = perfamanceTable, n.mouth = 12, 
-                                              hi = TRUE, q.hi = 0.5, 
-                                              one.scale = TRUE)
-data_for_cluster$profit <- NULL
-data_for_cluster$draw <- NULL
-## Вычисление параметров кластеризации 
-clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
-                                      plusplus = FALSE, test.range = 30)
-## Вычисление самох кластеров
-clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
-                            plusplus = FALSE, var.digits = 2)
-# вывод данных
-#print(clustFull.data[2])
+CleanGarbage(target = 'temp', env = '.GlobalEnv')
+gc()
+#

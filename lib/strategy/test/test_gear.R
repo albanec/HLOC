@@ -5,7 +5,7 @@
 ###
 #' Функция движка тестовой стратегии
 #' 
-#' @param data.souce Лист с котировками
+#' @param data.souce XTS с котировками
 #' @param sma.per Периоды SMA
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
@@ -18,9 +18,9 @@
 #'
 #' @export
 TestStr_gear <- function(data.source,
-                              sma.per, add.per, 
-                              k.mm, balance.start, 
-                              basket.weights, sleeps, commissions) {
+                         sma.per, add.per, 
+                         k.mm, balance.start, 
+                         basket.weights, sleeps, commissions) {
   # Зависимости:
   require(quantmod)
   # 
@@ -66,6 +66,7 @@ TestStr_gear <- function(data.source,
           data$sma > data.source$SPFB.SI.Close, -1, 0
         )
       )
+      last(data$sig) <- 0
       return(data)
     } %>%   
     na.omit(.) %>%  
@@ -245,7 +246,7 @@ TestStr_gear <- function(data.source,
         }
         # удаляем мусор
         remove(data.temp); #remove(num.vector)
-        data$diff.sig <- NULL
+        #data$diff.sig <- NULL
         data$sig.num <- NULL
         return(data)
       } 

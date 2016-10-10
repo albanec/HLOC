@@ -42,7 +42,11 @@ CalcPerfomanceTable <- function(data, data.state, dealsTable,
       as.numeric(.)
     fullReturn.percent <- fullReturn * 100 / balance   
     #
-    perfomanceTable <- data.frame(profit = fullReturn.percent, draw = max.drawdown.percent)
+    # sharp.data <-  
+    #   SharpeRatio.annualized(returns, scale = 1, geometric = TF) %>%
+    #   TransformMetric(., metric.name = "SharpRatio")
+    #
+    perfomanceTable <- data.frame(Return = fullReturn.percent, MaxDrawdown = max.drawdown.percent)
     return(perfomanceTable)
   }
   ### Есди расчёт полных метрик:

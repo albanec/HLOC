@@ -46,14 +46,16 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
                                sma.per = x, add.per, k.mm, balance.start, 
                                basket.weights, sleeps, commissions, ret.type)
       }
-    ) %>% 
+    ) 
+  #
+  parallel::stopCluster(parallel_cluster)
+  parallel_cluster <- c()
+  #
+  result %<>% 
     {
       .[!is.na(.)]
     } %>%
     MergeData_inList_byRow(.)
-  #
-  parallel::stopCluster(parallel_cluster)
-  parallel_cluster <- c()
   #
   if(!is.null(parallel_cluster)) {
     parallel::stopCluster(parallel_cluster)

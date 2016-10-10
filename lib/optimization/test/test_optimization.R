@@ -11,20 +11,19 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
- TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list', 
-                                            sma_begin, sma_end, sma_step,
-                                            # add.per_begin, add.per_end, add.per_step,
-                                            rolling_opt = FALSE, ...) {
-                                   #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
-                                   #         add.per_begin, add.per_end, add.per_step,
-                                   #         rolling_opt = FALSE, ...) {
-                                  
+TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list', 
+                                           sma_begin, sma_end, sma_step,
+                                           # add.per_begin, add.per_end, add.per_step,
+                                           rolling_opt = FALSE, ...) {
+                                           #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
+                                           #         add.per_begin, add.per_end, add.per_step,
+                                           #         rolling_opt = FALSE, ...) {                          
   #
   require(parallel)
   # запуск кластера
   parallel_cluster <- 
-    parallel::detectCores() %>%
-    parallel::makeCluster(.)
+    detectCores() %>%
+    makeCluster(.)
   ## Подгрузка данных в кластер
   # подгрузка библиотек
   clusterEvalQ(parallel_cluster, {
@@ -32,15 +31,15 @@
     library(magrittr)
     library(tidyr)
     library(PerformanceAnalytics)
-    source("main/test/linker.R")
+    source('main/test/linker.R')
   })
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
       'data.source.list', 
-      "add.per",
-      "k.mm", "balance.start", 
-      "basket.weights", "sleeps", "commissions", "ret.type"
+      'add.per',
+      'k.mm', 'balance.start', 
+      'basket.weights', 'sleeps', 'commissions', 'ret.type'
     )
   )
   # Формирование параметров оптимизации
@@ -71,7 +70,8 @@
                              basket.weights, sleeps, commissions, ret.type,
                              rolling_opt)
       }
-  parallel::stopCluster(parallel_cluster)
+    )
+  stopCluster(parallel_cluster)
   parallel_cluster <- c()  
   result %<>%  
     {
@@ -80,7 +80,7 @@
     MergeData_inList_byRow(.)
   #
   if(!is.null(parallel_cluster)) {
-    parallel::stopCluster(parallel_cluster)
+    stopCluster(parallel_cluster)
     parallel_cluster <- c()
   }
   #  
@@ -131,7 +131,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 ###
 #' Функция одного прогона вычислений движка test стратегии
 #' 
-#' @param data.souce Лист с котировками
+#' @param data.souce XTS с котировками
 #' @param sma.per Периоды SMA
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
@@ -143,7 +143,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr_OneThreadRun <- function(data.source = data.source.list[[1]], 
+TestStr_OneThreadRun <- function(data.source, 
                                  sma.per, add.per, k.mm, basket.weights, 
                                  sleeps, commissions,
                                  balance.start, ret.type, 
@@ -162,21 +162,21 @@ TestStr_OneThreadRun <- function(data.source = data.source.list[[1]],
     #   t(.) %>%
     #   {
     #     colnames(.) <- c(
-    #       "StartDate", "EndDate", "Period", "NumTradeDays", "NumBars", "NumBarsTrade", 
-    #       "NumBarsNoTrade", "SharpRatio", "SortinoRatio", "CalmarRatio", "SterlingRatio", 
-    #       "RecoveryFactor", "WinRatio", "MaxDrawdownDay", "MaxDrawdown", "MaxDrawdownPercent", 
-    #       "MeanDrawdown", "MeanDrawdownPercent", "MaxDrawdownDays", "MeanDrawdownDays", 
-    #       "NowDrawdownDays", "NowDrawdownPeriods", "NowDrawdown", "NowDrawdownPercent", 
-    #       "Return", "ReturnPercent", "ReturnAnnual", "ReturnMonthly", "ReturnBar", 
-    #       "ReturnBarTrade", "BestDay", "BestDayReturn", "BestDayReturnPercent", "MeanGoodDayReturn", 
-    #       "MeanGoodDayReturnPercent", "NumGoogDay", "NumGoogDayPercent", "MaxGoodDays", 
-    #       "FullGoodDayReturn", "WorstDay", "WorstDayReturn", "WorstDayReturnPercent", 
-    #       "MeanBadDayReturn", "MeanBadDayReturnPercent", "NumBadDay", "NumBadDayPercent", 
-    #       "MaxBadDays", "FullBadDayReturn", "ProfitFactorDaily", "DealsNum", "NumGoogDeals", 
-    #       "NumBadDeals", "MaxGoodDeals", "MaxBadDeals", "FullGoodDealReturn", "FullBadDealReturn", 
-    #       "MeanGoodDealReturn", "MeanGoodDealReturnPercent", "MeanBadDealReturn", 
-    #       "MeanBadDealReturnPercent", "MeanDealBars", "MeanGoodDealBars", "MeanBadDealBars", 
-    #       "MeanDealReturn", "MeanDealReturnPercent", "ProfitFactorDeals"
+    #       'StartDate', 'EndDate', 'Period', 'NumTradeDays', 'NumBars', 'NumBarsTrade', 
+    #       'NumBarsNoTrade', 'SharpRatio', 'SortinoRatio', 'CalmarRatio', 'SterlingRatio', 
+    #       'RecoveryFactor', 'WinRatio', 'MaxDrawdownDay', 'MaxDrawdown', 'MaxDrawdownPercent', 
+    #       'MeanDrawdown', 'MeanDrawdownPercent', 'MaxDrawdownDays', 'MeanDrawdownDays', 
+    #       'NowDrawdownDays', 'NowDrawdownPeriods', 'NowDrawdown', 'NowDrawdownPercent', 
+    #       'Return', 'ReturnPercent', 'ReturnAnnual', 'ReturnMonthly', 'ReturnBar', 
+    #       'ReturnBarTrade', 'BestDay', 'BestDayReturn', 'BestDayReturnPercent', 'MeanGoodDayReturn', 
+    #       'MeanGoodDayReturnPercent', 'NumGoogDay', 'NumGoogDayPercent', 'MaxGoodDays', 
+    #       'FullGoodDayReturn', 'WorstDay', 'WorstDayReturn', 'WorstDayReturnPercent', 
+    #       'MeanBadDayReturn', 'MeanBadDayReturnPercent', 'NumBadDay', 'NumBadDayPercent', 
+    #       'MaxBadDays', 'FullBadDayReturn', 'ProfitFactorDaily', 'DealsNum', 'NumGoogDeals', 
+    #       'NumBadDeals', 'MaxGoodDeals', 'MaxBadDeals', 'FullGoodDealReturn', 'FullBadDealReturn', 
+    #       'MeanGoodDealReturn', 'MeanGoodDealReturnPercent', 'MeanBadDealReturn', 
+    #       'MeanBadDealReturnPercent', 'MeanDealBars', 'MeanGoodDealBars', 'MeanBadDealBars', 
+    #       'MeanDealReturn', 'MeanDealReturnPercent', 'ProfitFactorDeals'
     #     )
     #     return(.)
     #   }
@@ -196,8 +196,8 @@ TestStr_OneThreadRun <- function(data.source = data.source.list[[1]],
       data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-      # очистка мусора по target = "temp"
-      CleanGarbage(target = "temp", env = ".GlobalEnv")
+      # очистка мусора по target = 'temp'
+      CleanGarbage(target = 'temp', env = '.GlobalEnv')
       #
       ### оценка perfomance-параметров
       perfomanceTable <- 
@@ -210,7 +210,7 @@ TestStr_OneThreadRun <- function(data.source = data.source.list[[1]],
   }
   perfomanceTable %<>%
     # добавление использованных параметров
-    cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
+    cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per) #, k.mm_ = k.mm)
   #
   return(perfomanceTable)
 }
