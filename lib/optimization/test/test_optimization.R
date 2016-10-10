@@ -8,7 +8,7 @@
 #' @param var.begin Стартовое значение оптимизации
 #' @param var.end Конечное значение оптимизации
 #'
-#' @return result Лист с perfomance'ами по всем итерациям цикла 
+#' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
  TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list', 
@@ -71,16 +71,14 @@
                              basket.weights, sleeps, commissions, ret.type,
                              rolling_opt)
       }
-    ) %T>%
-    {
-      parallel::stopCluster(parallel_cluster)
-      parallel_cluster <- c()  
-    } %>%
-  #result %<>%  
+  parallel::stopCluster(parallel_cluster)
+  parallel_cluster <- c()  
+  result %<>%  
     {
       .[!is.na(.)]
-    } #%>%
-    # MergeData_inList_byRow(.)
+    } %>%
+    MergeData_inList_byRow(.)
+  #
   if(!is.null(parallel_cluster)) {
     parallel::stopCluster(parallel_cluster)
     parallel_cluster <- c()
@@ -103,7 +101,7 @@
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
-#' @return result Лист с perfomance'ами по всем итерациям цикла 
+#' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
 TestStr_BruteForceOpt <- function(var.begin, var.end,
@@ -124,8 +122,8 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
     ) %>%
     {
       .[!is.na(.)]
-    } # %>%
-    # MergeData_inList_byRow(.)  
+    } %>%
+    MergeData_inList_byRow(.)  
   #
   return(result)
 }

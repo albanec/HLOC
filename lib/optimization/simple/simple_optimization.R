@@ -8,7 +8,7 @@
 #' @param var.begin Стартовое значение оптимизации
 #' @param var.end Конечное значение оптимизации
 #'
-#' @return result Лист с perfomance'ами по всем итерациям цикла 
+#' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
 SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
@@ -49,8 +49,8 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
     ) %>% 
     {
       .[!is.na(.)]
-    } #%>%
-    #MergeData_inList_byRow(.)
+    } %>%
+    MergeData_inList_byRow(.)
   #
   parallel::stopCluster(parallel_cluster)
   parallel_cluster <- c()
