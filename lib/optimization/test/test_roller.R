@@ -31,6 +31,7 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
   # подгрузка библиотек
   clusterEvalQ(parallel_cluster, {
     library(quantmod)
+    library(xts)
     library(magrittr)
     library(tidyr)
     library(PerformanceAnalytics)
@@ -48,10 +49,10 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
     lapply(
       date_slices$widthSlice, 
       function(x) {
-        temp_slice <<- x 
-        clusterExport(parallel_cluster, envir = .GlobalEnv, 
-          varlist = c('temp_slice')
-        )
+        temp_slice <- x 
+        #clusterExport(parallel_cluster, envir = .GlobalEnv, 
+        #  varlist = c('temp_slice')
+        #)
         result <- 
           vars %>%
           parLapply(

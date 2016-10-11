@@ -66,7 +66,7 @@ TestStr_gear <- function(data.source,
           data$sma > data.source$SPFB.SI.Close, -1, 0
         )
       )
-      last(data$sig) <- 0
+      data$sig[index(last(data$sig))] <- 0
       return(data)
     } %>%   
     na.omit(.) %>%  
@@ -275,6 +275,8 @@ TestStr_gear <- function(data.source,
         {
           data$state <- CalcState_Data(data)
           data$state[.] <- data$pos[.]
+          # условие закрытия сделок в конце торгового периода
+          data$state[index(last(data$state))] <- 0
           return(data$state)
         }
       return(data)  
