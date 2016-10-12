@@ -2,6 +2,39 @@
 # Движок тестовой стратегии:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
+TestStr_CalcN <- function(data) {
+  #FUN <- match.fun(FUN)
+  temp.env <- new.env()
+  ind <- 1:nrow(data)
+  n <- coredata(data$n)
+  pos <- coredata(data$pos)
+  pos.bars <- coredata(data$pos.bars)
+  pos.add <- coredata(data$pos.add)
+  assign('cache', n, envir = temp.env)
+  rm(data)
+  sapply(ind,
+         function(x) {
+           n <- get('cache', envir = temp.env)
+           #data[x, ] <- FUN(data, x, ...) 
+           n[x] <- ifelse(
+             pos[x] == 0,
+             0, 
+             ifelse(
+               pos.bars[x] == 0,
+               n[x] <- 4,
+               ifelse(
+                 pos.add[x] == 1,
+                 round(2 * n[x - 1]),
+                 round(0.5 * n[x - 1])
+               )
+             )
+           )
+           assign('cache', n, envir = temp.env) 
+         })
+  result <- get('cache', envir = temp.env)
+  rm(temp.env)
+  return(result)
+}
 ###
 #' Функция движка тестовой стратегии
 #' 
@@ -415,7 +448,6 @@ TestStr_gear <- function(data.source,
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
   data.state$balance <- NA
-  data.state$im.balance <- NA
   # начальное число синтетических контрактов корзины
   data.state$n <- NA
   # прочее
@@ -423,73 +455,50 @@ TestStr_gear <- function(data.source,
   data.state$margin <- NA
   data.state$commiss <- NA
   data.state$equity <- NA
+  data.state$equity[1] <- 0
   #
   ## 2.2 Расчёт самих сделок
   #
   cat("TestStrategy INFO:  Start Calculation Deals...", "\n")
-  for (n in 1:nrow(data.state)) {
-    # на первой строке рассчитываются стартовые значения
-    if (n == 1) {
-      data.state$balance[1] <- balance.start
-      data.state$im.balance[1] <- 0
-      data.state$commiss[1] <- 0
-      data.state$margin[1] <- 0
-      data.state$diff.n[1] <- 0
-      data.state$n[1] <- 0
-      data.state$equity[1] <- 0
-    } else {
-      ### основной расчёт
-      #индекс строки
-      temp.index <- index(data.state$state[n])
-      ## расчёт вариационки
-      data.state$margin[n] <- 
-        data.state$cret[[n]] * data.state$n[[n - 1]]
-      ## расчёт количества контрактов на такте
-      # если закрытие позиции, то контрактов ноль
-      if (data.state$pos[n] == 0) {
-        data.state$n[n] <- 0
-      } else {
-        # если открытие позиции, то
-        #if ((data.state$pos.add[n] + data.state$pos.drop[n]) == 0) {
-        if (data.state$pos.bars[n] == 0) {
-          data.state$n[n] <- 4
-        } else {
-          # если докупка
-          if (data.state$pos.add[n] == 1) {
-            data.state$n[n] <- 
-              {
-                2 * data.state$n[[n - 1]]
-              } %>%
-              round(.)
-          }
-          # если сброс
-          if (data.state$pos.drop[n] == 1) {
-            data.state$n[n] <- 
-              {
-                0.5 * data.state$n[[n - 1]]
-              } %>%
-              round(.)
-          }
-        }   
-      }
-      # изменение контрактов на такте
-      data.state$diff.n[n] <- data.state$n[[n]] - data.state$n[[n - 1]]
-      # расчёт баланса, заблокированного на ГО
-      data.state$im.balance[n] <- data.state$n[[n]] * coredata(data.source$IM[temp.index])
-      # комиссия на такте
-      data.state$commiss[n] <- basket.commiss * abs(data.state$diff.n[[n]])
-      # баланс на такте
-      data.state$balance[n] <- 
-        data.state$balance[[n - 1]] + data.state$margin[[n]] + 
-        data.state$im.balance[[n - 1]] - data.state$im.balance[[n]] - 
-        data.state$commiss[[n]]
+  #
+  data.state$n <- TestStr_CalcN(data = data.state)
+  # Изменение контрактов на такте
+  data.state$diff.n <- data.state$n - lag(data.state$n)
+  data.state$diff.n[1] <- 0
+  # Расчёт баланса, заблокированного на ГО
+  data.state$im.balance <- 
+    #индекс uniq state строк
+    index(data.state$state) %>%
+    unique(.) %>%
+    {
+      data.state$n * data.source$IM[.]
     }
-  }
-  cat("TestStrategy INFO:  Calculation Deals  OK", "\n")
+  data.state$im.balance %<>% 
+    is.na(.) %>%
+    {
+      data.state$im.balance[.] <- data.state$n[.] * data.source$IM[index(data.state$n[.])]
+      return(data.state$im.balance)
+    }
+  data.state$im.balance[1] <- 0                   
+  # Расчёт комиссии на такте
+  data.state$commiss <- basket.commiss * abs(data.state$diff.n)
+  data.state$commiss[1] <- 0
+  # Расчёт вариационки
+  data.state$margin <- 
+    data.state$cret * lag(data.state$n)
+  data.state$margin[1] <- 0
+  # Расчёт баланса 
+  data.state$balance <- 
+    balance.start + data.state$margin + 
+    lag(data.state$im.balance) - data.state$im.balance - 
+    data.state$commiss
+  data.state$balance[1] <- balance.start 
   #
   # расчёт equity по корзине в data.state
   data.state$perfReturn <- data.state$margin - data.state$commiss
   data.state$equity <- cumsum(data.state$perfReturn)
+  #
+  cat("TestStrategy INFO:  Calculation Deals  OK", "\n")
   #
   data %<>%  
     # перенос данных по количеству контрактов корзины в data

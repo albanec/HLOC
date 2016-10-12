@@ -4,7 +4,7 @@ source("main/test/linker.R")
 ### входные параметры
 # temp.dir <- "data/temp"
 from.date <- "2016-02-01"
-to.date <- "2016-02-02"
+to.date <- "2016-02-28"
 period <- "15min"
 tickers <- c("SPFB.Si")
 im.dir <- "data/im"
@@ -19,9 +19,11 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/F_SI_08-28.07.16_1min.csv")
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_source.csv")
 # выделение нужного периода
-data.source <- data.source["2016-02-01::2016-02-28"]
+data.source <- 
+  paste(from.date,'::',to.date, sep = "") %>%
+  data.source[.]
 # переход к нужному периоду свечей
 data.source <- ExpandData_toPeriod(x = data.source, per = "15min")
 data.source.list <- list(data.source)
