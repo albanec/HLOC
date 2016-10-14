@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = 'data/temp/F_SI_08-28.07.16_1min.csv')
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = '') %>%
@@ -57,7 +57,7 @@ system.time(
 # ## bf-оптимизация на обучающих данных 
 # system.time(
 #   {
-#     perfamanceTable_learning <- lapply(date_slices$widthSlice, 
+#     PerfomanceTable_learning <- lapply(date_slices$widthSlice, 
 #                                        function(x) {
 #                                          temp_slice <<- list(x) 
 #                                          Parallel_test(input_data = 'temp_slice',
@@ -70,7 +70,7 @@ system.time(
 # system.time(
 #   {
 #     cluster_data <- lapply(
-#       perfamanceTable_learning,
+#       PerfomanceTable_learning,
 #       function(x) {
 #         ## Подготовка к КА
 #         data_for_cluster <- CalcKmean_DataPreparation(data = x, n.mouth = 6, 

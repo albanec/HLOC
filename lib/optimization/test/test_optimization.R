@@ -182,6 +182,9 @@ TestStr_OneThreadRun <- function(data.source,
     #   }
     return()
   } else {
+    ### Формирование таблицы сделок
+    ## чистим от лишних записей
+    data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
       perfomanceTable <- 
@@ -191,14 +194,8 @@ TestStr_OneThreadRun <- function(data.source,
                             balance = balance.start, ret.type = 0, 
                             fast = TRUE)  
     } else {
-      ### Формирование таблицы сделок
-      ## чистим от лишних записей
-      data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-      # очистка мусора по target = 'temp'
-      CleanGarbage(target = 'temp', env = '.GlobalEnv')
-      #
       ### оценка perfomance-параметров
       perfomanceTable <- 
         CalcPerfomanceTable(data = data.strategy.list[[1]], 

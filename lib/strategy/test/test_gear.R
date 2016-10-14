@@ -2,7 +2,15 @@
 # Движок тестовой стратегии:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-TestStr_CalcN <- function(data) {
+###
+#' Функция расчёта числа контрактов в сделках (в state данных)
+#' 
+#' @param data XTS со state данными
+#'
+#' @return result Ряд данных с числом контрактов в сделках
+#'
+#' @export
+TestStr_calcDeals_inStates <- function(data) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
@@ -33,6 +41,7 @@ TestStr_CalcN <- function(data) {
          })
   result <- get('cache', envir = temp.env)
   rm(temp.env)
+  #
   return(result)
 }
 ###
@@ -461,7 +470,7 @@ TestStr_gear <- function(data.source,
   #
   cat("TestStrategy INFO:  Start Calculation Deals...", "\n")
   #
-  data.state$n <- TestStr_CalcN(data = data.state)
+  data.state$n <- TestStr_calcDeals_inStates(data = data.state)
   # Изменение контрактов на такте
   data.state$diff.n <- data.state$n - lag(data.state$n)
   data.state$diff.n[1] <- 0
@@ -484,49 +493,52 @@ TestStr_gear <- function(data.source,
   data.state$commiss <- basket.commiss * abs(data.state$diff.n)
   data.state$commiss[1] <- 0
   # Расчёт вариационки
-  data.state$margin <- 
-    data.state$cret * lag(data.state$n)
+  data.state$margin <- data.state$cret * lag(data.state$n)
   data.state$margin[1] <- 0
-  # Расчёт баланса 
-  data.state$balance <- 
-    balance.start + data.state$margin + 
-    lag(data.state$im.balance) - data.state$im.balance - 
-    data.state$commiss
-  data.state$balance[1] <- balance.start 
-  #
   # расчёт equity по корзине в data.state
   data.state$perfReturn <- data.state$margin - data.state$commiss
   data.state$equity <- cumsum(data.state$perfReturn)
+  # Расчёт баланса 
+  data.state$balance <- balance.start + data.state$equity - data.state$im.balance
+  data.state$balance[1] <- balance.start 
   #
   cat("TestStrategy INFO:  Calculation Deals  OK", "\n")
   #
-  data %<>%  
-    # перенос данных по количеству контрактов корзины в data
+  ## Перенос данных из state в full таблицу
+  # перенос данных по количеству контрактов корзины 
+  data$n <-  
+    merge(data, data.state$n) %>%
     {
-      merge(., data.state$n) %>%
-      {
-        data <- .
-        data$n <- na.locf(data$n)
-        return(data)
-      }
-    } %>%
-    # расчёт вариационки в data
+      data <- .
+      data$n <- na.locf(data$n)
+      return(data$n)
+    }
+  # перенос данных по комиссии корзины
+  data$commiss <-    
+    merge(data, data.state$commiss) %>%
     {
-      merge(., data.state$commiss) %>%
-      {
-        data <- .
-        data$commiss[is.na(data$commiss)] <- 0
-        data$margin <- lag(data$n) * data$cret
-        data$margin[1] <- 0
-        return(data)
-      } 
-    }  
-  #
+      data <- .
+      data$commiss[is.na(data$commiss)] <- 0
+      return(data$commiss)
+    }
+  # перенос данных по суммарному ГО
+  data$im.balance <-  
+    merge(data, data.state$im.balance) %>%
+    {
+      data <- .
+      data$im.balance <- na.locf(data$im.balance)
+      return(data$im.balance)
+    }
+  ## Расчёт показателей в full данных
+  # расчёт вариационки в data
+  data$margin <- lag(data$n) * data$cret
+  data$margin[1] <- 0      
   # расчёт equity по корзине в data 
   data$perfReturn <- data$margin - data$commiss
   data$equity <- cumsum(data$perfReturn)
   # расчёт баланса
-  data$balance <- balance.start + data$equity
+  data$balance <- balance.start + data$equity - data$im.balance
+  data$balance[1] <- balance.start 
   #
   # расчёт n, margin и equity по инструментам в data и data.state 
   for (i in 1:length(data.names)) {
@@ -539,12 +551,12 @@ TestStr_gear <- function(data.source,
           "data.state$",.,".diff.n <- diff(data.state$",.,".n) ; ",
           "data.state$",.,".diff.n[1] <- 0 ; ",
           "data.state$",.,".commiss <- commissions[i] * abs(data.state$",.,".diff.n) ; ",
-          "data.state$",.,".margin <- ",
-          "data.state$",.,".cret * lag(data.state$",.,".n) ; ",
+          #"data.state$",.,".im.balance <- NA",
+          "data.state$",.,".margin <- data.state$",.,".cret * lag(data.state$",.,".n) ; ",
           "data.state$",.,".margin[1] <- 0 ; ",
           "data.state$",.,".perfReturn <- data.state$",.,".margin - data.state$",.,".commiss ;",
           "data.state$",.,".equity <- cumsum(data.state$",.,".perfReturn) ;",
-          "data.state$",.,".balance <- balance.start + data.state$",.,".equity ;",
+          #"data.state$",.,".balance <- balance.start + data.state$",.,".equity ;",
           # расчёт для data  
           "data$",.,".n <- ", 
           "merge(data, data.state$",.,".n) %$% ",
@@ -554,9 +566,10 @@ TestStr_gear <- function(data.source,
           "data$",.,".margin[1] <- 0 ; ",
           "data <- merge(data, data.state$",.,".commiss) ; ",
           "data$",.,".commiss[is.na(data$",.,".commiss)] <- 0 ; ",
+          #"data$",.,".im.balance <- NA",
           "data$",.,".perfReturn <- data$",.,".margin - data$",.,".commiss ;",
           "data$",.,".equity <- cumsum(data$",.,".perfReturn) ;",
-          "data$",.,".balance <- balance.start + data$",.,".equity ;",
+          #"data$",.,".balance <- balance.start + data$",.,".equity ;",
           sep = "")
         return(t)
       }    

@@ -58,7 +58,7 @@ data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.
 # ## BruteForce оптимизация 
 # system.time(
 #   {
-#     perfamanceTable.one <- SimpleStr_BruteForceOpt(var.begin = 1, var.end = 100,
+#     perfomanceTable.one <- SimpleStr_BruteForceOpt(var.begin = 1, var.end = 100,
 #                                                    data.source = data.source.list[[1]], 
 #                                                    add.per, k.mm, balance.start, 
 #                                                    basket.weights, sleeps, commissions, ret.type)
@@ -68,7 +68,7 @@ data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    perfamanceTable <- SimpleStr_Parallel_BruteForceOpt(
+    perfomanceTable <- SimpleStr_Parallel_BruteForceOpt(
       var.begin = 1, var.end = 100,
       data.source = data.source.list[[1]], 
       add.per, k.mm, balance.start, 
@@ -77,5 +77,5 @@ system.time(
   }
 )
 #
-perfamanceTable <- MergeData_inList_byRow(perfamanceTable)
+perfomanceTable <- MergeData_inList_byRow(perfomanceTable)
 #

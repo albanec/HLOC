@@ -121,7 +121,8 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
 SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]], 
                                    sma.per, add.per, k.mm, basket.weights, 
                                    sleeps, commissions, 
-                                   balance.start, ret.type) {
+                                   balance.start, ret.type,
+                                   rolling_opt = FALSE) {
   ### отработка тестового робота
   data.strategy.list <- SimpleStr_gear(data.source,
                                        sma.per, add.per, k.mm, 
@@ -135,18 +136,28 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
     ### Формирование таблицы сделок
     ## чистим от лишних записей
     data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
-    ## лист с данными по сделкам (по тикерам и за всю корзину)
-    dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
-    # очистка мусора по target = "temp"
-    CleanGarbage(target = "temp", env = ".GlobalEnv")
-    #
-    ### оценка perfomance-параметров
-    perfomanceTable <- 
-      CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                          data.state = data.strategy.list[[2]],
-                          dealsTable = dealsTable.list,
-                          balance = balance.start, 
-                          ret.type = ret.type)
+    if (rolling_opt == TRUE) {
+      ### оценка perfomance-параметров
+      perfomanceTable <- 
+        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                            data.state = 0,
+                            dealsTable = 0,
+                            balance = balance.start, ret.type = 0, 
+                            fast = TRUE) 
+    } else {
+      ## лист с данными по сделкам (по тикерам и за всю корзину)
+      dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+      # очистка мусора по target = "temp"
+      CleanGarbage(target = "temp", env = ".GlobalEnv")
+      # 
+      ### оценка perfomance-параметров
+      perfomanceTable <- 
+        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                            data.state = data.strategy.list[[2]],
+                            dealsTable = dealsTable.list,
+                            balance = balance.start, 
+                            ret.type = ret.type)  
+    }
   }
   perfomanceTable %<>% 
     # добавление использованных параметров

@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/F_SI_08-28.07.16_1min.csv")
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_data.csv")
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = "") %>%
@@ -48,7 +48,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ### BruteForce оптимизация (в один поток)
 # system.time(
 #   {
-#     perfamanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
+#     PerfomanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
 #                                              data.source = data.source.list[[1]], 
 #                                              add.per, k.mm, balance.start, 
 #                                              basket.weights, sleeps, commissions, ret.type,
@@ -59,7 +59,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    perfamanceTable <- TestStr_BruteForceOpt_Parallel(
+    PerfomanceTable <- TestStr_BruteForceOpt_Parallel(
       #input_data = 'data.source.list',
       sma_begin = 10, sma_end = 100, sma_step = 1,
       rolling_opt = FALSE
@@ -69,10 +69,10 @@ system.time(
   }
 )
 #
-perfamanceTable <- MergeData_inList_byRow(perfamanceTable)
+PerfomanceTable <- MergeData_inList_byRow(PerfomanceTable)
 ### КА
 ## Подготовка к КА
-data_for_cluster <- CalcKmean_DataPreparation(data = perfamanceTable, n.mouth = 12, 
+data_for_cluster <- CalcKmean_DataPreparation(data = PerfomanceTable, n.mouth = 12, 
                                               hi = TRUE, q.hi = 0.5, 
                                               one.scale = TRUE)
 data_for_cluster$profit <- NULL
