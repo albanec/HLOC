@@ -65,10 +65,11 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
       parallel_cluster,
       ., 
       function(x){
-        TestStr_OneThreadRun(data.source = data.source.list[[1]],
-                             sma.per = x, add.per = 10, k.mm, balance.start, 
-                             basket.weights, sleeps, commissions, ret.type,
-                             rolling_opt)
+        TestStr_OneThreadRun(data.xts = data.source.list[[1]],
+                             sma.per = x, add.per = 10, k.mm, basket.weights,
+                             sleeps, commissions, 
+                             balance.start, ret.type,
+                             rolling_opt) 
       }
     )
   stopCluster(parallel_cluster)
@@ -105,20 +106,21 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
 #'
 #' @export
 TestStr_BruteForceOpt <- function(var.begin, var.end,
-                                  data.source, add.per, k.mm, balance.start, 
-                                  basket.weights, sleeps, commissions, ret.type,
+                                  data.xts, add.per, k.mm, basket.weights, 
+                                  sleeps, commissions, 
+                                  balance.start, ret.type,
                                   rolling_opt = FALSE) {
   #
   result <- 
-    var.begin:var.end %>%
-    lapply(
-      ., 
-      function(x){
-        TestStr_OneThreadRun(data.source = data.source.list[[1]],
-                             sma.per = x, add.per, k.mm, balance.start, 
-                             basket.weights, sleeps, commissions, ret.type,
-                             rolling_opt)
-      }
+    var.begin:var.end %>% 
+    lapply(., 
+           function(x){
+             TestStr_OneThreadRun(data.xts = data.xts,
+                                  sma.per = x, add.per, k.mm, basket.weights,
+                                  sleeps, commissions, 
+                                  balance.start, ret.type,
+                                  rolling_opt) 
+           }
     ) %>%
     {
       .[!is.na(.)]
@@ -131,7 +133,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 ###
 #' Функция одного прогона вычислений движка test стратегии
 #' 
-#' @param data XTS с котировками
+#' @param data.xts XTS с котировками
 #' @param sma.per Периоды SMA
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
@@ -143,14 +145,14 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr_OneThreadRun <- function(data, 
+TestStr_OneThreadRun <- function(data.xts, 
                                  sma.per, add.per, k.mm, basket.weights, 
                                  sleeps, commissions,
                                  balance.start, ret.type, 
                                  rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
-  data.strategy.list <- TestStr_gear(data.source = data,
+  data.strategy.list <- TestStr_gear(data.source = data.xts,
                                      sma.per, add.per, k.mm, balance.start, 
                                      basket.weights, sleeps, commissions)
   ## Анализ perfomanc'ов

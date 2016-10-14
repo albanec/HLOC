@@ -49,7 +49,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 # system.time(
 #   {
 #     PerfomanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
-#                                              data.source = data.source.list[[1]], 
+#                                              data.xts = data.source.list[[1]], 
 #                                              add.per, k.mm, balance.start, 
 #                                              basket.weights, sleeps, commissions, ret.type,
 #                                              rolling_opt = FALSE)
