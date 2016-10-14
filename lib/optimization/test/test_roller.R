@@ -1,10 +1,10 @@
-TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list', 
-                              sma_begin, sma_end, sma_step,
-                              # add.per_begin, add.per_end, add.per_step,
-                              rolling_opt = FALSE, ...) {
-                              #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
-                              #         add.per_begin, add.per_end, add.per_step,
-                              #         rolling_opt = FALSE, ...) {
+TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.source.list', 
+                                           sma_begin, sma_end, sma_step,
+                                           # add.per_begin, add.per_end, add.per_step,
+                                           rolling_opt = FALSE, ...) {
+                                           #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
+                                           #         add.per_begin, add.per_end, add.per_step,
+                                           #         rolling_opt = FALSE, ...) {
   #
   require(parallel)
   # Формирование параметров оптимизации
@@ -45,11 +45,11 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
       'basket.weights', 'sleeps', 'commissions', 'ret.type'
     )
   )
-  bf_data <-
+  bf_data.list <-
     lapply(
-      date_slices$widthSlice, 
+      data_slices$widthSlice, 
       function(x) {
-        temp_slice <- x 
+        data_slice <- x 
         #clusterExport(parallel_cluster, envir = .GlobalEnv, 
         #  varlist = c('temp_slice')
         #)
@@ -59,10 +59,11 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
             parallel_cluster,
             ., 
             function(x){
-              TestStr_OneThreadRun(data.source = temp_slice,
-                                   sma.per = x, add.per = 10, k.mm, balance.start, 
-                                   basket.weights, sleeps, commissions, ret.type,
-                                   rolling_opt)
+              TestStr_OneThreadRun(data.xts = data_slice,
+                                   sma.per = x, add.per = 10, k.mm, basket.weights,
+                                   sleeps, commissions,
+                                   balance.start, ret.type,
+                                   rolling_opt = TRUE)
             }
           ) 
         result %<>%
@@ -76,8 +77,8 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
   stopCluster(parallel_cluster)
   parallel_cluster <- c()  
   #
-  cluster_data <- lapply(
-    bf_data,
+  cluster_data.list <- lapply(
+    bf_data.list,
     function(x) {
       ## Подготовка к КА
       data_for_cluster <- CalcKmean_DataPreparation(data = x, n.mouth = 6, 
@@ -90,7 +91,7 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
                                             plusplus = FALSE, test.range = 30)
       ## Вычисление самох кластеров
       clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
-                                    plusplus = FALSE, var.digits = 2)
+                                  plusplus = FALSE, var.digits = 0)
     } 
   )  
   #
@@ -98,6 +99,7 @@ TestStr_RollerOpt <- function(date_slices, #input_data = 'data.source.list',
     stopCluster(parallel_cluster)
     parallel_cluster <- c()
   }
+  result <- cluster_data.list
   #  
   return(result)
 }

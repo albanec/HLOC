@@ -201,9 +201,9 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @return result.list Лист с данными, разложенными по индексам окон
 #'
 #' @export 
-RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 
-                                     width, by = NULL, align = c('left', 'right'),
-                                     add_bySlice = FALSE, lookback = FALSE) {
+RollingSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 
+                                 width, by = NULL, align = c('left', 'right'),
+                                 add_bySlice = FALSE, lookback = FALSE) {
   ## подготовка
   n_rows <- nrow(data)
   n_cols <- ncol(data)
@@ -278,7 +278,7 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
         nrow(temp_subset) %>%
         (width + 1):. %>%
         temp_subset[., ]
-      bySlice.list <- RollingTimeSlicer_forXTS(data = temp_subset, start_date, end_date, period = NULL, 
+      bySlice.list <- RollingSlicer_forXTS(data = temp_subset, start_date, end_date, period = NULL, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
@@ -385,7 +385,7 @@ RollingTimeSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
         } %>%
         temp_subset[.] %>%
         .[-1, ]
-      bySlice.list <- RollingTimeSlicer_forXTS(data = temp_subset, start_date, end_date, period, 
+      bySlice.list <- RollingSlicer_forXTS(data = temp_subset, start_date, end_date, period, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)

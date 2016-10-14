@@ -152,7 +152,7 @@ CalcDrawdownDataSet <- function(data, fullData = FALSE) {
 #'
 #' Функция возращает таблицу данных одному dd
 #' 
-#' @param data Данные balance
+#' @param data Данные dd
 #' @param n Номер dd
 #' 
 #' @return dd.summary df, содержащий данные по dd c номером n

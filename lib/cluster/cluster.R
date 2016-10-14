@@ -71,7 +71,13 @@ CalcKmean_DataPreparation <- function(data, n.mouth ,
 #' @export
 CalcKmean_Parameters <- function(data, test.range = 30, iter.max = 100, plusplus = FALSE) {
   #
-  cluster.range <- 2:test.range
+  n <- nrow(data)
+  if (n < test.range) {
+    cluster.range <- 2:(n - 1)
+  } else {
+    cluster.range <- 2:test.range 
+  }
+  #cat(cluster.range)
   #Isolate required features
   data$profit <- NULL
   data$draw <- NULL
