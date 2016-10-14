@@ -131,7 +131,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 ###
 #' Функция одного прогона вычислений движка test стратегии
 #' 
-#' @param data.souce XTS с котировками
+#' @param data XTS с котировками
 #' @param sma.per Периоды SMA
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
@@ -143,16 +143,16 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr_OneThreadRun <- function(data.source, 
+TestStr_OneThreadRun <- function(data, 
                                  sma.per, add.per, k.mm, basket.weights, 
                                  sleeps, commissions,
                                  balance.start, ret.type, 
                                  rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
-  data.strategy.list <- TestStr_gear(data.source, sma.per, add.per, k.mm, 
-                                     basket.weights, sleeps, commissions,
-                                     balance.start)
+  data.strategy.list <- TestStr_gear(data.source = data,
+                                     sma.per, add.per, k.mm, balance.start, 
+                                     basket.weights, sleeps, commissions)
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
   if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
@@ -187,22 +187,20 @@ TestStr_OneThreadRun <- function(data.source,
     data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
-      perfomanceTable <- 
-        CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                            data.state = 0,
-                            dealsTable = 0,
-                            balance = balance.start, ret.type = 0, 
-                            fast = TRUE)  
+      perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                                             data.state = 0,
+                                             dealsTable = 0,
+                                             balance = balance.start, ret.type = 0, 
+                                             fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
       ### оценка perfomance-параметров
-      perfomanceTable <- 
-        CalcPerfomanceTable(data = data.strategy.list[[1]], 
-                            data.state = data.strategy.list[[2]],
-                            dealsTable = dealsTable.list,
-                            balance = balance.start, 
-                            ret.type)  
+      perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+                                             data.state = data.strategy.list[[2]],
+                                             dealsTable = dealsTable.list,
+                                             balance = balance.start, 
+                                             ret.type)  
     }
   }
   perfomanceTable %<>%

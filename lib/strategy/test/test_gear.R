@@ -464,7 +464,6 @@ TestStr_gear <- function(data.source,
   data.state$margin <- NA
   data.state$commiss <- NA
   data.state$equity <- NA
-  data.state$equity[1] <- 0
   #
   ## 2.2 Расчёт самих сделок
   #
@@ -497,7 +496,9 @@ TestStr_gear <- function(data.source,
   data.state$margin[1] <- 0
   # расчёт equity по корзине в data.state
   data.state$perfReturn <- data.state$margin - data.state$commiss
+  data.state$perfReturn[1] <- 0
   data.state$equity <- cumsum(data.state$perfReturn)
+  data.state$equity[1] <- 0
   # Расчёт баланса 
   data.state$balance <- balance.start + data.state$equity - data.state$im.balance
   data.state$balance[1] <- balance.start 
