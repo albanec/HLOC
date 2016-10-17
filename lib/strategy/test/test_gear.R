@@ -99,7 +99,7 @@ TestStr_gear <- function(data.source,
       #data$sma <- 
       #  SMA(data.source$SPFB.SI.Close, sma.per) %>%
       #  round(., digits = 0)
-      data$sma <- CalcSMA(x = data.source$SPFB.SI.Close, per = sma.per)
+      data$sma <- CalcIndicator_SMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse(
         data$sma < data.source$SPFB.SI.Close, 
@@ -194,8 +194,7 @@ TestStr_gear <- function(data.source,
               function(x) {
                 temp <- abs(sign(which(data$sig.num == x)))
                 temp[1] <- 0
-                xts(x = cumsum(temp), order.by = index(data$sig.num[data$sig.num == x])
-                )
+                xts(x = cumsum(temp), order.by = index(data$sig.num[data$sig.num == x]))
               }
             ) %>% 
             MergeData_inList_byRow(.)

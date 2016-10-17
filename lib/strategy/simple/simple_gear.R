@@ -56,7 +56,7 @@ SimpleStr_gear <- function(data.source,
       cat("TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
       # тикер-индикатор: SI        
       #data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-      data$sma <- CalcSMA(x = data.source$SPFB.SI.Close, per = sma.per)
+      data$sma <- CalcIndicator_SMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse(
         data$sma < data.source$SPFB.SI.Close, 1, 

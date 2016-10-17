@@ -2,6 +2,8 @@
 # описания стратегий и вспомагательных функций
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
+### Загрузка дочерних библиотек
+source("lib/strategy/strategy_indicators.R")
 ###
 #' Переход к состояниям (фильтрация сигналов)
 #' 
@@ -324,21 +326,3 @@ NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.pri
   return(data)
 }
 #
-###
-#' Функция для расчёта SMA
-#' 
-#' @param x XTS
-#' @param per Период SMA
-#' @param digits Округление до знаков после точки
-#'
-#' @return x XTS ряд со значениями SMA
-#'
-#' @export
-CalcSMA <- function(x, per, digits = 0, ...) {
-  #
-  x <- 
-    SMA(x = x, n = per) %>%
-    round(., digits = digits)
-  #
-  return(x)
-}
