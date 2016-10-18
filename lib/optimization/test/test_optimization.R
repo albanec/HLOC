@@ -39,7 +39,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
       'data.source.list', 
       'add.per',
       'k.mm', 'balance.start', 
-      'basket.weights', 'sleeps', 'commissions', 'ret.type'
+      'basket.weights', 'slips', 'commissions', 'ret.type'
     )
   )
   # Формирование параметров оптимизации
@@ -67,7 +67,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
       function(x){
         TestStr_OneThreadRun(data.xts = data.source.list[[1]],
                              sma.per = x, add.per = 10, k.mm, basket.weights,
-                             sleeps, commissions, 
+                             slips, commissions, 
                              balance.start, ret.type,
                              rolling_opt) 
       }
@@ -98,7 +98,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
 #' @param basket.weights Веса корзины (вектор)
-#' @param sleeps Слипы (вектор)
+#' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
@@ -107,7 +107,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
 #' @export
 TestStr_BruteForceOpt <- function(var.begin, var.end,
                                   data.xts, add.per, k.mm, basket.weights, 
-                                  sleeps, commissions, 
+                                  slips, commissions, 
                                   balance.start, ret.type,
                                   rolling_opt = FALSE) {
   #
@@ -117,7 +117,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
            function(x){
              TestStr_OneThreadRun(data.xts = data.xts,
                                   sma.per = x, add.per, k.mm, basket.weights,
-                                  sleeps, commissions, 
+                                  slips, commissions, 
                                   balance.start, ret.type,
                                   rolling_opt) 
            }
@@ -138,7 +138,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
 #' @param basket.weights Веса корзины (вектор)
-#' @param sleeps Слипы (вектор)
+#' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
@@ -147,14 +147,14 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @export
 TestStr_OneThreadRun <- function(data.xts, 
                                  sma.per, add.per, k.mm, basket.weights, 
-                                 sleeps, commissions,
+                                 slips, commissions,
                                  balance.start, ret.type, 
                                  rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
   data.strategy.list <- TestStr_gear(data.source = data.xts,
                                      sma.per, add.per, k.mm, balance.start, 
-                                     basket.weights, sleeps, commissions)
+                                     basket.weights, slips, commissions)
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
   if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {

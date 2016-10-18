@@ -42,7 +42,7 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
     varlist = c(
       'add.per',
       'k.mm', 'balance.start', 
-      'basket.weights', 'sleeps', 'commissions', 'ret.type'
+      'basket.weights', 'slips', 'commissions', 'ret.type'
     )
   )
   bf_data.list <-
@@ -61,7 +61,7 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
             function(x){
               TestStr_OneThreadRun(data.xts = data_slice,
                                    sma.per = x, add.per = 10, k.mm, basket.weights,
-                                   sleeps, commissions,
+                                   slips, commissions,
                                    balance.start, ret.type,
                                    rolling_opt = TRUE)
             }

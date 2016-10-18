@@ -14,7 +14,7 @@ add.per <- 10
 basket.weights <- c(1,1,1) # количество инструментов в портфеле
 balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
-sleeps <- c(6, 20, 0.06) # в пунктах
+slips <- c(6, 20, 0.06) # в пунктах
 commissions <- c(2, 2, 2)  # в рублях
 #
 ### загрузка данных
@@ -58,7 +58,7 @@ data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.
 ### отработка тестового робота
 data.strategy.list <- SimpleStr_gear(data.source = data.source.list[[1]],
                                           sma.per, add.per, k.mm, balance.start, 
-                                          basket.weights, sleeps, commissions)
+                                          basket.weights, slips, commissions)
 #
 ### формирование таблицы сделок
 ## чистим от лишних записей

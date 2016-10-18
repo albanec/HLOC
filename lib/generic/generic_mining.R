@@ -395,3 +395,17 @@ RollingSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
   #
   return(result.list)
 }
+#
+CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
+   ends <- endpoints(x, on, k) 
+   if (findFirst == TRUE) {
+    # модификация (перенос endpoint'ов на начало периода)
+    ends <- 
+      ends[-length(ends)] %>%
+      {
+        . + 1 
+      }
+  }
+  #
+  return(ends)
+}

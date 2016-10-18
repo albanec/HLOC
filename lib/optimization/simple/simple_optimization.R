@@ -32,7 +32,7 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
     varlist = c(
       "data.source.list", 
       "add.per", "k.mm", "balance.start", 
-      "basket.weights", "sleeps", "commissions", "ret.type"
+      "basket.weights", "slips", "commissions", "ret.type"
     )
   )
   #
@@ -44,7 +44,7 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
       function(x){
         SimpleStr_OneThreadRun(data.source = data.source.list[[1]],
                                sma.per = x, add.per, k.mm, balance.start, 
-                               basket.weights, sleeps, commissions, ret.type)
+                               basket.weights, slips, commissions, ret.type)
       }
     ) 
   #
@@ -74,7 +74,7 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
 #' @param basket.weights Веса корзины (вектор)
-#' @param sleeps Слипы (вектор)
+#' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
@@ -83,7 +83,7 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
 #' @export
 SimpleStr_BruteForceOpt <- function(var.begin, var.end,
                                     data.source, add.per, k.mm, balance.start, 
-                                    basket.weights, sleeps, commissions, ret.type) {
+                                    basket.weights, slips, commissions, ret.type) {
   #
   result <- 
     var.begin:var.end %>%
@@ -92,7 +92,7 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
       function(x){
         SimpleStr_OneThreadRun(data.source = data.source.list[[1]],
                                sma.per = x, add.per, k.mm, balance.start, 
-                               basket.weights, sleeps, commissions, ret.type)
+                               basket.weights, slips, commissions, ret.type)
       }
     ) %>%
     {
@@ -111,7 +111,7 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
 #' @param add.per Период докупок
 #' @param k.mm Коэффициент MM
 #' @param basket.weights Веса корзины (вектор)
-#' @param sleeps Слипы (вектор)
+#' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
 #' @param balance.start Стартовый баланс
 #'
@@ -120,13 +120,13 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
 #' @export
 SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]], 
                                    sma.per, add.per, k.mm, basket.weights, 
-                                   sleeps, commissions, 
+                                   slips, commissions, 
                                    balance.start, ret.type,
                                    rolling_opt = FALSE) {
   ### отработка тестового робота
   data.strategy.list <- SimpleStr_gear(data.source,
                                        sma.per, add.per, k.mm, 
-                                       basket.weights, sleeps, commissions,
+                                       basket.weights, slips, commissions,
                                        balance.start)
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок

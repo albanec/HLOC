@@ -14,7 +14,7 @@ add.per <- 10
 basket.weights <- c(1,0,0) # количество инструментов в портфеле
 balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
-sleeps <- c(0, 0, 0) # в пунктах
+slips <- c(0, 0, 0) # в пунктах
 commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
@@ -51,7 +51,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 #     PerfomanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
 #                                              data.xts = data.source.list[[1]], 
 #                                              add.per, k.mm, balance.start, 
-#                                              basket.weights, sleeps, commissions, ret.type,
+#                                              basket.weights, slips, commissions, ret.type,
 #                                              rolling_opt = FALSE)
 #   }
 # )
@@ -64,7 +64,7 @@ system.time(
       sma_begin = 10, sma_end = 100, sma_step = 1,
       rolling_opt = FALSE
       #add.per, k.mm, balance.start, 
-      #basket.weights, sleeps, commissions, ret.type
+      #basket.weights, slips, commissions, ret.type
     )
   }
 )

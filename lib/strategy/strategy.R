@@ -68,18 +68,21 @@ CrossLine_inXTS <- function(x1,x2) {
 #' @return data$state Ряд состояний
 #'
 #' @export
-CalcState_Data <- function(data) {
+CalcState_Data <- function(x) {
   require(quantmod) 
   # ----------
-  data$pos <-
-    na.locf(data$pos) %>%
-    ifelse(is.na(.) | is.nan(.) | is.infinite(.), 0, .)
-  ind <- which(data$pos != lag(data$pos))
-  data$state <- rep(NA, length(data$pos))
-  data$state[ind] <- data$pos[ind]
-  data$state[1] <- data$pos[1]
+  x <-
+    na.locf(x) %>%
+    {
+      ifelse(is.na(.) | is.nan(.) | is.infinite(.), 0, .)
+    } %>%
+    xts(., order.by = index(x))
+  ind <- which(x != lag(x))
+  result <- rep(NA, length(x))
+  result[ind] <- x[ind]
+  result[1] <- x[1]
   #
-  return(data$state)
+  return(result)
 }
 #
 ###
@@ -327,6 +330,9 @@ NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.pri
 }
 #
 SplitSwitchPosition <- function(data) {    
+  ## Точки смены позиций
+  data$action <- diff(data$pos)
+  data$action[1] <- data$pos[1]
   # индекс строки-переворота
   temp.ind <- index(data[data$action == 2 | data$action == -2])
   if (length(temp.ind) == 0) {
@@ -350,7 +356,7 @@ SplitSwitchPosition <- function(data) {
     data$action[temp.ind] <- abs(sign(data$action[temp.ind]))
     data$pos.num[temp.ind] <- data$pos.num[temp.ind] - 1
     # правильное заполнение поля $pos.bars
-    temp.ind.num <- data[temp.ind, which.i=TRUE]
+    temp.ind.num <- data[temp.ind, which.i = TRUE]
     data$pos.bars[temp.ind] <- data$pos.bars[temp.ind.num - 1] 
     data <- rbind(data, temp)   
     rm(temp.ind)

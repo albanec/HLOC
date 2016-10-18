@@ -53,7 +53,7 @@ TestStr_calcDeals_inStates <- function(data) {
 #' @param k.mm Коэффициент MM
 #' @param balance.start Стартовый баланс
 #' @param basket.weights Веса корзины (вектор)
-#' @param sleeps Слипы
+#' @param slips Слипы
 #' @param commissions Комиссии (вектор)
 #'
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
@@ -62,7 +62,7 @@ TestStr_calcDeals_inStates <- function(data) {
 TestStr_gear <- function(data.source,
                          sma.per, add.per, 
                          k.mm, balance.start, 
-                         basket.weights, sleeps, commissions) {
+                         basket.weights, slips, commissions) {
   # Зависимости:
   require(quantmod)
   # 
@@ -314,7 +314,7 @@ TestStr_gear <- function(data.source,
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- CalcState_Data(data)
+          data$state <- CalcState_Data(x = data$pos)
           data$state[.] <- data$pos[.]
           # условие закрытия сделок в конце торгового периода
           data$state[index(last(data$state))] <- 0
@@ -407,7 +407,7 @@ TestStr_gear <- function(data.source,
           "data.state$",.,".Open <- ", 
           "merge(data.state, data.source$",.,".Open[data.state.ind]) %$% ",
           "na.locf(",.,".Open) %>% 
-          { . + sleeps[i] * data.state$state } ; ",
+          { . + slips[i] * data.state$state } ; ",
           # перенос Open'ов в data 
           "data$",.,".Open <- ", 
           "merge(data, data.source$",.,".Open[data.ind]) %$% ",
