@@ -326,3 +326,81 @@ NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.pri
   return(data)
 }
 #
+SplitSwitchPosition <- function(data) {    
+  # индекс строки-переворота
+  temp.ind <- index(data[data$action == 2 | data$action == -2])
+  if (length(temp.ind) == 0) {
+    cat("TestStrategy INFO: No Switch Position there", "\n")
+    rm(temp.ind)
+  } else {
+    cat("TestStrategy INFO:  Split SwitchPosition...", "\n") 
+    # temp копия нужных строк (строки начала новой сделки)
+    temp <- 
+      data[temp.ind] %>% 
+      { 
+        x <- .
+        x$pos <- sign(x$action)  
+        # x$state <- sign(x$action)  
+        x$action <- abs(sign(x$action))  
+        return(x)
+      }
+    # cтроки предыдущей сделки
+    data$pos[temp.ind] <- 0
+    # data$state[temp.ind] <- sign(data$action[temp.ind])
+    data$action[temp.ind] <- abs(sign(data$action[temp.ind]))
+    data$pos.num[temp.ind] <- data$pos.num[temp.ind] - 1
+    # правильное заполнение поля $pos.bars
+    temp.ind.num <- data[temp.ind, which.i=TRUE]
+    data$pos.bars[temp.ind] <- data$pos.bars[temp.ind.num - 1] 
+    data <- rbind(data, temp)   
+    rm(temp.ind)
+  }
+  #
+  return(data)
+}
+#
+CalcBarsNum_inPos <- function(x) {
+  result <-   
+    # вектор, содержащий номера позиций
+    unique(x) %>%
+    # нумерация тиков внутри состояний сигналов
+    {
+      if (length(.) == 1) {
+        .
+      } else {
+        sapply(
+          ., 
+          function(var) {
+            temp <- abs(sign(which(x == var)))
+            temp[1] <- 0
+            xts(x = cumsum(temp), order.by = index(x[x == var]))
+          }
+        ) %>% 
+        MergeData_inList_byRow(.)
+      }
+    }
+  #
+  return(result)
+}
+#
+CalcPosNum <- function(x) {
+  action <- diff(x)
+  action[1] <- x[1]
+  result <- 
+    abs(sign(action)) %>%
+    # защита от нумерации позиций "вне рынка"
+    {
+      abs(sign(x)) * . 
+    } %>%
+    cumsum(.) %>%
+    # защита от нумераций пачек нулевых позиций
+    {
+      temp <- action
+      temp[1] <- 0
+      temp <- abs(sign(temp))
+      x <- . * sign(temp + abs(x))
+      return(x)
+    }
+  #
+  return(result)
+}
