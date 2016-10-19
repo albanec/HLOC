@@ -25,24 +25,6 @@ Convert_SigToState <- function(x) {
 }
 #
 ###
-#' Вычисляет пересечения графиков векторов
-#' 
-#' @param x1 Вектор1
-#' @param x2 Вектор2
-#'
-#' @return x Вектор пересечений
-#'
-#' @export
-CrossLine_forVector <- function(x1, x2) {
-  x <- diff(x1 > x2)
-  x[1] <- 0
-  x[x < 0] <- 0
-  x <- as.logical(c(0, x))
-  #
-  return(x)
-}
-#
-###
 #' Вычисляет пересечения графиков рядов
 #'
 #' Вычисляются пересечения x1 "снизу-вверх" x2 (точки пробития вверх x2)
@@ -53,13 +35,33 @@ CrossLine_forVector <- function(x1, x2) {
 #' @return x Ряд пересечений
 #'
 #' @export
-CrossLine_inXTS <- function(x1, x2) {
-  x <- diff(x1 > x2)
+CrossLine <- function(x1, x2, eq = FALSE) {
+  if (eq == TRUE) {
+    x <- diff(x1 >= x2)
+  } else {
+    x <- diff(x1 > x2)
+  }
   x[1] <- 0
   x[x < 0] <- 0
   x <- sign(x)
   #
   return(x)
+}
+#
+#' Надстройка нал CrossLine для удобства
+#' @export
+CrossLine_up <- function(x1, x2, eq = FALSE) {
+  result <- CrossLine(x1, x2, eq)
+  #
+  return(result)
+}
+#
+#' Надстройка нал CrossLine для удобства
+#' @export
+CrossLine_down <- function(x1, x2, eq = FALSE) {
+  result <- CrossLine(x2, x1, eq)
+  #
+  return(result)
 }
 #
 ###
