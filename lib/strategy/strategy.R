@@ -414,3 +414,58 @@ CalcPosNum <- function(x) {
   #
   return(result)
 }
+#
+CleanRepeated <- function(x) {
+  result <- 
+    diff(x) %>%
+    {
+      .[1] <- x[1]
+      return(.)
+    } %>%
+    sign(.) %>%
+    abs(.) %>%
+    {
+      x * .
+    }
+  #
+  return(result)
+}
+#
+CleanStates <- function(open, close) {
+  #FUN <- match.fun(FUN)
+  temp.env <- new.env()
+  rows <- length(open)
+  ind <- 1:rows
+  result <- data.frame(open = integer(rows), close = integer(rows))
+  time.ind <- index(open)
+  open <- coredata(open)
+  close <- coredata(close)
+  assign('cache.state', 0, envir = temp.env)
+  sapply(ind,
+         function(x) {
+           cache.state <- get('cache.state', envir = temp.env)
+           result <- get('result', envir = temp.env)
+           #data[x, ] <- FUN(data, x, ...) 
+           temp.open <- ifelse((cache.state == 0) | is.na(cache.state),
+                               open[x], 
+                               ifelse(close[x] == cache.state,
+                                      0,
+                                      cache.state))
+           temp.close <- ifelse((cache.state != 0) | !is.na(cache.state),
+                                ifelse(close[x] == cache.state,
+                                       close[x],
+                                       0),
+                                0)
+           cache.state <- temp.open
+           result$open[x] <- temp.open
+           result$close[x] <- temp.close
+           assign('cache.state', temp.open, envir = temp.env)
+           assign('result', result, envir = temp.env) 
+         })
+  result <- get('result', envir = temp.env)
+  rm(temp.env)
+  result <- xts(result, order.by = time.ind)
+  #
+  return(result)
+}
+#
