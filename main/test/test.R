@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_data.csv")
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_source.csv")
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = "") %>%

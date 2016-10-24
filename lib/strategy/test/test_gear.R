@@ -10,7 +10,7 @@
 #' @return result Ряд данных с числом контрактов в сделках
 #'
 #' @export
-TestStr_calcDeals_inStates <- function(data) {
+CalcDeals_inStates.TestStr <- function(data) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
@@ -468,7 +468,7 @@ TestStr_gear <- function(data.source,
   #
   cat("TestStrategy INFO:  Start Calculation Deals...", "\n")
   #
-  data.state$n <- TestStr_calcDeals_inStates(data = data.state)
+  data.state$n <- CalcDeals_inStates.TestStr(data = data.state)
   # Изменение контрактов на такте
   data.state$diff.n <- data.state$n - lag(data.state$n)
   data.state$diff.n[1] <- 0

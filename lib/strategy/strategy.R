@@ -415,7 +415,7 @@ CalcPosNum <- function(x) {
   return(result)
 }
 #
-CleanRepeated <- function(x) {
+CleanRepeatSignal <- function(x) {
   result <- 
     diff(x) %>%
     {
@@ -431,8 +431,8 @@ CleanRepeated <- function(x) {
   return(result)
 }
 #
-CleanStates <- function(open, close) {
-  #FUN <- match.fun(FUN)
+CalcOrders <- function(open, close, FUN) {
+  FUN <- match.fun(FUN)
   temp.env <- new.env()
   rows <- length(open)
   ind <- 1:rows

@@ -409,3 +409,4 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
   #
   return(ends)
 }
+#
