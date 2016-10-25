@@ -28,39 +28,41 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
   if (type == "full") {
     # нормализация по уровням свечей 
     data.names <- 
-    names(data)[grep("Close", names(data))] %>%
+    names(data)[grep(".Close", names(data))] %>%
     sub(".Close", "", .)
+    if (is.null(data.names))
+    #
     for (i in 1:length(data.names)) {
-    temp.text <- paste(
-      "if (any(is.na(data$",data.names[i],".Close))!= TRUE) {",
-      "cat(\"INFO(NormData_NA): No NA in\"",",data.names[i]", ",\"\\n\")",
-      "} else {",
-      "data$",data.names[i],".temp <- data$",data.names[i],".Open ; ",    
-      "data$",data.names[i],".Open[is.na(data$",data.names[i],".Open)] <- ",
-      "na.locf(coredata(data$",data.names[i],".Close))[is.na(data$",data.names[i],".Open)] ; ",
-      "",
-      "data$",data.names[i],".Close[is.na(data$",data.names[i],".Close)] <- ",
-      "rev(na.locf(rev(coredata(data$",data.names[i],".temp))))[is.na(data$",data.names[i],".Close)] ; ",
-      "",
-      "data$",data.names[i],".High[is.na(data$",data.names[i],".High)] <- ",
-        "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".High)] > ",
-        "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)],",
-        "data$",data.names[i],".Close[is.na(data$",data.names[i],".High)],",
-        "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)]) ; ",
-      "",
-      "data$",data.names[i],".Low[is.na(data$",data.names[i],".Low)] <- ",
-        "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)] >",
-        "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
-        "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
-        "data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)]) ; ",
-      "",
-      "data$",data.names[i],".Volume[is.na(data$",data.names[i],".Volume)] <- 0 ; ",
-      "",
-      "data$",data.names[i],".temp <- NULL ; ",
-      "cat(\"INFO(NormData_NA): All NA remove in\"",",data.names[i]", ",\"\\n\")", 
-      "}",
-      sep = "")
-    eval(parse(text = temp.text))
+      temp.text <- paste(
+        "if (any(is.na(data$",data.names[i],".Close))!= TRUE) {",
+        "cat(\"INFO(NormData_NA): No NA in\"",",data.names[i]", ",\"\\n\")",
+        "} else {",
+        "data$",data.names[i],".temp <- data$",data.names[i],".Open ; ",    
+        "data$",data.names[i],".Open[is.na(data$",data.names[i],".Open)] <- ",
+        "na.locf(coredata(data$",data.names[i],".Close))[is.na(data$",data.names[i],".Open)] ; ",
+        "",
+        "data$",data.names[i],".Close[is.na(data$",data.names[i],".Close)] <- ",
+        "rev(na.locf(rev(coredata(data$",data.names[i],".temp))))[is.na(data$",data.names[i],".Close)] ; ",
+        "",
+        "data$",data.names[i],".High[is.na(data$",data.names[i],".High)] <- ",
+          "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".High)] > ",
+          "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)],",
+          "data$",data.names[i],".Close[is.na(data$",data.names[i],".High)],",
+          "data$",data.names[i],".Open[is.na(data$",data.names[i],".High)]) ; ",
+        "",
+        "data$",data.names[i],".Low[is.na(data$",data.names[i],".Low)] <- ",
+          "ifelse(data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)] >",
+          "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
+          "data$",data.names[i],".Open[is.na(data$",data.names[i],".Low)],",
+          "data$",data.names[i],".Close[is.na(data$",data.names[i],".Low)]) ; ",
+        "",
+        "data$",data.names[i],".Volume[is.na(data$",data.names[i],".Volume)] <- 0 ; ",
+        "",
+        "data$",data.names[i],".temp <- NULL ; ",
+        "cat(\"INFO(NormData_NA): All NA remove in\"",",data.names[i]", ",\"\\n\")", 
+        "}",
+        sep = "")
+      eval(parse(text = temp.text))
     }
   }
   if (type == "approx") {
