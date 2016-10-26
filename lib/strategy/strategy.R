@@ -415,7 +415,7 @@ CalcPosNum <- function(x) {
   return(result)
 }
 #
-CleanRepeatSignal <- function(x) {
+CleanDuplicateSignal <- function(x) {
   result <- 
     diff(x) %>%
     {
