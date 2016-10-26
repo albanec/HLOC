@@ -99,7 +99,7 @@ TestStr_gear <- function(data.source,
       #data$sma <- 
       #  SMA(data.source$SPFB.SI.Close, sma.per) %>%
       #  round(., digits = 0)
-      data$sma <- CalcIndicator_SMA(x = data.source$SPFB.SI.Close, per = sma.per)
+      data$sma <- CalcIndicator.SMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse(
         data$sma < data.source$SPFB.SI.Close, 
@@ -314,7 +314,7 @@ TestStr_gear <- function(data.source,
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- CalcState_Data(x = data$pos)
+          data$state <- CalcStates.inData(x = data$pos)
           data$state[.] <- data$pos[.]
           # условие закрытия сделок в конце торгового периода
           data$state[index(last(data$state))] <- 0
@@ -447,11 +447,11 @@ TestStr_gear <- function(data.source,
   # добавление курса
   
   # суммарный cret в data
-  data$cret <- CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
+  data$cret <- CalcSum_inXTS_byTargetCol.basket(data = data, target = "cret", basket.weights)
   # расчёт суммарного cret для data.state
   cat("TestStrategy INFO:  CalcCRet for data.state", "\n")
   # суммарный cret в data.state
-  data.state$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
+  data.state$cret <- CalcSum_inXTS_byTargetCol.basket(data = data.state, target = "cret", basket.weights)
   #
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс

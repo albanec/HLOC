@@ -56,7 +56,7 @@ SimpleStr_gear <- function(data.source,
       cat("TestStrategy INFO:  Calculate SMA with period:  ", sma.per, "\n")
       # тикер-индикатор: SI        
       #data$sma <- SMA(data.source$SPFB.SI.Close, sma.per)
-      data$sma <- CalcIndicator_SMA(x = data.source$SPFB.SI.Close, per = sma.per)
+      data$sma <- CalcIndicator.SMA(x = data.source$SPFB.SI.Close, per = sma.per)
       cat("TestStrategy INFO:  Calculate $sig and $pos...", "\n")
       data$sig <- ifelse(
         data$sma < data.source$SPFB.SI.Close, 1, 
@@ -270,7 +270,7 @@ SimpleStr_gear <- function(data.source,
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- CalcState_Data(x = data$pos)
+          data$state <- CalcStates.inData(x = data$pos)
           data$state[.] <- data$pos[.]
           return(data$state)
         }
@@ -403,28 +403,28 @@ SimpleStr_gear <- function(data.source,
     merge(data, data.source$USDRUB[data.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
-    NormData_Price_inXTS(data = data, 
+    NormData_inXTS.price(data = data, 
                              norm.data = ., 
                              names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                              outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                              tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                              convert.to = "RUB")
   # суммарный cret в data
-  data$cret <- CalcSum_Basket_TargetPar_inXTS(data = data, target = "cret", basket.weights)
+  data$cret <- CalcSum_inXTS_byTargetCol.basket(data = data, target = "cret", basket.weights)
   # расчёт суммарного cret для data.state
   cat("TestStrategy INFO:  CalcCRet for data.state", "\n")
   data.state <- 
     merge(data.state, data.source$USDRUB[data.state.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
-    NormData_Price_inXTS(data = data.state, 
+    NormData_inXTS.price(data = data.state, 
                              norm.data = ., 
                              names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                              outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                              tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                              convert.to = "RUB")
   # суммарный cret в data.state
-  data.state$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.state, target = "cret", basket.weights)
+  data.state$cret <- CalcSum_inXTS_byTargetCol.basket(data = data.state, target = "cret", basket.weights)
   #
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс

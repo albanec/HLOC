@@ -12,7 +12,7 @@
 #' @return x XTS ряд со значениями SMA
 #'
 #' @export
-CalcIndicator_SMA <- function(x, per, digits = 0, ...) {
+CalcIndicator.SMA <- function(x, per, digits = 0, ...) {
   #
   x <- 
     SMA(x = x, n = per) %>%
@@ -31,7 +31,7 @@ CalcIndicator_SMA <- function(x, per, digits = 0, ...) {
 #' @return x XTS со значениями DCI ($high, $mid, $low)
 #'
 #' @export
-CalcIndicator_DCI <- function(x, per, digits = 0, lag = TRUE) {
+CalcIndicator.DCI <- function(x, per, digits = 0, lag = TRUE) {
   #
   x <- 
     DonchianChannel(HL = x, n = per, include.lag = lag) %>%

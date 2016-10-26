@@ -12,7 +12,7 @@ source("lib/strategy/strategy_indicators.R")
 #' @return x$y ряд сделок (отфильтрованный ряд сигналов)
 #'
 #' @export
-Convert_SigToState <- function(x) {
+Convert.signal_to_states <- function(x) {
   x$a <- 
     na.locf(x) %>%
     ifelse(is.na(x$a) | is.nan(x$a) | is.infinite(x$a), 0, x$a)
@@ -50,7 +50,7 @@ CrossLine <- function(x1, x2, eq = FALSE) {
 #
 #' Надстройка нал CrossLine для удобства
 #' @export
-CrossLine_up <- function(x1, x2, eq = FALSE) {
+CrossLine.up <- function(x1, x2, eq = FALSE) {
   result <- CrossLine(x1, x2, eq)
   #
   return(result)
@@ -58,7 +58,7 @@ CrossLine_up <- function(x1, x2, eq = FALSE) {
 #
 #' Надстройка нал CrossLine для удобства
 #' @export
-CrossLine_down <- function(x1, x2, eq = FALSE) {
+CrossLine.down <- function(x1, x2, eq = FALSE) {
   result <- CrossLine(x2, x1, eq)
   #
   return(result)
@@ -72,7 +72,7 @@ CrossLine_down <- function(x1, x2, eq = FALSE) {
 #' @return data$state Ряд состояний
 #'
 #' @export
-CalcState_Data <- function(x) {
+CalcStates.inData <- function(x) {
   require(quantmod) 
   # ----------
   x <-
@@ -97,11 +97,11 @@ CalcState_Data <- function(x) {
 #' @return state.data Данные с рядом состояний  
 #'
 #' @export
-CalcState_Table <- function(data) {
+CalcStates.buildStatesTable <- function(data) {
   require(quantmod) 
   # ----------
   state.data <- 
-    data %>% CalcState_Data(.) %>%
+    data %>% CalcStates.inData(.) %>%
     merge(data, .) %>%
     na.omit(.)
   #
@@ -233,11 +233,11 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
 #' @return data Основной XTS (нужные данные конвертированы к нужной валюте)
 #'
 #' @export
-NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
+NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
   x <- norm.data
   for (i in 1:length(names)) {
     temp.text <- paste("data$",outnames[i]," <- ",
-                       "NormData_Price_byCol(data = data$",names[i],",",
+                       "NormData.price(data = data$",names[i],",",
                                                    "norm.data = x, convert.to = \"",convert.to,"\",",
                                                    "tick.val = ",tick.val[i],",",
                                                    "tick.price = ", tick.price[i],")",
@@ -258,7 +258,7 @@ NormData_Price_inXTS <- function(data, names, norm.data, outnames, convert.to, t
 #' @return data Суммированные данные (столбец)
 #'
 #' @export
-CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
+CalcSum_inXTS_byTargetCol.basket <- function(data, basket.weights, target) {
   #require()
   # 
   temp.text <- 
@@ -281,7 +281,7 @@ CalcSum_Basket_TargetPar_inXTS <- function(data, basket.weights, target) {
 #' @return data XTS ряд, с добавленными параметрами
 #'
 #' @export
-AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
+AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   old.dir <- getwd()
   setwd(dir) 
   # загрузка ГО
@@ -322,7 +322,7 @@ AddData_FuturesSpecs_inXTS <- function(data, from.date, to.date, dir) {
 #' @return data XTS ряд
 #'
 #' @export
-NormData_Price_byCol <- function(data, norm.data, convert.to, tick.val, tick.price) {
+NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
   if (convert.to == "RUB") {
     data <- (data * tick.price / tick.val) * norm.data
   }
@@ -369,7 +369,7 @@ SplitSwitchPosition <- function(data) {
   return(data)
 }
 #
-CalcBarsNum_inPos <- function(x) {
+CalcBarsNum <- function(x) {
   result <-   
     # вектор, содержащий номера позиций
     unique(x) %>%
@@ -393,7 +393,7 @@ CalcBarsNum_inPos <- function(x) {
   return(result)
 }
 #
-CalcPosNum <- function(x) {
+CalcPosition.num <- function(x) {
   action <- diff(x)
   action[1] <- x[1]
   result <- 
@@ -415,7 +415,7 @@ CalcPosNum <- function(x) {
   return(result)
 }
 #
-CleanDuplicateSignal <- function(x) {
+CleanSignal.duplicate <- function(x) {
   result <- 
     diff(x) %>%
     {
@@ -431,7 +431,7 @@ CleanDuplicateSignal <- function(x) {
   return(result)
 }
 #
-CalcOrders <- function(open, close, FUN) {
+CalcPosition.byOrders <- function(open, close, FUN) {
   FUN <- match.fun(FUN)
   temp.env <- new.env()
   rows <- length(open)

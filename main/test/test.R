@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_source.csv")
+data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_data.csv")
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = "") %>%
@@ -33,11 +33,11 @@ data.source.list[[1]] <-
   # удаление NA (по свечам)
   NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
-  AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
+  AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
   CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
 # суммарное ГО по корзине 
-data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+data.source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data.source.list[[1]], 
                                                            target = "IM", basket.weights)
 ## расчёт суммарного return'a 
 # перевод return'ов в валюту

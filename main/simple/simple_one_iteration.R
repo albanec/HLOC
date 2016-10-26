@@ -34,25 +34,25 @@ data.source.list[[1]] <-
   # удаление NA (по свечам)
   NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
-  AddData_FuturesSpecs_inXTS(data = ., from.date, to.date, dir = im.dir) %>%
+  AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
   CalcReturn_inXTS(data = ., price = "Open", type = ret.type)
 #
 ### расчёт суммарных показателей портфеля 
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
-data.source.list[[1]]$IM <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+data.source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data.source.list[[1]], 
                                                                target = "IM", basket.weights)
 # расчёт суммарного return'a 
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
-data.source.list[[1]] <- NormData_Price_inXTS(data = data.source.list[[1]], 
+data.source.list[[1]] <- NormData_inXTS.price(data = data.source.list[[1]], 
                                               norm.data = data.source.list[[1]]$USDRUB, 
                                               names = c("SPFB.RTS.ret", "SPFB.BR.ret"), 
                                               outnames = c("SPFB.RTS.cret", "SPFB.BR.cret"), 
                                               tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                                               convert.to = "RUB")
 # суммирование
-data.source.list[[1]]$cret <- CalcSum_Basket_TargetPar_inXTS(data = data.source.list[[1]], 
+data.source.list[[1]]$cret <- CalcSum_inXTS_byTargetCol.basket(data = data.source.list[[1]], 
                                                                  target = "cret", basket.weights)
 #
 ### отработка тестового робота
