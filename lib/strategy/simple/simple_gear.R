@@ -17,7 +17,7 @@
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-SimpleStr_gear <- function(data.source,
+SimpleStr.gear <- function(data.source,
                                 sma.per, add.per, 
                                 k.mm, balance.start, 
                                 basket.weights, slips, commissions) {
@@ -155,7 +155,7 @@ SimpleStr_gear <- function(data.source,
                 )
               }
             ) %>% 
-            MergeData_inList_byRow(.)
+            MergeData_inList.byRow(.)
           }
         } %T>%
         {
@@ -231,7 +231,7 @@ SimpleStr_gear <- function(data.source,
                   )
                 }
               ) %>%
-              MergeData_inList_byRow(.)
+              MergeData_inList.byRow(.)
             }
           }
         if (length(data.temp) != 1) {

@@ -16,7 +16,7 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
   #            result <- data.frame(sma, x)
   #            return(result)
   #          }) %>%
-  #   MergeData_inList_byRow(.) %>%
+  #   MergeData_inList.byRow(.) %>%
   #   {
   #     list(.[, 1], .[, 2])
   #   }
@@ -70,7 +70,7 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
           {
             .[!is.na(.)]
           } %>%
-          MergeData_inList_byRow(.)
+          MergeData_inList.byRow(.)
         return(result)
       }
     )

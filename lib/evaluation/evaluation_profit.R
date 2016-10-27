@@ -39,7 +39,7 @@ ProfitTable <- function(data, dealsTable, balance, ...) {
       fullReturn * 20 / .
     }
   ### расчёт метрик по дням
-  profitTable.byDays <- ProfitTable_byDays(data, balance)
+  profitTable.byDays <- ProfitTable.byDays(data, balance)
   ### расчёт метрик по сделкам для корзины
   profitTable.byDeals <-  
     ProfitList_byDeals(data = dealsTable[[1]]) %>%

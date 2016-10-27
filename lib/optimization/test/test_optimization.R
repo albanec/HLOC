@@ -11,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list', 
+TestStr_BruteForceOpt.Parallel <- function(#input_data = 'data.source.list', 
                                            sma_begin, sma_end, sma_step,
                                            # add.per_begin, add.per_end, add.per_step,
                                            rolling_opt = FALSE, ...) {
@@ -51,7 +51,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
   #            result <- data.frame(sma, x)
   #            return(result)
   #          }) %>%
-  #   MergeData_inList_byRow(.) %>%
+  #   MergeData_inList.byRow(.) %>%
   #   {
   #     list(.[, 1], .[, 2])
   #   }
@@ -78,7 +78,7 @@ TestStr_BruteForceOpt_Parallel <- function(#input_data = 'data.source.list',
     {
       .[!is.na(.)]
     } %>%
-    MergeData_inList_byRow(.)
+    MergeData_inList.byRow(.)
   #
   if(!is.null(parallel_cluster)) {
     stopCluster(parallel_cluster)
@@ -125,7 +125,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
     {
       .[!is.na(.)]
     } %>%
-    MergeData_inList_byRow(.)  
+    MergeData_inList.byRow(.)  
   #
   return(result)
 }
@@ -152,7 +152,7 @@ TestStr_OneThreadRun <- function(data.xts,
                                  rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
-  data.strategy.list <- TestStr_gear(data.source = data.xts,
+  data.strategy.list <- TestStr.gear(data.source = data.xts,
                                      sma.per, add.per, k.mm, balance.start, 
                                      basket.weights, slips, commissions)
   ## Анализ perfomanc'ов
@@ -186,19 +186,19 @@ TestStr_OneThreadRun <- function(data.xts,
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+    data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
-      perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                              data.state = 0,
                                              dealsTable = 0,
                                              balance = balance.start, ret.type = 0, 
                                              fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = TRUE)
       ### оценка perfomance-параметров
-      perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                              data.state = data.strategy.list[[2]],
                                              dealsTable = dealsTable.list,
                                              balance = balance.start, 

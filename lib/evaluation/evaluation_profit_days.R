@@ -13,10 +13,10 @@
 #' @return profitTable.byDays DF с данными по profit'у (по дням)
 #'
 #' @export
-ProfitTable_byDays <- function(data, balance, ...) {
+ProfitTable.byDays <- function(data, balance, ...) {
   # разбор дней
   ### статистика по дням
-  trdaysStatsList <- CalcTradingDaysStats(data = data)
+  trdaysStatsList <- TradingDaysStats.calc(data = data)
   ### разбор статистики
   # индексы лудших/худших дней
   bestDay.index  <- which.max(trdaysStatsList[[1]]$Return)
@@ -107,7 +107,7 @@ ProfitTable_byDays <- function(data, balance, ...) {
 #' @return result Лист со статистикой по дням (внутри trdayStats и trdaySeries)
 #'
 #' @export
-CalcTradingDaysStats <- function(data) {
+TradingDaysStats.calc <- function(data) {
   #
   data %<>%
     # очистка от строк c одинаковым индексом (если есть)
@@ -139,10 +139,10 @@ CalcTradingDaysStats <- function(data) {
     1:. %>%
     lapply(.,
            function(x) {
-             OneTradingDaysStats_DF(data = data, n = x)
+             TradingDays.daySummary(data = data, n = x)
            }) %>%
     # объединение данных внутри листа в один df
-    MergeData_inList_byRow(.) 
+    MergeData_inList.byRow(.) 
   trdaySeries <- 
     {
       ifelse(trdayStats$Return >= 0, 
@@ -168,7 +168,7 @@ CalcTradingDaysStats <- function(data) {
 #' @return result DF с данными 
 #'
 #' @export
-OneTradingDaysStats_DF <- function(data, n) {
+TradingDays.daySummary <- function(data, n) {
   #
   # если торговые дни не посчитаны
   if (is.null(data$trday.num) == TRUE) {
@@ -190,7 +190,7 @@ OneTradingDaysStats_DF <- function(data, n) {
   result <- 
     # выгружаем данные по dd с номером n
     data[data$trday.num == n] %>%
-    Convert_XTStoDF(.) %>%
+    Convert.XTStoDF(.) %>%
     {
       df <-
         data.frame(Date = character(1) %>% 

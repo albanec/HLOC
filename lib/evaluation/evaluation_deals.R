@@ -12,7 +12,7 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-CalcDealsTables <- function(data, convert = FALSE, ...) {
+DealsTables.calc <- function(data, convert = FALSE, ...) {
   if (!exists("data.names")) {
     data.names <- 
       grep(".equity", names(data)) %>%
@@ -33,23 +33,23 @@ CalcDealsTables <- function(data, convert = FALSE, ...) {
     # посделочный расчёт, на выходе лист с df по каждой сделке
     lapply(pos.num.list,
            function (x) {
-             CalcOneDealSummary_DF(data, n = x, data.names = data.names, type = "tickers")
+             CalcOneDealSummary.df(data, n = x, data.names = data.names, type = "tickers")
            }) %>%
     # объединение данных внутри листа в один df
-    MergeData_inList_byRow(.)
+    MergeData_inList.byRow(.)
   ### расчёт таблицы сделок (данные по корзине)
   dealsTable_byBasket <- 
     lapply(pos.num.list,
            function (x) {
-             CalcOneDealSummary_DF(data, n = x, data.names = data.names, type = "basket")
+             CalcOneDealSummary.df(data, n = x, data.names = data.names, type = "basket")
            }) %>%
-    MergeData_inList_byRow(.)
+    MergeData_inList.byRow(.)
   #
   if (convert != FALSE) {
     dealsTable_byTickers %<>%
-      ConvertDealsTable(data.deals = ., type = "tickers")
+      DealsTable.convert(data.deals = ., type = "tickers")
     dealsTable_byBasket %<>%
-      ConvertDealsTable(data.deals = ., type = "basket")
+      DealsTable.convert(data.deals = ., type = "basket")
   }
   #
   return(list(dealsTable_byBasket, dealsTable_byTickers))
@@ -66,7 +66,7 @@ CalcDealsTables <- function(data, convert = FALSE, ...) {
 #' @return result Изменённая таблица данных сделок
 #'
 #' @export
-ConvertDealsTable <- function(data.deals, type = "tickers") {
+DealsTable.convert <- function(data.deals, type = "tickers") {
   ## Номера столбцов, касающихся закрытия 
   numDeals <- 
     # ряд номеров позиций
@@ -131,7 +131,7 @@ ConvertDealsTable <- function(data.deals, type = "tickers") {
 #' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-CalcOneDealSummary_DF <- function(data, type, n, ...) {
+CalcOneDealSummary.df <- function(data, type, n, ...) {
   #
   if (!exists("data.names")) {
     data.names <- 
@@ -219,7 +219,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
               return(temp.data)
             }
           ) %>%
-          MergeData_inList_byRow(.)
+          MergeData_inList.byRow(.)
       } else {
         names.set <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "balance", 
                        "n", "diff.n", "commiss", "equity", "perfReturn") 
@@ -269,7 +269,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
       return(temp.data)
     } %>%
     # конвертируем таблицу в DF      
-    Convert_XTStoDF(.) %>%
+    Convert.XTStoDF(.) %>%
     ### расчёт итогового DF
     {
       df <- 
@@ -439,7 +439,7 @@ CalcOneDealSummary_DF <- function(data, type, n, ...) {
 #' @return data Очищенный xts ряд состояний
 #'
 #' @export
-CleanStatesTable <- function(data) {
+StatesTable.clean <- function(data) {
   data %<>%
     # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
     {

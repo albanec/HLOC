@@ -19,19 +19,19 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = 'data/temp/si_data.csv')
+data.source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = '') %>%
   data.source[.]
 # переход к нужному периоду свечей
-data.source <- ExpandData_toPeriod(x = data.source, per = '15min')
+data.source <- ExpandData.toPeriod(x = data.source, per = '15min')
 data.source.list <- list(data.source)
 colnames(data.source.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
 #
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_NA_inXTS(data = data.source.list[[1]], type = 'full') %>%
+  NormData_inXTS.na(data = data.source.list[[1]], type = 'full') %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
@@ -48,7 +48,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ## нарезка временных интервалов для обучения/торговли
 system.time(
   {
-    data_slices <- RollingSlicer_forXTS(data = data.source.list[[1]], start_date = from.date, 
+    data_slices <- RollingSlicer(data = data.source.list[[1]], start_date = from.date, 
                                         end_date = to.date, period = 'months', 
                                         width = 6, by = 3, align = 'right',
                                         add_bySlice = TRUE)

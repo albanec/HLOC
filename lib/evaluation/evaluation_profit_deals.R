@@ -21,7 +21,7 @@ ProfitList_byDeals <- function(data, ...) {
   ### Расчёт
   result.list <- lapply(names.set, 
                         function(x){
-                          ProfitTable_byDeals_oneTicker(data = data, ticker.name = x)
+                          ProfitTable.byDeals.oneTicker(data = data, ticker.name = x)
                         })
   names(result.list) <- names.set
   #
@@ -39,7 +39,7 @@ ProfitList_byDeals <- function(data, ...) {
 #' @return result DF с данными по profit'у сделок тикера
 #'
 #' @export
-ProfitTable_byDeals_oneTicker <- function(data, ticker.name, ...) {
+ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
   # подготовка данных для обработки (фильтрация субсделок)
   data %<>%
     # выделение нужных строк

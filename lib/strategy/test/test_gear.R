@@ -10,7 +10,7 @@
 #' @return result Ряд данных с числом контрактов в сделках
 #'
 #' @export
-CalcDeals_inStates.TestStr <- function(data) {
+CalcDeals_inStates.testStr <- function(data) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
@@ -59,7 +59,7 @@ CalcDeals_inStates.TestStr <- function(data) {
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr_gear <- function(data.source,
+TestStr.gear <- function(data.source,
                          sma.per, add.per, 
                          k.mm, balance.start, 
                          basket.weights, slips, commissions) {
@@ -197,7 +197,7 @@ TestStr_gear <- function(data.source,
                 xts(x = cumsum(temp), order.by = index(data$sig.num[data$sig.num == x]))
               }
             ) %>% 
-            MergeData_inList_byRow(.)
+            MergeData_inList.byRow(.)
           }
         } %T>%
         {
@@ -275,7 +275,7 @@ TestStr_gear <- function(data.source,
                   )
                 }
               ) %>%
-              MergeData_inList_byRow(.)
+              MergeData_inList.byRow(.)
             }
           }
         if (length(data.temp) != 1) {
@@ -468,7 +468,7 @@ TestStr_gear <- function(data.source,
   #
   cat("TestStrategy INFO:  Start Calculation Deals...", "\n")
   #
-  data.state$n <- CalcDeals_inStates.TestStr(data = data.state)
+  data.state$n <- CalcDeals_inStates.testStr(data = data.state)
   # Изменение контрактов на такте
   data.state$diff.n <- data.state$n - lag(data.state$n)
   data.state$diff.n[1] <- 0

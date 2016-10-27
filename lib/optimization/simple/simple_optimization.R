@@ -11,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
+SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
   #
   require(parallel)
   # запуск кластера
@@ -55,7 +55,7 @@ SimpleStr_Parallel_BruteForceOpt <- function(var.begin, var.end, ...) {
     {
       .[!is.na(.)]
     } %>%
-    MergeData_inList_byRow(.)
+    MergeData_inList.byRow(.)
   #
   if(!is.null(parallel_cluster)) {
     parallel::stopCluster(parallel_cluster)
@@ -98,7 +98,7 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
     {
       .[!is.na(.)]
     } #%>%
-    #MergeData_inList_byRow(.)
+    #MergeData_inList.byRow(.)
   #
   return(result)
 }
@@ -124,7 +124,7 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
                                    balance.start, ret.type,
                                    rolling_opt = FALSE) {
   ### отработка тестового робота
-  data.strategy.list <- SimpleStr_gear(data.source,
+  data.strategy.list <- SimpleStr.gear(data.source,
                                        sma.per, add.per, k.mm, 
                                        basket.weights, slips, commissions,
                                        balance.start)
@@ -135,24 +135,24 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+    data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
       perfomanceTable <- 
-        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+        PerfomanceTable(data = data.strategy.list[[1]], 
                             data.state = 0,
                             dealsTable = 0,
                             balance = balance.start, ret.type = 0, 
                             fast = TRUE) 
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = TRUE)
       # очистка мусора по target = "temp"
       CleanGarbage(target = "temp", env = ".GlobalEnv")
       # 
       ### оценка perfomance-параметров
       perfomanceTable <- 
-        CalcPerfomanceTable(data = data.strategy.list[[1]], 
+        PerfomanceTable(data = data.strategy.list[[1]], 
                             data.state = data.strategy.list[[2]],
                             dealsTable = dealsTable.list,
                             balance = balance.start, 

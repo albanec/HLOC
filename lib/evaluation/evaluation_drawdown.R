@@ -12,14 +12,14 @@
 #' @return drawdown.table DF с данными по просадкам
 #'
 #' @export
-DrawdownTable <- function(data.balance) {
+DrawdownsTable <- function(data.balance) {
   # ----------
   # подготовка данных
-  #cat("INFO(DrawdownTable): Calc Drawdown Data Set", "\n")
-  drawdowns <- CalcDrawdownDataSet(data = data.balance, fullData = TRUE)
+  #cat("INFO(DrawdownsTable): Calc Drawdown Data Set", "\n")
+  drawdowns <- Drawdowns.dd_data(data = data.balance, fullData = TRUE)
   ### вычисление summary по data set'у
   ## max просадка
-  #cat("INFO(DrawdownTable): Calc MaxDrawdown", "\n")
+  #cat("INFO(DrawdownsTable): Calc MaxDrawdown", "\n")
   max.drawdown <- 
     min(drawdowns[[2]]$Depth) %>%
     as.numeric(.)
@@ -127,18 +127,18 @@ DrawdownTable <- function(data.balance) {
 #' @return drawdowns Таблица просадок (или list(dd.data, drawdowns))
 #'
 #' @export
-CalcDrawdownDataSet <- function(data, fullData = FALSE) {
+Drawdowns.dd_data <- function(data, fullData = FALSE) {
   # ----------
   # расчёт dd
-  dd.data <- CalcDrawdowns(data = data)
+  dd.data <- Drawdowns.calc(data = data)
   n.vec <- 1:max(dd.data$num)
   # формирование таблицы со статистикой
   drawdowns <- 
     lapply(n.vec,
            function (x) {
-             CalcOneDrawdownSummary_DF(data = dd.data, n = x)
+             Drawdowns.calcSummary(data = dd.data, n = x)
            }) %>%
-    MergeData_inList_byRow(.)
+    MergeData_inList.byRow(.)
   #
   if (fullData == TRUE) {
     return(list(dd.data, drawdowns))  
@@ -158,12 +158,12 @@ CalcDrawdownDataSet <- function(data, fullData = FALSE) {
 #' @return dd.summary df, содержащий данные по dd c номером n
 #'
 #' @export
-CalcOneDrawdownSummary_DF <- function(data, n) {
+Drawdowns.calcSummary <- function(data, n) {
   #
   dd.summary <- 
     # выгружаем данные по dd с номером n
     data[data$num == n] %>%
-    Convert_XTStoDF(.) %>%
+    Convert.XTStoDF(.) %>%
     {
       df <- 
         # создаём скелет df с нужными полями
@@ -219,7 +219,7 @@ CalcOneDrawdownSummary_DF <- function(data, n) {
 #' @return data XTS, солержащий данные по dd 
 #'
 #' @export
-CalcDrawdowns <- function(data) {
+Drawdowns.calc <- function(data) {
   #
   # очистка от строк c одинаковым индексом (если есть)
   data <- data[which(!duplicated(index(data)))]
@@ -253,7 +253,7 @@ CalcDrawdowns <- function(data) {
   data$num <- cumsum(data$temp.diff)
   # собираем мусор
   data <- 
-    CleanGarbage_inCols(data) %>%
+    CleanGarbage.inCols(data) %>%
     # выкидываем balance столбец (исходные данные)
     {
       .[, -1]

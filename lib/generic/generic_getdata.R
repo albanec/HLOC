@@ -14,7 +14,7 @@
 #' @return data.list Лист с XTS по котировкам (+ все котировки сохраняются в csv файлы)
 #'
 #' @export
-GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, period, 
+GetData.Tickers <- function(tickers = "TickerList.csv", from.date, to.date, period, 
                                maxattempts = 5, rename = FALSE, dir, local = TRUE) {
   # Зависимости:
   require(rusquant)
@@ -23,15 +23,15 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
   # установка пути в temp папку
   old.dir <- getwd()
   setwd(dir)
-  cat("INFO(GetData_Ticker_Set):  Current work.dir:", getwd(), "\n")  
+  cat("INFO(GetData.Tickers):  Current work.dir:", getwd(), "\n")  
   # проверка, tickers путь к .csv или нет
   if (all(grepl(".csv", tickers)) == TRUE) {
     # если путь, то выгружаем из .csv данные тикеров
-    cat("INFO(GetData_Ticker_Set):  Loading Tickers: ", tickers, "\n")
+    cat("INFO(GetData.Tickers):  Loading Tickers: ", tickers, "\n")
     tickers <- 
       read.csv(tickers, header = F, stringsAsFactors = F) %>%
       .[, 1]   
-    cat("INFO(GetData_Ticker_Set):  Loading Tickers: OK", "\n") 
+    cat("INFO(GetData.Tickers):  Loading Tickers: OK", "\n") 
   } 
   #
   n.ticker <- length(tickers)
@@ -43,13 +43,13 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
   for (i in 1:n.ticker) {
     # количество попыток загрузки ограничено пер. maxattempts
     for (t in 1:maxattempts) {
-      cat("INFO(GetData_Ticker_Set):  (",i,"/",n.ticker,")", 
+      cat("INFO(GetData.Tickers):  (",i,"/",n.ticker,")", 
           "Downloading: ",tickers[i],"  Attempt: ",t,"/",maxattempts,"\n")
       # загрузка данных
-      data <- GetData_Ticker_One(ticker = tickers[i], from.date = from.date, to.date = to.date, 
+      data <- GetData.OneTicker(ticker = tickers[i], from.date = from.date, to.date = to.date, 
                                  period = period.min, rename)
       if (exists("data")) {
-        cat("INFO(GetData_Ticker_Set):  (",i,"/",n.ticker,")","Downloading ",tickers[i],"  complete","\n")
+        cat("INFO(GetData.Tickers):  (",i,"/",n.ticker,")","Downloading ",tickers[i],"  complete","\n")
         break
       }
     }
@@ -58,7 +58,7 @@ GetData_Ticker_Set <- function(tickers = "TickerList.csv", from.date, to.date, p
     data.name <- 
       tickers[i] %>%
       as.character(.)
-    Save_XTStoCSV(data = data, filename = data.name, period = period.min)
+    Save_XTS.toCSV(data = data, filename = data.name, period = period.min)
     # формирование уникального имени (по тикеру и периоду)
     assign(paste(data.name, period.min, sep="."), data)
     # удаление лишнего
@@ -129,9 +129,9 @@ ExpandData <- function(data.list, frames, period) {
           # выделение данных по временному периоду
           data[window] %>%
           # выделение данных по периоду свечи
-          ExpandData_toPeriod(., per = p)
+          ExpandData.toPeriod(., per = p)
         # сохранение данных
-        Save_XTStoCSV(data = data.temp, filename = data.name, period = p, tframe = n)
+        Save_XTS.toCSV(data = data.temp, filename = data.name, period = p, tframe = n)
       }
       # удаление temp данных
       remove(data.temp)
@@ -151,7 +151,7 @@ ExpandData <- function(data.list, frames, period) {
 #' @return x XTS с данными (с новым периодом)
 #'
 #' @export
-ExpandData_toPeriod <- function(x, per) {
+ExpandData.toPeriod <- function(x, per) {
   # подготовка данных по периоду
   if (per == "5min") { 
     p1 <- "mins"
@@ -205,7 +205,7 @@ ExpandData_toPeriod <- function(x, per) {
       if (nrow(.) == length(ind)) {
         index(.) <- ind 
       } else {
-        stop("ERROR(ExpandData_toPeriod): ")
+        stop("ERROR(ExpandData.toPeriod): ")
       }
       return(.)
     }
@@ -226,20 +226,20 @@ ExpandData_toPeriod <- function(x, per) {
 #' @return data XTS массив
 #'
 #' @export
-GetData_Ticker_One <- function(ticker, period = "15min", 
+GetData.OneTicker <- function(ticker, period = "15min", 
                                from.date, to.date = Sys.Date(), 
                                rename = FALSE) {
   # Зависимости:
   require(rusquant)   
   # ----------
   #
-  cat("INFO(GetData_Ticker_One):  ", "Download Source Data...", "\n")
+  cat("INFO(GetData.OneTicker):  ", "Download Source Data...", "\n")
   # загрузка данных
   data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = "Finam", 
                      auto.assign = FALSE, warning = FALSE)
   # проверка на правильность загруженных данных
   if (is.xts(data) !=  TRUE) {
-    stop(paste("ERROR(GetData_Ticker_One):  ticker ",ticker," not present!!!", sep = ""))
+    stop(paste("ERROR(GetData.OneTicker):  ticker ",ticker," not present!!!", sep = ""))
   }
   # нужно ли переименовывать данные к обезличенному OHLCV виду
   # если rename == FALSE, данные будут вида "ticker_name.OHLCV"

@@ -3,8 +3,8 @@ source("main/test/linker.R")
 #
 ### входные параметры
 # temp.dir <- "data/temp"
-from.date <- '2016-02-01'
-to.date <- '2016-02-28'
+from.date <- "2016-03-01"
+to.date <- "2016-03-31"
 period <- "15min"
 tickers <- c("SPFB.Si")
 im.dir <- "data/im"
@@ -16,7 +16,9 @@ balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
 slips <- c(0, 0, 0) # в пунктах
 commissions <- c(10, 0, 0)  # в рублях
-#
+per_DCI <- 10 
+per_slowSMA <- 20 
+per_fastSMA <- 5 
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
 data.source <- Read_CSV.toXTS.FinamQuotes(filename = "data/temp/si_data.csv")
@@ -44,44 +46,12 @@ data.source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data.source.
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
 data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret 
 #
+### выгрузка дат экспирации
+  expiration.dates <- Read_CSV.toDF(file.path = expiration, sep = ",")
+   colnames(expiration.dates) <- expiration.dates[1, ]
+   expiration.dates <- 
+    expiration.dates[-1, ] %>%
+    as.vector(.) %>%
+    ymd(x = ., tz = 'MSK') %>%
+    as.POSIXlt(.)
 #
-### BruteForce оптимизация (в один поток)
-# system.time(
-#   {
-#     PerfomanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
-#                                              data.xts = data.source.list[[1]], 
-#                                              add.per, k.mm, balance.start, 
-#                                              basket.weights, slips, commissions, ret.type,
-#                                              rolling_opt = FALSE)
-#   }
-# )
-#
-### Parallel BruteForce оптимизация 
-system.time(
-  {
-    PerfomanceTable <- TestStr_BruteForceOpt.Parallel(
-      #input_data = 'data.source.list',
-      sma_begin = 10, sma_end = 100, sma_step = 1,
-      rolling_opt = FALSE
-      #add.per, k.mm, balance.start, 
-      #basket.weights, slips, commissions, ret.type
-    )
-  }
-)
-#
-PerfomanceTable <- MergeData_inList.byRow(PerfomanceTable)
-### КА
-## Подготовка к КА
-data_for_cluster <- CalcKmean_DataPreparation(data = PerfomanceTable, n.mouth = 12, 
-                                              hi = TRUE, q.hi = 0.5, 
-                                              one.scale = TRUE)
-data_for_cluster$profit <- NULL
-data_for_cluster$draw <- NULL
-## Вычисление параметров кластеризации 
-clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
-                                      plusplus = FALSE, test.range = 30)
-## Вычисление самох кластеров
-clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
-                            plusplus = FALSE, var.digits = 2)
-# вывод данных
-#print(clustFull.data[2])

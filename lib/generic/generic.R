@@ -69,7 +69,7 @@ PrepareForWork_Packages <- function(package.list.csv, package.list = FALSE, down
 #' @return dist Max расстояние
 #'
 #' @export
-FindMax_DistancePoint <- function(y, x=1:len(y)) {
+FindMaxDistancePoint <- function(y, x=1:len(y)) {
   #
   all.coord <- rbind(vec(y), vec(x))
   first.point <- all.coord[, 1]

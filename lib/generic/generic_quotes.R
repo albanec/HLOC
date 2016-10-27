@@ -12,7 +12,7 @@
 #' @return data XTS ряд, очищенный от NA (по всем тикерам)
 #'
 #' @export
-NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
+NormData_inXTS.na <- function(data, type="full", filename = FALSE) {
   # 
   if (is.xts(data) != TRUE) {
   stop("INFO(NormData_NA): Error in source data: DataType != .xts !!!")
@@ -72,7 +72,7 @@ NormData_NA_inXTS <- function(data, type="full", filename = FALSE) {
   data <- na.omit(data)
   }
   if (filename != FALSE) {
-  Save_XTStoCSV(data = merged.data, filename = filename)  
+  Save_XTS.toCSV(data = merged.data, filename = filename)  
   }
   #
   return(data)
@@ -152,7 +152,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   data.names <- sub(".Close", "", data.names)
   temp.data <- xts()
   for (i in 1:length(data.names)) {
-    temp.text <- paste("temp.data <- Read_CSVtoXTS(filename = \"",data.names[i],".IM\") ; ",
+    temp.text <- paste("temp.data <- Read_CSV.toXTS(filename = \"",data.names[i],".IM\") ; ",
                "data$",data.names[i],".IM <- temp.data ; ",
                "remove(temp.data) ; ",
                "data$",data.names[i],".IM <- na.locf(data$",data.names[i],".IM) ; ",
@@ -162,7 +162,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   remove(temp.text)
   remove(data.names)
   # загрузка котировок USDRUB_TOM
-  data.USDRUB <- GetData_Ticker_One(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
+  data.USDRUB <- GetData.OneTicker(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
   data$USDRUB <- data.USDRUB$Close
   remove(data.USDRUB)
   data$USDRUB <- na.locf(data$USDRUB)

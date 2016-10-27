@@ -289,7 +289,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   data.names <- sub(".Close", "", data.names)
   temp.data <- xts()
   for (i in 1:length(data.names)) {
-    temp.text <- paste("temp.data <- Read_CSVtoXTS(filename = \"",data.names[i],".IM\") ; ",
+    temp.text <- paste("temp.data <- Read_CSV.toXTS(filename = \"",data.names[i],".IM\") ; ",
                        "data$",data.names[i],".IM <- temp.data ; ",
                        "remove(temp.data) ; ",
                        "data$",data.names[i],".IM <- na.locf(data$",data.names[i],".IM) ; ",
@@ -299,7 +299,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   remove(temp.text)
   remove(data.names)
   # загрузка котировок USDRUB_TOM
-  data.USDRUB <- GetData_Ticker_One(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
+  data.USDRUB <- GetData.OneTicker(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
   data$USDRUB <- data.USDRUB$Close
   remove(data.USDRUB)
   data$USDRUB <- na.locf(data$USDRUB)
@@ -369,7 +369,7 @@ SplitSwitchPosition <- function(data) {
   return(data)
 }
 #
-CalcBarsNum <- function(x) {
+CalcPosition.bars <- function(x) {
   result <-   
     # вектор, содержащий номера позиций
     unique(x) %>%
@@ -386,7 +386,7 @@ CalcBarsNum <- function(x) {
             xts(x = cumsum(temp), order.by = index(x[x == var]))
           }
         ) %>% 
-        MergeData_inList_byRow(.)
+        MergeData_inList.byRow(.)
       }
     }
   #

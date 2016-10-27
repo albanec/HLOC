@@ -19,19 +19,19 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSVtoXTS_FinamQuotes(filename = "data/temp/si_data.csv")
+data.source <- Read_CSV.toXTS.FinamQuotes(filename = "data/temp/si_data.csv")
 # выделение нужного периода
 data.source <- 
   paste(from.date,'::',to.date, sep = "") %>%
   data.source[.]
 # переход к нужному периоду свечей
-data.source <- ExpandData_toPeriod(x = data.source, per = "15min")
+data.source <- ExpandData.toPeriod(x = data.source, per = "15min")
 data.source.list <- list(data.source)
 colnames(data.source.list[[1]]) <- c("SPFB.SI.Open", "SPFB.SI.High", "SPFB.SI.Low","SPFB.SI.Close", "SPFB.SI.Volume")
 #
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
+  NormData_inXTS.na(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
@@ -47,21 +47,21 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 #
 ### один прогон вычислений 
 ### отработка тестового робота
-data.strategy.list <- TestStr_gear(data.source = data.source.list[[1]],
+data.strategy.list <- TestStr.gear(data.source = data.source.list[[1]],
                                    sma.per, add.per, k.mm, balance.start, 
                                    basket.weights, slips, commissions)
 #
 ### формирование таблицы сделок
 ## чистим от лишних записей
-data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
 ## лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = FALSE)#TRUE
+dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = FALSE)#TRUE
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
 perfomanceTable <- 
-  CalcPerfomanceTable(data = data.strategy.list[[1]], 
+  PerfomanceTable(data = data.strategy.list[[1]], 
                       data.state = data.strategy.list[[2]],
                       dealsTable = dealsTable.list,
                       balance = balance.start, 

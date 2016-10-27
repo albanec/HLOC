@@ -21,18 +21,18 @@ commissions <- c(2, 2, 2)  # в рублях
 data.source.list <- 
   {
     cat("Start Loading Data... ", "\n")
-    GetData_Ticker_Set(tickers, from.date, to.date, period, dir = "data/temp", maxattempts = 5)
+    GetData.Tickers(tickers, from.date, to.date, period, dir = "data/temp", maxattempts = 5)
   } %>%
   {
     cat("Start Merging Data... ", "\n")
-    MergeData_inList_byCol(.)  
+    MergeData_inList.byCol(.)  
   }
 #
 ### нормализация данных
 cat("Start Normalization&Improve Data... ", "\n")
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
+  NormData_inXTS.na(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)

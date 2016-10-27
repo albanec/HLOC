@@ -13,7 +13,7 @@ source("lib/evaluation/evaluation_ratio.R")
 #' Расчет perfomance-метрик (полный набор)
 #'
 #' Расчитывает perfomance-метрики (статистика по временным метрикам (datesTable) + доходности (profitTable) + 
-#' просадкам (drawdownTable) + коэффициентам продуктивности (ratioTable)) 
+#' просадкам (DrawdownsTable) + коэффициентам продуктивности (ratioTable)) 
 #' по данным отработки стратегии (data.strategy.list[[1]]) 
 #' 
 #' @param data Входной xts данных отработки стратегии 
@@ -22,13 +22,13 @@ source("lib/evaluation/evaluation_ratio.R")
 #' @return perfomanceTable.list Итоговая perfomance-таблица (list)
 #'
 #' @export
-CalcPerfomanceTable <- function(data, data.state, dealsTable,
-                                balance, ret.type, fast = FALSE, ...) {
+PerfomanceTable <- function(data, data.state, dealsTable,
+                            balance, ret.type, fast = FALSE, ...) {
   #
   ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
   if (fast == TRUE) {
     # вычисление максимальной просадки (в процентах)
-    drawdowns <- CalcDrawdownDataSet(data = data$balance, fullData = TRUE)
+    drawdowns <- Drawdowns.dd_data(data = data$balance, fullData = TRUE)
     # max.drawdown <- 
     #   min(drawdowns[[2]]$Depth) %>%
     #   as.numeric(.)
@@ -44,30 +44,30 @@ CalcPerfomanceTable <- function(data, data.state, dealsTable,
     #
     # sharp.data <-  
     #   SharpeRatio.annualized(returns, scale = 1, geometric = TF) %>%
-    #   TransformMetric(., metric.name = "SharpRatio")
+    #   Ratio.transformMetric(., metric.name = "SharpRatio")
     #
     perfomanceTable <- data.frame(Return = fullReturn.percent, MaxDrawdown = max.drawdown.percent)
     return(perfomanceTable)
   }
   ### Есди расчёт полных метрик:
-  cat("INFO(CalcPerfomanceTable):  Calc PerfomanceMetrics ... Start", "\n")
+  cat("INFO(PerfomanceTable):  Calc PerfomanceMetrics ... Start", "\n")
   ## простые временные метрики
-  cat("INFO(CalcPerfomanceTable):  Calc DatesMetrics", "\n", sep = "  ")
+  cat("INFO(PerfomanceTable):  Calc DatesMetrics", "\n", sep = "  ")
   datesTable <- DatesTable(data = data, data.state = data.state)    
   ## расчёт drawdown'ов
-  cat("INFO(CalcPerfomanceTable):  Calc DrawdownTable", "\n")
-  drawdownTable <- DrawdownTable(data.balance = data$balance)
+  cat("INFO(PerfomanceTable):  Calc DrawdownsTable", "\n")
+  DrawdownsTable <- DrawdownsTable(data.balance = data$balance)
   ## profit метрики
-  cat("INFO(CalcPerfomanceTable):  Calc ProfitTable", "\n")
-  profitTable <- ProfitTable(data = data, dealsTable = dealsTable, drawdownTable = drawdownTable,
+  cat("INFO(PerfomanceTable):  Calc ProfitTable", "\n")
+  profitTable <- ProfitTable(data = data, dealsTable = dealsTable, DrawdownsTable = DrawdownsTable,
                              balance = balance.start, 
                              nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
   ## расчёт коэффициентов
-  cat("INFO(CalcPerfomanceTable):  Calc RatioTable", "\n")
+  cat("INFO(PerfomanceTable):  Calc RatioTable", "\n")
   ratioTable <- RatioTable(returns = data$perfReturn, ret.type)
   # фактор восстановления
   rf <- 
-    profitTable$Return / drawdownTable$MaxDrawdown %>%
+    profitTable$Return / DrawdownsTable$MaxDrawdown %>%
     abs(.) %>%
     data.frame(RecoveryFactor = .)
   # коэф. выигрыша
@@ -77,12 +77,12 @@ CalcPerfomanceTable <- function(data, data.state, dealsTable,
     data.frame(WinRatio = .)
   #
   ### итоговая таблица
-  cat("INFO(CalcPerfomanceTable):  Build PerfomanceTable", "\n")
+  cat("INFO(PerfomanceTable):  Build PerfomanceTable", "\n")
   perfomanceTable <- cbind(datesTable, ratioTable, 
                            rf, win.ratio, 
-                           drawdownTable, profitTable)
+                           DrawdownsTable, profitTable)
  #
-  cat("INFO(CalcPerfomanceTable):  Calc PerfomanceMetrics ... OK", "\n")
+  cat("INFO(PerfomanceTable):  Calc PerfomanceMetrics ... OK", "\n")
   #
   return(perfomanceTable)
 }

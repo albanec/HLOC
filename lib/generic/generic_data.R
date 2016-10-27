@@ -13,13 +13,13 @@
 #' @return data XTS ряд, полученный из файла
 #'
 #' @export
-Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
+Read_CSV.toXTS.FinamQuotes <- function(filename, ...) {
   #
   ## считывание .csv
-  data <- Read_CSVtoDF(file.path = filename, sep = ",")
+  data <- Read_CSV.toDF(file.path = filename, sep = ",")
   #
   if (length(data) != 0) {
-    cat("INFO(Read_CSVtoXTS_FinamQuotes):  Load file ... ",filename, "\n", sep = "")
+    cat("INFO(Read_CSV.toXTS.FinamQuotes):  Load file ... ",filename, "\n", sep = "")
   } 
   ## проверка полей-заголовков
   colNames.temp <- data[1, ]
@@ -32,7 +32,7 @@ Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
   } else {
     ticker.name <- "Unkown ticker"
   }
-  cat("INFO(Read_CSVtoXTS_FinamQuotes):  Export ticker ... \"",ticker.name,"\" data", "\n", sep = "")
+  cat("INFO(Read_CSV.toXTS.FinamQuotes):  Export ticker ... \"",ticker.name,"\" data", "\n", sep = "")
   #
   if ("<PER>" %in% colNames.temp) {
     per <-  
@@ -48,7 +48,7 @@ Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
   } else {
     per <- "Unkown period"
   }
-  cat("INFO(Read_CSVtoXTS_FinamQuotes):  Data period ... \"",per,"\"", "\n", sep = "")
+  cat("INFO(Read_CSV.toXTS.FinamQuotes):  Data period ... \"",per,"\"", "\n", sep = "")
   ### формирование XTS
   data <- 
     ## выделяем полезные данные
@@ -113,7 +113,7 @@ Read_CSVtoXTS_FinamQuotes <- function(filename, ...) {
 #' @return file Считанный файл
 #'
 #' @export
-Read_CSVtoDF <- function(file.path, sep = ";") {
+Read_CSV.toDF <- function(file.path, sep = ";") {
   #
   file <- read.table(file=file.path, header=F, stringsAsFactors = F, sep = sep, as.is=T) 
   #
@@ -131,7 +131,7 @@ Read_CSVtoDF <- function(file.path, sep = ";") {
 #' @return data XTS ряд, полученный из файла
 #'
 #' @export
-Read_CSVtoXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ",") {
+Read_CSV.toXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ",") {
   # ----------
   require(xts)
   # ----------
@@ -162,7 +162,7 @@ Read_CSVtoXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ",") {
 #' @return 
 #'
 #' @export
-Save_XTStoCSV <- function(data, filename, period = FALSE, tframe = FALSE, sep = ",") {
+Save_XTS.toCSV <- function(data, filename, period = FALSE, tframe = FALSE, sep = ",") {
   # ----------
   require(zoo)
   # ----------  
@@ -186,13 +186,13 @@ Save_XTStoCSV <- function(data, filename, period = FALSE, tframe = FALSE, sep = 
 #' @return x Конвертированные в df данные
 #'
 #' @export
-Convert_XTStoDF <- function(x) {
+Convert.XTStoDF <- function(x) {
   # ----------
   require(quantmod)   
   # ----------
   #
   if (is.xts(x) != TRUE) {
-    stop(paste("ERROR(Convert_XTStoDF):  Input Data wrong type!!!", sep = ""))
+    stop(paste("ERROR(Convert.XTStoDF):  Input Data wrong type!!!", sep = ""))
   } else {
     x <- data.frame(date = index(x), x, row.names = NULL)  
   }
@@ -208,12 +208,12 @@ Convert_XTStoDF <- function(x) {
 #' @return x Конвертированные в XTS данные
 #'
 #' @export
-Convert_DFtoXTS <- function(x) {
+Convert.DFtoXTS <- function(x) {
   # ----------
   require(quantmod)   
   # ----------
   if (is.data.frame(x) != TRUE) {
-    stop(paste("ERROR(Convert_DFtoXTS):  Input Data wrong type!!!", sep = ""))
+    stop(paste("ERROR(Convert.DFtoXTS):  Input Data wrong type!!!", sep = ""))
   } else {
     x <- xts(x[, -1], order.by = as.POSIXct(x$date))
   }

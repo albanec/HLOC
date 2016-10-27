@@ -30,14 +30,14 @@ RatioTable <- function(returns, ret.type) {
   # SortinoRatio
   sortino.data <- SortinoRatio(returns)
   # CalmarRatio
-  calmar.data <- CalcCalmarRatio(returns, scale = 1, geometric = TF)
+  calmar.data <- CalmarRatio.calc(returns, scale = 1, geometric = TF)
   # SterlingRatio
-  sterling.data <- CalcSterlingRatio(returns, scale = 1, geometric = TF)
+  sterling.data <- SterlingRatio.calc(returns, scale = 1, geometric = TF)
   # формирование таблицы
-  ratioTable <- cbind.data.frame(TransformMetric(sharp.data, metric.name = "SharpRatio"), 
-                                  TransformMetric(sortino.data, metric.name = "SortinoRatio"), 
-                                  TransformMetric(calmar.data, metric.name = "CalmarRatio"),
-                                  TransformMetric(sterling.data, metric.name = "SterlingRatio"))
+  ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = "SharpRatio"), 
+                                  Ratio.transformMetric(sortino.data, metric.name = "SortinoRatio"), 
+                                  Ratio.transformMetric(calmar.data, metric.name = "CalmarRatio"),
+                                  Ratio.transformMetric(sterling.data, metric.name = "SterlingRatio"))
   #pMetric[,1] <- 
   return(ratioTable)
 }
@@ -54,7 +54,7 @@ RatioTable <- function(returns, ret.type) {
 #' @return result Значение коэф. Кальмара
 #'
 #' @export
-CalcCalmarRatio <- function(R, scale = NA, geometric = TRUE) {
+CalmarRatio.calc <- function(R, scale = NA, geometric = TRUE) {
   R = checkData(R)
   if (is.na(scale)) {
     freq = periodicity(R)
@@ -101,7 +101,7 @@ CalcCalmarRatio <- function(R, scale = NA, geometric = TRUE) {
 #' @return result Значение коэф. Стерлинга
 #'
 #' @export
-CalcSterlingRatio <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
+SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
   R = checkData(R)
   if (is.na(scale)) {
     freq = periodicity(R)
@@ -146,7 +146,7 @@ CalcSterlingRatio <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
 #' @return metric.data Транформированная в столбец метрика
 #'
 #' @export
-TransformMetric <- function(metric.data, metric.name) {
+Ratio.transformMetric <- function(metric.data, metric.name) {
   #
   #cat("Calculating Performance Metric:", metric.name, "\n")
   metric.data <- as.matrix(metric.data)

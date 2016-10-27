@@ -11,7 +11,7 @@
 #' @return m Матрица, состоящая их n сток вектора x
 #'
 #' @export
-Repeat_Row <- function(x,n) {
+Repeat.row <- function(x,n) {
   #
   m <- matrix(rep(x,each = n),nrow = n)
   #
@@ -27,7 +27,7 @@ Repeat_Row <- function(x,n) {
 #' @return m Матрица, состоящая их n столбцов вектора x
 #'
 #' @export
-Repeat_Col <- function(x,n) {
+Repeat.col <- function(x,n) {
   #
   m <- matrix(rep(x,each = n), ncol = n, byrow = TRUE)
   #
@@ -43,7 +43,7 @@ Repeat_Col <- function(x,n) {
 #' @return list(merged.data) Лист с xts рядом объединенных значений (по всем тикерам)
 #'
 #' @export
-MergeData_inList_byCol <- function(data.list, col.name = FALSE) {
+MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
   # 
   n.ticker <- length(data.list) 
   FirstTime <- TRUE
@@ -81,7 +81,7 @@ MergeData_inList_byCol <- function(data.list, col.name = FALSE) {
 #' @return data.list[[1]] Объединенные данные
 #'
 #' @export
-MergeData_inList_byRow <- function(data.list) {
+MergeData_inList.byRow <- function(data.list) {
   #
   while (length(data.list) > 1) {
   idxdata.list <- seq(from=1, to=length(data.list), by=2)
@@ -106,7 +106,7 @@ MergeData_inList_byRow <- function(data.list) {
 #' @return data XTS ряд, очищенный от NA (по всем тикерам)
 #'
 #' @export
-SubsetCol_inXTS_byTarget <- function(data, target) {
+Subset_inXTS_byTarget.Col <- function(data, target) {
   #
   data <-
     colnames(data) %>%
@@ -125,7 +125,7 @@ SubsetCol_inXTS_byTarget <- function(data, target) {
 #' @return data Данные, очищенный от столбцов с target в названии
 #'
 #' @export
-CleanGarbage_inCols <- function(x, target = "temp") {
+CleanGarbage.inCols <- function(x, target = "temp") {
   x <- 
     colnames(x) %>%
     grep(target, .) %>%
@@ -201,7 +201,7 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @return result.list Лист с данными, разложенными по индексам окон
 #'
 #' @export 
-RollingSlicer_forXTS <- function(data, start_date, end_date, period = NULL, 
+RollingSlicer <- function(data, start_date, end_date, period = NULL, 
                                  width, by = NULL, align = c('left', 'right'),
                                  add_bySlice = FALSE, lookback = FALSE) {
   ## подготовка
@@ -278,7 +278,7 @@ RollingSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
         nrow(temp_subset) %>%
         (width + 1):. %>%
         temp_subset[., ]
-      bySlice.list <- RollingSlicer_forXTS(data = temp_subset, start_date, end_date, period = NULL, 
+      bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period = NULL, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
@@ -385,7 +385,7 @@ RollingSlicer_forXTS <- function(data, start_date, end_date, period = NULL,
         } %>%
         temp_subset[.] %>%
         .[-1, ]
-      bySlice.list <- RollingSlicer_forXTS(data = temp_subset, start_date, end_date, period, 
+      bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)

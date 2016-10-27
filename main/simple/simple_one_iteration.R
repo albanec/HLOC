@@ -21,18 +21,18 @@ commissions <- c(2, 2, 2)  # в рублях
 data.source.list <- 
   {
     cat("Start Loading Data... ", "\n")
-    GetData_Ticker_Set(tickers, from.date, to.date, period, dir = "data/temp", maxattempts = 5)
+    GetData.Tickers(tickers, from.date, to.date, period, dir = "data/temp", maxattempts = 5)
   } %>%
   {
     cat("Start Merging Data... ", "\n")
-    MergeData_inList_byCol(.)  
+    MergeData_inList.byCol(.)  
   }
 #
 ### нормализация данных
 cat("Start Normalization&Improve Data... ", "\n")
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_NA_inXTS(data = data.source.list[[1]], type = "full") %>%
+  NormData_inXTS.na(data = data.source.list[[1]], type = "full") %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
@@ -56,20 +56,20 @@ data.source.list[[1]]$cret <- CalcSum_inXTS_byTargetCol.basket(data = data.sourc
                                                                  target = "cret", basket.weights)
 #
 ### отработка тестового робота
-data.strategy.list <- SimpleStr_gear(data.source = data.source.list[[1]],
+data.strategy.list <- SimpleStr.gear(data.source = data.source.list[[1]],
                                           sma.per, add.per, k.mm, balance.start, 
                                           basket.weights, slips, commissions)
 #
 ### формирование таблицы сделок
 ## чистим от лишних записей
-data.strategy.list[[2]] <- CleanStatesTable(data = data.strategy.list[[2]])
+data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
 ## лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- CalcDealsTables(data = data.strategy.list[[2]], convert = TRUE)
+dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = TRUE)
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 #
 ### оценка perfomance-параметров
-perfomanceTable <- CalcPerfomanceTable(data = data.strategy.list[[1]], 
+perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                        data.state = data.strategy.list[[2]],
                                        dealsTable = dealsTable.list,
                                        balance = balance.start, 
