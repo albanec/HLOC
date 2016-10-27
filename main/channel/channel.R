@@ -52,6 +52,5 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
    expiration.dates <- 
     expiration.dates[-1, ] %>%
     as.vector(.) %>%
-    ymd(x = ., tz = 'MSK') %>%
-    as.POSIXlt(.)
+    ymd(x = ., tz = 'MSK')
 #
