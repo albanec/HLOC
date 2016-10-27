@@ -14,8 +14,8 @@ add.per <- 10
 basket.weights <- c(1,0,0) # количество инструментов в портфеле
 balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
-slips <- c(0, 0, 0) # в пунктах
-commissions <- c(10, 0, 0)  # в рублях
+slips <- 2 # в пунктах
+commissions <- 10  # в рублях
 per_DCI <- 10 
 per_slowSMA <- 20 
 per_fastSMA <- 5 

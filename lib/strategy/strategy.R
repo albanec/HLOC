@@ -333,6 +333,14 @@ NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
   return(data)
 }
 #
+###
+#' Функция расщепления переворотных сделок
+#' 
+#' @param data Полные данные отработки робота
+#'
+#' @return data Данные с расщеплёнными позициями-переворотами 
+#'
+#' @export
 SplitSwitchPosition <- function(data) {    
   ## Точки смены позиций
   data$action <- diff(data$pos)
@@ -369,6 +377,14 @@ SplitSwitchPosition <- function(data) {
   return(data)
 }
 #
+###
+#' Функция подсчёта числа баров в позициях
+#' 
+#' @param x Ряд позиций
+#'
+#' @return result Ряд с числом баров в позициях
+#'
+#' @export
 CalcPosition.bars <- function(x) {
   result <-   
     # вектор, содержащий номера позиций
@@ -393,6 +409,14 @@ CalcPosition.bars <- function(x) {
   return(result)
 }
 #
+###
+#' Функция подсчёта позиций
+#' 
+#' @param x Ряд позиций
+#'
+#' @return result Ряд номеров позиций
+#'
+#' @export
 CalcPosition.num <- function(x) {
   action <- diff(x)
   action[1] <- x[1]
@@ -415,6 +439,14 @@ CalcPosition.num <- function(x) {
   return(result)
 }
 #
+###
+#' Функция очистки сигналов от повторяющихся
+#' 
+#' @param x Ряд сигналов
+#'
+#' @return result Очищенный ряд сигналов
+#'
+#' @export
 CleanSignal.duplicate <- function(x) {
   result <- 
     diff(x) %>%
@@ -431,30 +463,52 @@ CleanSignal.duplicate <- function(x) {
   return(result)
 }
 #
-CalcPosition.byOrders <- function(open, close, FUN) {
-  FUN <- match.fun(FUN)
+###
+#' Функция расчёта позиций относительно ордеров 
+#' 
+#' @param bto Данные buy-to-open (open long positions)
+#' @param stc Данные sell-to-close (close long positions)
+#' @param sto Данные sell-to-open (open short positions)
+#' @param btc Данные buy-to-close (close short positions)
+#'
+#' @return result DF c $open и $close сделок
+#'
+#' @export
+CalcPosition.byOrders <- function(bto, stc, sto, btc) {
+  #FUN <- match.fun(FUN)
   temp.env <- new.env()
-  rows <- length(open)
+  rows <- length(bto)
   ind <- 1:rows
   result <- data.frame(open = integer(rows), close = integer(rows))
-  time.ind <- index(open)
-  open <- coredata(open)
-  close <- coredata(close)
+  time.ind <- index(bto)
+  bto <- coredata(bto) %>% as.integer(.)
+  stc <- coredata(stc) %>% as.integer(.)
+  sto <- coredata(sto) %>% as.integer(.)
+  btc <- coredata(btc) %>% as.integer(.)
   assign('cache.state', 0, envir = temp.env)
   sapply(ind,
          function(x) {
            cache.state <- get('cache.state', envir = temp.env)
            result <- get('result', envir = temp.env)
            #data[x, ] <- FUN(data, x, ...) 
-           temp.open <- ifelse((cache.state == 0) | is.na(cache.state),
-                               open[x], 
-                               ifelse(close[x] == cache.state,
+           temp.open <- ifelse(cache.state == 0 | is.na(cache.state),
+                               ifelse(bto[x] != 0,
+                                      bto[x],
+                                      sto[x]),
+                               ifelse(stc[x] == cache.state,
                                       0,
-                                      cache.state))
-           temp.close <- ifelse((cache.state != 0) | !is.na(cache.state),
-                                ifelse(close[x] == cache.state,
-                                       close[x],
-                                       0),
+                                      ifelse(btc[x] == cache.state,
+                                             0,
+                                             cache.state)
+                                      )
+                              )
+           temp.close <- ifelse(cache.state != 0 | !is.na(cache.state),
+                                ifelse(btc[x] == cache.state,
+                                       btc[x],
+                                       ifelse(stc[x] == cache.state,
+                                              stc[x],
+                                              0)
+                                       ),
                                 0)
            cache.state <- temp.open
            result$open[x] <- temp.open
