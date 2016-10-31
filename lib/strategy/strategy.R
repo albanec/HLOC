@@ -272,45 +272,6 @@ CalcSum_inXTS_byTargetCol.basket <- function(data, basket.weights, target) {
 }
 #
 ###
-#' Функция добавляет параметры инструментов (для фьючерсов: размеры ГО и курс USDRUB для пересчёта к RUB)
-#' 
-#' @param data XTS, содержащий нужные данные 
-#' @param from.date 
-#' @param to.date
-#'
-#' @return data XTS ряд, с добавленными параметрами
-#'
-#' @export
-AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
-  old.dir <- getwd()
-  setwd(dir) 
-  # загрузка ГО
-  data.names <- names(data)[grep("Close", names(data))]
-  data.names <- sub(".Close", "", data.names)
-  temp.data <- xts()
-  for (i in 1:length(data.names)) {
-    temp.text <- paste("temp.data <- Read_CSV.toXTS(filename = \"",data.names[i],".IM\") ; ",
-                       "data$",data.names[i],".IM <- temp.data ; ",
-                       "remove(temp.data) ; ",
-                       "data$",data.names[i],".IM <- na.locf(data$",data.names[i],".IM) ; ",
-                       sep="")
-    eval(parse(text = temp.text))
-  }
-  remove(temp.text)
-  remove(data.names)
-  # загрузка котировок USDRUB_TOM
-  data.USDRUB <- GetData.OneTicker(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
-  data$USDRUB <- data.USDRUB$Close
-  remove(data.USDRUB)
-  data$USDRUB <- na.locf(data$USDRUB)
-  # очистка от NA (на данном этапе na.omit полезным данным не навредит)
-  data <- na.omit(data)
-  setwd(old.dir)
-  #
-  return(data)
-}
-#
-###
 #' Функция для расчёта стоимости тиков
 #' 
 #' @param data XTS, содержащий нужные данные 

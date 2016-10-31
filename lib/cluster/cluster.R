@@ -24,7 +24,7 @@ CalcKmean_DataPreparation <- function(data, n.mouth ,
                                       one.scale = FALSE) {
   #
   # выделение столбцов с переменными
-  df <- Subset_inXTS_byTarget.Col(data = data, target = "_")
+  df <- Subset_byTarget.col(data = data, target = "_")
   # добавление столбцов с профитом и просадкой
   df$profit <- 
     {

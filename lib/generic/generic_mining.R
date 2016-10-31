@@ -106,12 +106,16 @@ MergeData_inList.byRow <- function(data.list) {
 #' @return data XTS ряд, очищенный от NA (по всем тикерам)
 #'
 #' @export
-Subset_inXTS_byTarget.Col <- function(data, target) {
+Subset_byTarget.col <- function(data, target, strict = FALSE) {
   #
-  data <-
-    colnames(data) %>%
-    grep(target, .) %>%
-    data[, .]
+  if (strict != TRUE) {
+    data <-
+      colnames(data) %>%
+      grep(target, .) %>%
+      data[, .]  
+  } else {
+    data <- data[, target]
+  }
   #
   return(data)
 }

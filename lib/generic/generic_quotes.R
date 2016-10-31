@@ -143,7 +143,7 @@ NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
 #' @return data XTS ряд, с добавленными параметрами
 #'
 #' @export
-AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
+AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir, add.USDRUB = TRUE) {
   # 
   old.dir <- getwd()
   setwd(dir) 
@@ -161,11 +161,13 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir) {
   }
   remove(temp.text)
   remove(data.names)
-  # загрузка котировок USDRUB_TOM
-  data.USDRUB <- GetData.OneTicker(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
-  data$USDRUB <- data.USDRUB$Close
-  remove(data.USDRUB)
-  data$USDRUB <- na.locf(data$USDRUB)
+  if (add.USDRUB == TRUE) {
+    # загрузка котировок USDRUB_TOM
+    data.USDRUB <- GetData.OneTicker(ticker = "USD000UTSTOM", from.date, to.date, period = "day", rename = TRUE)
+    data$USDRUB <- data.USDRUB$Close
+    remove(data.USDRUB)
+    data$USDRUB <- na.locf(data$USDRUB)  
+  } 
   # очистка от NA (на данном этапе na.omit полезным данным не навредит)
   data <- na.omit(data)
   setwd(old.dir)
