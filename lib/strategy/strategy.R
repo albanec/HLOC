@@ -484,3 +484,58 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
   return(result)
 }
 #
+###
+#' Функция очистки сигналов на датах экспирации
+#' 
+#' @param signals Данные ордеров (bto/stc/sto/btc)
+#' @param exp.vector Вектор с датами экспирации
+#'
+#' @return result.list Лист с очищенными рядами сигналов
+#'
+#' @export
+CleanSignal.expiration <- function(signals, exp.vector) {
+  
+  col.names <- names(signals)
+  bto <-
+    grep('.bto', col.names) %>%
+    signals[, .]
+  stc <-
+    grep('.stc', col.names) %>%
+    signals[, .]
+  sto <-
+    grep('.sto', col.names) %>%
+    signals[, .] 
+  btc <-
+    grep('.btc', col.names) %>%
+    signals[, .]
+
+  temp.ind <- 
+    index(signals) %>%
+    strptime(x = ., format = '%Y-%m-%d') %>%
+    unique(.) %>%
+    as.POSIXct(., origin = '1970-01-01', tz='MSK')
+  temp.ind <- 
+    {
+      which(temp.ind %in% exp.vector)
+    } %>%
+    temp.ind[.] %>%
+    as.character(.)
+  
+  if (length(temp.ind) != 0) {
+    # удаление входов в дни экспирации
+    bto[temp.ind] <- 0
+    sto[temp.ind] <- 0
+    # принудительное закрытие сделок в 16:00 дня экспирации
+    temp.ind <- 
+      as.character(temp.ind) %>%
+      paste(., '16:00:00', sep = ' ')
+    stc[temp.ind] <- 1
+    btc[temp.ind] <- -1
+  }
+  rm(temp.ind)
+  
+  result.list <- list(bto, stc, sto, btc)
+  names(result) <- c('bto', 'stc', 'sto', 'btc')
+
+  return(result.list)
+}

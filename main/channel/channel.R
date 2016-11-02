@@ -16,9 +16,9 @@ balance.start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
 slips <- 2 # в пунктах
 commissions <- 10  # в рублях
-per_DCI <- 10 
-per_slowSMA <- 20 
-per_fastSMA <- 5 
+per_DCI <- 50 
+per_slowSMA <- 50 
+per_fastSMA <- 40 
 expiration_dates.filename <- 'data/expiration/expiration_dates.csv'
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
@@ -58,5 +58,4 @@ expiration.dates <-
   as.vector(.) %>%
   ymd(x = ., tz = 'MSK')
 #
-
-exp.vector <- expiration_dates
+exp.vector <- expiration.dates
