@@ -537,7 +537,14 @@ CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
   return(signals)
 }
 #
-### фильтрация канальных индикаторах на утренних gap'ах
+###
+#' Функция фильтрации канальных индикаторах на утренних gap'ах
+#' 
+#' @param signals Данные ордеров (bto/stc/sto/btc)
+#'
+#' @return result.list Лист с очищенными рядами сигналов
+#'
+#' @export
 CleanSignal.gap <- function(signals) {
   # расчёт enpoint'ов 
   ends <- CalcEndpoints(x = signals, on = 'days', k = 1, findFirst = TRUE)
@@ -582,7 +589,37 @@ CleanSignal.gap <- function(signals) {
   gap <- signals$gap
   signals$gap <- NULL
   rm(ends)
-  result <- list(signals, gap)
+  result.list <- list(signals, gap)
   #
-  return(result)
+  return(result.list)
+}
+#
+###
+#' Функция фильтрации канальных индикаторах на утренних gap'ах
+#' 
+#' @param price Данные цен на сделках
+#' @param action Данные action
+#' @param data.source Данные с котировками
+#' @param slips Слипы
+#'
+#' @return price XTS с ценами
+#'
+#' @export
+CalcPrice.slips <- function(price, action, data.source, slips) {
+    price <- price + slips * sign(action)
+    price.ind <- index(price)
+    low.ind <- 
+    { 
+        which(price < Lo(data.source[price.ind])) 
+    } %>% 
+        price.ind[.]
+    high.ind <- 
+    { 
+        which(price > Hi(data.source[price.ind])) 
+    } %>% price.ind[.]
+    
+    price[low.ind] <- Lo(data.source[low.ind])
+    price[high.ind] <- Hi(data.source[high.ind])
+    #
+    return(price)
 }
