@@ -12,10 +12,10 @@ ret.type <- 'ret'
 sma.per <- 100
 add.per <- 10
 basket.weights <- c(1,0,0) # количество инструментов в портфеле
-balance.start <- 1000000
+balance_start <- 1000000
 k.mm <- 0.02  # mm на заход в сделку
-slips <- 2 # в пунктах
-commissions <- 10  # в рублях
+slips <- 10 # в пунктах
+commiss <- 3  # в рублях
 per_DCI <- 50 
 per_slowSMA <- 50 
 per_fastSMA <- 40 

@@ -452,7 +452,7 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
            cache.state <- get('cache.state', envir = temp.env)
            result <- get('result', envir = temp.env)
            #data[x, ] <- FUN(data, x, ...) 
-           temp.open <- ifelse(cache.state == 0 | is.na(cache.state),
+           result$open[x] <- ifelse(cache.state == 0 | is.na(cache.state),
                                ifelse(bto[x] != 0,
                                       bto[x],
                                       sto[x]),
@@ -463,7 +463,7 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
                                              cache.state)
                                       )
                               )
-           temp.close <- ifelse(cache.state != 0 | !is.na(cache.state),
+           result$close[x] <- ifelse(cache.state != 0 | !is.na(cache.state),
                                 ifelse(btc[x] == cache.state,
                                        btc[x],
                                        ifelse(stc[x] == cache.state,
@@ -471,10 +471,9 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
                                               0)
                                        ),
                                 0)
-           cache.state <- temp.open
-           result$open[x] <- temp.open
-           result$close[x] <- temp.close
-           assign('cache.state', temp.open, envir = temp.env)
+           cache.state <- result$open[x]
+           #
+           assign('cache.state', cache.state, envir = temp.env)
            assign('result', result, envir = temp.env) 
          })
   result <- get('result', envir = temp.env)
@@ -493,21 +492,16 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
 #' @return result.list Лист с очищенными рядами сигналов
 #'
 #' @export
-CleanSignal.expiration <- function(signals, exp.vector) {
+CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
   
-  col.names <- names(signals)
-  bto <-
-    grep('.bto', col.names) %>%
-    signals[, .]
-  stc <-
-    grep('.stc', col.names) %>%
-    signals[, .]
-  sto <-
-    grep('.sto', col.names) %>%
-    signals[, .] 
-  btc <-
-    grep('.btc', col.names) %>%
-    signals[, .]
+  if (pos == FALSE) {
+    # выделение данных ордеров
+    col.names <- names(signals)
+    bto_col <- grep('bto', col.names) 
+    stc_col <- grep('stc', col.names)
+    sto_col <- grep('sto', col.names)
+    btc_col <- grep('btc', col.names)
+  }
 
   temp.ind <- 
     index(signals) %>%
@@ -522,20 +516,73 @@ CleanSignal.expiration <- function(signals, exp.vector) {
     as.character(.)
   
   if (length(temp.ind) != 0) {
-    # удаление входов в дни экспирации
-    bto[temp.ind] <- 0
-    sto[temp.ind] <- 0
+    if (pos == FALSE) {
+      # удаление входов в дни экспирации
+      signals[temp.ind, bto_col] <- 0
+      signals[temp.ind, sto_col] <- 0 
+    }
     # принудительное закрытие сделок в 16:00 дня экспирации
     temp.ind <- 
       as.character(temp.ind) %>%
       paste(., '16:00:00', sep = ' ')
-    stc[temp.ind] <- 1
-    btc[temp.ind] <- -1
+    if (pos == FALSE) {
+      signals[temp.ind, stc_col] <- 1
+      signals[temp.ind, btc_col] <- -1  
+    } else {
+      signals[temp.ind] <- 0
+    }
   }
   rm(temp.ind)
+  #
+  return(signals)
+}
+#
+### фильтрация канальных индикаторах на утренних gap'ах
+CleanSignal.gap <- function(signals) {
+  # расчёт enpoint'ов 
+  ends <- CalcEndpoints(x = signals, on = 'days', k = 1, findFirst = TRUE)
+  signals$gap <- 0
+  # свечи gap'ов
+  signals$gap[ends] <- 1
   
-  result.list <- list(bto, stc, sto, btc)
-  names(result) <- c('bto', 'stc', 'sto', 'btc')
-
-  return(result.list)
+  # выделение данных ордеров
+  col.names <- names(signals)
+  bto_col <- grep('bto', col.names) 
+  stc_col <- grep('stc', col.names)
+  sto_col <- grep('sto', col.names)
+  btc_col <- grep('btc', col.names)
+  
+  ## на gap'ах:
+  # заход в позиции запрещён
+  signals[ends, bto_col] <- 0
+  signals[ends, sto_col] <- 0
+  #data <- na.omit(data)
+  # выходы на следующей свече по Open
+  temp.ind <- which(signals$gap == 1 & signals[, stc_col] != 0)
+  if (length(temp.ind) != 0) {
+    signals[temp.ind + 1, stc_col] <- ifelse(signals[temp.ind, stc_col] != 0,
+                                             signals[temp.ind, stc_col],
+                                             0)
+   #signals[temp.ind, stc_col] <- 0
+  }
+  rm(temp.ind)
+  temp.ind <- which(signals$gap == 1 & signals[, btc_col] != 0)
+  if (length(temp.ind) != 0) {
+    signals[temp.ind + 1, btc_col] <- ifelse(signals[temp.ind, btc_col] != 0,
+                                             signals[temp.ind, btc_col],
+                                             0)
+    #signals[temp.ind, btc_col] <- 0
+  }
+  rm(temp.ind)
+  signals[ends, stc_col] <- 0
+  signals[ends, btc_col] <- 0
+  # перенос индикаторов gap'ов на следующую свечу (нужно для подгрузки котировок)
+  signals$gap <- lag(signals$gap)
+  signals$gap[1] <- 0
+  gap <- signals$gap
+  signals$gap <- NULL
+  rm(ends)
+  result <- list(signals, gap)
+  #
+  return(result)
 }
