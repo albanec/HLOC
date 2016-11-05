@@ -44,28 +44,27 @@ data.source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data.source.
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
 data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret 
 #
-#
+
 ### один прогон вычислений 
-### отработка тестового робота
+## отработка тестового робота
 data.strategy.list <- TestStr.gear(data.source = data.source.list[[1]],
                                    sma.per, add.per, k.mm, balance.start, 
                                    basket.weights, slips, commissions)
-#
-### формирование таблицы сделок
-## чистим от лишних записей
+## формирование таблицы сделок
+# чистим от лишних записей
 data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
-## лист с данными по сделкам (по тикерам и за всю корзину)
+# лист с данными по сделкам (по тикерам и за всю корзину)
 dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = FALSE)#TRUE
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
-#
-### оценка perfomance-параметров
+gc()
+## оценка perfomance-параметров
 perfomanceTable <- 
   PerfomanceTable(data = data.strategy.list[[1]], 
-                      data.state = data.strategy.list[[2]],
-                      dealsTable = dealsTable.list,
-                      balance = balance.start, 
-                      ret.type = ret.type) %>%
+                  data.state = data.strategy.list[[2]],
+                  dealsTable = dealsTable.list,
+                  balance = balance.start, 
+                  ret.type = ret.type) %>%
   # добавление использованных параметров
   cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
 ## запись в файл 
