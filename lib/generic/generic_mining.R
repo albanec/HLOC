@@ -51,13 +51,13 @@ MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
   for (i in 1:n.ticker) {
     data <- data.list[[i]]
     data.name <- 
-      names(data)[grep("Close", names(data))] %>%
-      sub(".Close", "", .)
-    cat("INFO(MergeData_fromAll_toOne):  Processing StocksData:  ", data.name, "\n")
+      names(data)[grep('Close', names(data))] %>%
+      sub('.Close', '', .)
+    cat('INFO(MergeData_fromAll_toOne):  Processing StocksData:  ', data.name, '\n')
     if (col.name != FALSE) {
       temp.text <-
-      paste(data.name, col.name, sep = ".") %>%
-      paste("data <- data$", ., sep = "")
+      paste(data.name, col.name, sep = '.') %>%
+      paste('data <- data$', ., sep = '')
       eval(parse(text = temp.text))
     }
     if (FirstTime == TRUE) {
@@ -68,7 +68,7 @@ MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
     }
   }  
   merged.data <- list(merged.data)
-  names(merged.data) <- c("merged.data")
+  names(merged.data) <- c('merged.data')
   #
   return(merged.data)
 }
@@ -129,7 +129,7 @@ Subset_byTarget.col <- function(data, target, strict = FALSE) {
 #' @return data Данные, очищенный от столбцов с target в названии
 #'
 #' @export
-CleanGarbage.inCols <- function(x, target = "temp") {
+CleanGarbage.inCols <- function(x, target = 'temp') {
   x <- 
     colnames(x) %>%
     grep(target, .) %>%
@@ -148,7 +148,7 @@ CleanGarbage.inCols <- function(x, target = "temp") {
 #' @param q.low Уровень квантиля для вычисления худших значений (берётся всё, что ниже квантиля)
 #' @param low Вычисляем худшие значения (классический квантиль) 
 #' @param hi Вычисляем лучшие значения (всё, что больше квантиля) 
-#' @param two Вычисляем "середину" между двумя уровнями
+#' @param two Вычисляем 'середину' между двумя уровнями
 #' @param abs Eсли нужно, задать абсолютное значение квантиля (вычисленное ранее)
 #'
 #' @return data Отфильтрованные данные
@@ -198,9 +198,9 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' если == NULL - посвечный период
 #' @param width Глубина окна скольжения  
 #' @param by Шаг окна скольжения 
-#' @param align "Выравнивание" индекса результата, ставить = right (на данный момент не используется)
+#' @param align 'Выравнивание' индекса результата, ставить = right (на данный момент не используется)
 #' @param add_bySlice Нужно ли добавить в выходные данные нарезку с by-периодами 
-#' @param lookback "Заглядывание" за дату начала анализа (на данный момент не используется)
+#' @param lookback 'Заглядывание' за дату начала анализа (на данный момент не используется)
 #'
 #' @return result.list Лист с данными, разложенными по индексам окон
 #'
@@ -220,7 +220,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
   # индкесы исходных данных
   data_ind <- index(data)
   # интервал анализа
-  interval <- paste(start_date,'::',end_date, sep = "")
+  interval <- paste(start_date,'::',end_date, sep = '')
   #
   if (is.null(by)) {
     by <- width
@@ -320,7 +320,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     #       index(.)  - offset(x = width)
     #     } %>%
     #     # проверить!!!
-    #     paste(.,'::',end_date, sep = "") %>%
+    #     paste(.,'::',end_date, sep = '') %>%
     #     data[.]
     # } elxe {
     #
@@ -385,7 +385,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         } %>%
         {
           text <- index(ends_[.])
-          paste(text,"::", sep = "")
+          paste(text,'::', sep = '')
         } %>%
         temp_subset[.] %>%
         .[-1, ]

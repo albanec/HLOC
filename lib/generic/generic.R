@@ -3,11 +3,11 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ### Загрузка дочерних библиотек
-source("lib/generic/generic_mining.R")
-source("lib/generic/generic_getdata.R")
-source("lib/generic/generic_data.R")
-source("lib/generic/generic_quotes.R")
-source("lib/generic/generic_perfomance.R")
+source('lib/generic/generic_mining.R')
+source('lib/generic/generic_getdata.R')
+source('lib/generic/generic_data.R')
+source('lib/generic/generic_quotes.R')
+source('lib/generic/generic_perfomance.R')
 #
 ###
 #' Функция загружает, устанавливает и подключает необходимые пакеты 
@@ -26,16 +26,16 @@ PrepareForWork_Packages <- function(package.list.csv, package.list = FALSE, down
   # ----------
   #
   if (package.list == FALSE) {
-    cat("Package List Path:", package.list.csv, "\n")  
-    cat("Reading Package Lists...", "\n")
+    cat('Package List Path:', package.list.csv, '\n')  
+    cat('Reading Package Lists...', '\n')
     package.list <- read.csv(package.list.csv, header = F, stringsAsFactors = F)  
     package.list <- unlist(package.list, use.names = FALSE)  
   } 
-  cat("Loading Installed Package List...", "\n")
+  cat('Loading Installed Package List...', '\n')
   if (update == TRUE) {
-    cat ("Start Upgrading packages", "\n")
+    cat ('Start Upgrading packages', '\n')
     update.packages(ask = FALSE)
-    cat ("Upgrade Packages: OK", "\n")
+    cat ('Upgrade Packages: OK', '\n')
     download <- FALSE
   } 
   if (download == TRUE) {
@@ -44,19 +44,19 @@ PrepareForWork_Packages <- function(package.list.csv, package.list = FALSE, down
       install.packages(package.list.temp1, dependencies = TRUE)    
       package.list.temp2 <- setdiff(package.list.temp1, rownames(installed.packages()))
       if (length(package.list.temp2) > 0) {
-        warning("Installation Error!!!")
+        warning('Installation Error!!!')
       } else {
-        cat (length(diff(package.list, package.list.temp1)), " packages newly installed!", "\n")
-        cat("Installation Complete", "\n")
+        cat (length(diff(package.list, package.list.temp1)), ' packages newly installed!', '\n')
+        cat('Installation Complete', '\n')
       }
     } else {
-      cat ("All Packages Already Installed!", "\n")
+      cat ('All Packages Already Installed!', '\n')
     }  
   }
   if (load == TRUE) {
-    cat("Load Libraries to Workspace")
+    cat('Load Libraries to Workspace')
     lapply(package.list, library, character.only = TRUE)
-    cat("Libraries Prepare to Work")
+    cat('Libraries Prepare to Work')
   }
 }
 #
@@ -96,16 +96,16 @@ FindMaxDistancePoint <- function(y, x=1:len(y)) {
 #' @return
 #'
 #' @export
-CleanGarbage <- function(target = "temp", env = ".GlobalEnv") {
-  cat("INFO(CleanTempData): Removing TempData..  Start", "\n")
+CleanGarbage <- function(target = 'temp', env = '.GlobalEnv') {
+  cat('INFO(CleanTempData): Removing TempData..  Start', '\n')
   removeVector <- 
     ls(env) %>%
     {
       grep(target, ., value = TRUE) 
     } 
   rm(list = removeVector, envir = as.environment(env))
-  cat("INFO(CleanTempData): Removing TempData..  OK", "\n")
-  cat("INFO(CleanTempData): Garbage Collect..  Start", "\n")
+  cat('INFO(CleanTempData): Removing TempData..  OK', '\n')
+  cat('INFO(CleanTempData): Garbage Collect..  Start', '\n')
   gc()
-  cat("INFO(CleanTempData): Garbage Collect..  OK", "\n")
+  cat('INFO(CleanTempData): Garbage Collect..  OK', '\n')
 }

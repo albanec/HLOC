@@ -21,7 +21,7 @@ DatesTable <- function(data, data.state) {
   require(PerformanceAnalytics)
   # ----------
   #
-  # cat("INFO(DateTable):  Calc Date Metrics", "\n", sep = "  ")
+  # cat('INFO(DateTable):  Calc Date Metrics', '\n', sep = '  ')
   trading.days <- 
     index(data) %>%
     CalcTradingDays(x = .)
@@ -37,7 +37,7 @@ DatesTable <- function(data, data.state) {
   period <- 
     periodicity(data) %>%
     {
-      paste(.[[2]], "mins")
+      paste(.[[2]], 'mins')
     }
   ### всего баров
   nbar <- 
@@ -58,8 +58,8 @@ DatesTable <- function(data, data.state) {
   nbar.out <- nbar - nbar.trade
   ### таблица временных метрик
   datesTable <- cbind.data.frame(from.date, to.date, period, trading.days, nbar, nbar.trade, nbar.out)
-  colnames(datesTable) <- c("StartDate", "EndDate", "Period", "NumTradeDays", 
-                            "NumBars", "NumBarsTrade", "NumBarsNoTrade")
+  colnames(datesTable) <- c('StartDate', 'EndDate', 'Period', 'NumTradeDays', 
+                            'NumBars', 'NumBarsTrade', 'NumBarsNoTrade')
   #
   return(datesTable)
 }

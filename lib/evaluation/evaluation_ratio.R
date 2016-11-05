@@ -19,7 +19,7 @@ RatioTable <- function(returns, ret.type) {
   #
   # от типа используемых return'ов сильно зависят дальнейшие вычисления;
   # функции пакета PerfomanceAnalythics по умолчанию настроены на расчёт SR (т.е. на геометрический рассчёт)
-  if (ret.type == "sret") {
+  if (ret.type == 'sret') {
     TF <- TRUE
   } else {
     TF <- FALSE
@@ -34,10 +34,10 @@ RatioTable <- function(returns, ret.type) {
   # SterlingRatio
   sterling.data <- SterlingRatio.calc(returns, scale = 1, geometric = TF)
   # формирование таблицы
-  ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = "SharpRatio"), 
-                                  Ratio.transformMetric(sortino.data, metric.name = "SortinoRatio"), 
-                                  Ratio.transformMetric(calmar.data, metric.name = "CalmarRatio"),
-                                  Ratio.transformMetric(sterling.data, metric.name = "SterlingRatio"))
+  ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = 'SharpRatio'), 
+                                  Ratio.transformMetric(sortino.data, metric.name = 'SortinoRatio'), 
+                                  Ratio.transformMetric(calmar.data, metric.name = 'CalmarRatio'),
+                                  Ratio.transformMetric(sterling.data, metric.name = 'SterlingRatio'))
   #pMetric[,1] <- 
   return(ratioTable)
 }
@@ -60,10 +60,10 @@ CalmarRatio.calc <- function(R, scale = NA, geometric = TRUE) {
     freq = periodicity(R)
     switch(freq$scale, 
            minute = {
-             stop("Data periodicity too high")
+             stop('Data periodicity too high')
            }, 
            hourly = {
-             stop("Data periodicity too high")
+             stop('Data periodicity too high')
            }, 
            daily = {
              scale = 252
@@ -84,7 +84,7 @@ CalmarRatio.calc <- function(R, scale = NA, geometric = TRUE) {
   annualized_return = Return.annualized(R, scale = scale, geometric = geometric)
   drawdown = abs(maxDrawdown(R, geometric = geometric))
   result = annualized_return/drawdown
-  rownames(result) = "Calmar Ratio"
+  rownames(result) = 'Calmar Ratio'
   return(result)
 }
 #
@@ -107,10 +107,10 @@ SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
     freq = periodicity(R)
     switch(freq$scale, 
            minute = {
-             stop("Data periodicity too high")
+             stop('Data periodicity too high')
            }, 
            hourly = { 
-             stop("Data periodicity too high")
+             stop('Data periodicity too high')
            }, 
            daily = {
              scale = 252
@@ -131,7 +131,7 @@ SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
   annualized_return = Return.annualized(R, scale = scale, geometric = geometric)
   drawdown = abs(maxDrawdown(R, geometric = geometric) + excess)
   result = annualized_return / drawdown
-  rownames(result) = paste("Sterling Ratio (Excess = ", round(excess * 100, 0), "%)", sep = "")
+  rownames(result) = paste('Sterling Ratio (Excess = ', round(excess * 100, 0), '%)', sep = '')
   return(result)
 }
 #
@@ -148,14 +148,14 @@ SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
 #' @export
 Ratio.transformMetric <- function(metric.data, metric.name) {
   #
-  #cat("Calculating Performance Metric:", metric.name, "\n")
+  #cat('Calculating Performance Metric:', metric.name, '\n')
   metric.data <- as.matrix(metric.data)
   # трансформация в нужный вид:
   if (nrow(metric.data) == 1) {
     metric.data <- t(metric.data)
   }
   colnames(metric.data) <- metric.name
-  rownames(metric.data) <- ""
+  rownames(metric.data) <- ''
   return (metric.data)
 }
 #

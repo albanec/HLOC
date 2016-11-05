@@ -125,7 +125,7 @@ TradingDaysStats.calc <- function(data) {
   # разметка номеров дней
   data$trday.num <- 
     {
-      data$endpoint[endpoints(data, on = "days")] <- 1
+      data$endpoint[endpoints(data, on = 'days')] <- 1
       return(data)
     } %>%
     {
@@ -175,7 +175,7 @@ TradingDays.daySummary <- function(data, n) {
     # разметка номеров дней
     data$trday.num <- 
       {
-        data$endpoint[endpoints(data, on = "days")] <- 1
+        data$endpoint[endpoints(data, on = 'days')] <- 1
         return(data)
       } %>%
       {
@@ -185,7 +185,7 @@ TradingDays.daySummary <- function(data, n) {
     data$trday.num <- na.locf(data$trday.num, fromLast = TRUE) 
   } 
   ### выборка нужных столбцов
-  data <- data[, c("balance", "trday.num")]
+  data <- data[, c('balance', 'trday.num')]
   ### расчёт
   result <- 
     # выгружаем данные по dd с номером n
@@ -202,8 +202,8 @@ TradingDays.daySummary <- function(data, n) {
                    ) 
       df$Date <- 
         first(.$date) %>%
-        format(., "%Y-%m-%d") %>%
-        as.POSIXct(., origin = "1970-01-01") 
+        format(., '%Y-%m-%d') %>%
+        as.POSIXct(., origin = '1970-01-01') 
       df$Num <- n
         df$Return <- 
         {

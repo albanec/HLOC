@@ -14,12 +14,12 @@ library(parallel)
 # library(data.table)
 #
 ## Загрузка библиотек
-source("lib/generic/generic.R")
-source("lib/strategy/strategy.R")
-source("lib/evaluation/evaluation.R")
-source("lib/optimization/optimization.R")
-source("lib/cluster/cluster.R")
+source('lib/generic/generic.R')
+source('lib/strategy/strategy.R')
+source('lib/evaluation/evaluation.R')
+source('lib/optimization/optimization.R')
+source('lib/cluster/cluster.R')
 # движок стратегии
-source("lib/strategy/simple/simple_gear.R")
+source('lib/strategy/simple/simple_gear.R')
 # движок оптимизации
-source("lib/optimization/simple/simple_optimization.R")
+source('lib/optimization/simple/simple_optimization.R')

@@ -15,11 +15,11 @@
 DrawdownsTable <- function(data.balance) {
   # ----------
   # подготовка данных
-  #cat("INFO(DrawdownsTable): Calc Drawdown Data Set", "\n")
+  #cat('INFO(DrawdownsTable): Calc Drawdown Data Set', '\n')
   drawdowns <- Drawdowns.dd_data(data = data.balance, fullData = TRUE)
   ### вычисление summary по data set'у
   ## max просадка
-  #cat("INFO(DrawdownsTable): Calc MaxDrawdown", "\n")
+  #cat('INFO(DrawdownsTable): Calc MaxDrawdown', '\n')
   max.drawdown <- 
     min(drawdowns[[2]]$Depth) %>%
     as.numeric(.)
@@ -32,9 +32,9 @@ DrawdownsTable <- function(data.balance) {
     {
       index(first(.)) 
     } %>%
-    as.POSIXct(., origin = "1970-01-01")
+    as.POSIXct(., origin = '1970-01-01')
   ## средняя просадка
-  #cat("Calculating Performance Metric:  MeanDrawdown", "\n")
+  #cat('Calculating Performance Metric:  MeanDrawdown', '\n')
   mean.drawdown <- 
     mean(drawdowns[[2]]$Depth) %>% 
     as.numeric(.)
@@ -42,33 +42,33 @@ DrawdownsTable <- function(data.balance) {
     mean(drawdowns[[2]]$DepthPercent) %>% 
     as.numeric(.)
   ## max длина просадки в днях
-  #cat("Calculating Performance Metric:  MaxDrawdownDays", "\n")
+  #cat('Calculating Performance Metric:  MaxDrawdownDays', '\n')
   max.drawdown.days <- 
     max(drawdowns[[2]]$Days) %>%
     as.numeric(.) 
   ## среднее число дней в просадке
-  #cat("Calculating Performance Metric:  MeanDrawdownDays", "\n")
+  #cat('Calculating Performance Metric:  MeanDrawdownDays', '\n')
   mean.drawdown.days <- 
     drawdowns[[2]]$Days[drawdowns[[2]]$Days != 0] %>%
     mean(.) %>%
     trunc(.) %>%
     as.numeric(.)
   ## текущее число дней в просадке
-  #cat("Calculating Performance Metric:  NowDrawdownDays", "\n")
+  #cat('Calculating Performance Metric:  NowDrawdownDays', '\n')
   now.drawdown.days <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Days),
            0) %>%
     as.numeric(.)
   ## текущее число свечей в просадке
-  #cat("Calculating Performance Metric:  NowDrawdownPeriods", "\n")
+  #cat('Calculating Performance Metric:  NowDrawdownPeriods', '\n')
   now.drawdown.periods <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Length),
            0) %>%
     as.numeric(.)
   ## текущая просадка 
-  #cat("Calculating Performance Metric:  NowDrawdown", "\n")
+  #cat('Calculating Performance Metric:  NowDrawdown', '\n')
   now.drawdown <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[1]]$dd),
@@ -182,13 +182,13 @@ Drawdowns.calcSummary <- function(data, n) {
       # начало dd
       df$From <- 
         .$date[1] %>%
-        as.POSIXct(., origin = "1970-01-01") 
+        as.POSIXct(., origin = '1970-01-01') 
       # конец dd
       df$To <- 
         {
           .$date[nrow(.)]
         } %>%
-        as.POSIXct(., origin = "1970-01-01") 
+        as.POSIXct(., origin = '1970-01-01') 
       # максимальная глубина
       df$Depth <- min(.$dd)
       df$DepthPercent <- min(.$dd.percent)
@@ -196,7 +196,7 @@ Drawdowns.calcSummary <- function(data, n) {
       df$Length <- nrow(.)
       # дни в просадке
       df$Days <-
-       # as.POSIXct(.$date, origin = "1970-01-01") %>%
+       # as.POSIXct(.$date, origin = '1970-01-01') %>%
         CalcTradingDays(x = .$date, fullDays = TRUE) 
       return(df)
     } #%>%
@@ -264,6 +264,4 @@ Drawdowns.calc <- function(data) {
   #
   return(data)
 }
-#
-
 #

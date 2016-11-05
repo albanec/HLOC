@@ -3,11 +3,11 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ### Загрузка дочерних библиотек
-source("lib/evaluation/evaluation_dates.R")
-source("lib/evaluation/evaluation_deals.R")
-source("lib/evaluation/evaluation_drawdown.R")
-source("lib/evaluation/evaluation_profit.R")
-source("lib/evaluation/evaluation_ratio.R")
+source('lib/evaluation/evaluation_dates.R')
+source('lib/evaluation/evaluation_deals.R')
+source('lib/evaluation/evaluation_drawdown.R')
+source('lib/evaluation/evaluation_profit.R')
+source('lib/evaluation/evaluation_ratio.R')
 #
 ###
 #' Расчет perfomance-метрик (полный набор)
@@ -44,26 +44,26 @@ PerfomanceTable <- function(data, data.state, dealsTable,
     #
     # sharp.data <-  
     #   SharpeRatio.annualized(returns, scale = 1, geometric = TF) %>%
-    #   Ratio.transformMetric(., metric.name = "SharpRatio")
+    #   Ratio.transformMetric(., metric.name = 'SharpRatio')
     #
     perfomanceTable <- data.frame(Return = fullReturn.percent, MaxDrawdown = max.drawdown.percent)
     return(perfomanceTable)
   }
   ### Есди расчёт полных метрик:
-  cat("INFO(PerfomanceTable):  Calc PerfomanceMetrics ... Start", "\n")
+  cat('INFO(PerfomanceTable):  Calc PerfomanceMetrics ... Start', '\n')
   ## простые временные метрики
-  cat("INFO(PerfomanceTable):  Calc DatesMetrics", "\n", sep = "  ")
+  cat('INFO(PerfomanceTable):  Calc DatesMetrics', '\n', sep = '  ')
   datesTable <- DatesTable(data = data, data.state = data.state)    
   ## расчёт drawdown'ов
-  cat("INFO(PerfomanceTable):  Calc DrawdownsTable", "\n")
+  cat('INFO(PerfomanceTable):  Calc DrawdownsTable', '\n')
   DrawdownsTable <- DrawdownsTable(data.balance = data$balance)
   ## profit метрики
-  cat("INFO(PerfomanceTable):  Calc ProfitTable", "\n")
+  cat('INFO(PerfomanceTable):  Calc ProfitTable', '\n')
   profitTable <- ProfitTable(data = data, dealsTable = dealsTable, DrawdownsTable = DrawdownsTable,
                              balance = balance.start, 
                              nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
   ## расчёт коэффициентов
-  cat("INFO(PerfomanceTable):  Calc RatioTable", "\n")
+  cat('INFO(PerfomanceTable):  Calc RatioTable', '\n')
   ratioTable <- RatioTable(returns = data$perfReturn, ret.type)
   # фактор восстановления
   rf <- 
@@ -77,12 +77,12 @@ PerfomanceTable <- function(data, data.state, dealsTable,
     data.frame(WinRatio = .)
   #
   ### итоговая таблица
-  cat("INFO(PerfomanceTable):  Build PerfomanceTable", "\n")
+  cat('INFO(PerfomanceTable):  Build PerfomanceTable', '\n')
   perfomanceTable <- cbind(datesTable, ratioTable, 
                            rf, win.ratio, 
                            DrawdownsTable, profitTable)
  #
-  cat("INFO(PerfomanceTable):  Calc PerfomanceMetrics ... OK", "\n")
+  cat('INFO(PerfomanceTable):  Calc PerfomanceMetrics ... OK', '\n')
   #
   return(perfomanceTable)
 }

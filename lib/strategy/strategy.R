@@ -3,7 +3,7 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ### Загрузка дочерних библиотек
-source("lib/strategy/strategy_indicators.R")
+source('lib/strategy/strategy_indicators.R')
 ###
 #' Переход к состояниям (фильтрация сигналов)
 #' 
@@ -27,7 +27,7 @@ Convert.signal_to_states <- function(x) {
 ###
 #' Вычисляет пересечения графиков рядов
 #'
-#' Вычисляются пересечения x1 "снизу-вверх" x2 (точки пробития вверх x2)
+#' Вычисляются пересечения x1 'снизу-вверх' x2 (точки пробития вверх x2)
 #' 
 #' @param x1 xts1
 #' @param x2 xts2
@@ -117,16 +117,16 @@ CalcStates.buildStatesTable <- function(data) {
 #' @return data XTS + return'ы по каждому инструменту 
 #'
 #' @export
-CalcReturn_inXTS <- function(data, price = "Close", type = "sret") {
+CalcReturn_inXTS <- function(data, price = 'Close', type = 'sret') {
   require(quantmod)
   # ----------
   data.names <- 
-    names(data)[grep("Close", names(data))] %>%
-    sub(".Close", "", .)
+    names(data)[grep('Close', names(data))] %>%
+    sub('.Close', '', .)
   for (i in 1:length(data.names)) {
-    temp.text <- paste("data$",data.names[i],".",type," <- ",
-                       "CalcReturn(data$",data.names[i],".",price,", type = \"",type,"\")", 
-                       sep="")
+    temp.text <- paste('data$',data.names[i],'.',type,' <- ',
+                       'CalcReturn(data$',data.names[i],'.',price,', type = \"',type,'\")', 
+                       sep='')
     eval(parse(text = temp.text))
   }
   #
@@ -236,12 +236,12 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
 NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
   x <- norm.data
   for (i in 1:length(names)) {
-    temp.text <- paste("data$",outnames[i]," <- ",
-                       "NormData.price(data = data$",names[i],",",
-                                                   "norm.data = x, convert.to = \"",convert.to,"\",",
-                                                   "tick.val = ",tick.val[i],",",
-                                                   "tick.price = ", tick.price[i],")",
-                       sep = "")
+    temp.text <- paste('data$',outnames[i],' <- ',
+                       'NormData.price(data = data$',names[i],',',
+                                                   'norm.data = x, convert.to = \"',convert.to,'\",',
+                                                   'tick.val = ',tick.val[i],',',
+                                                   'tick.price = ', tick.price[i],')',
+                       sep = '')
     eval(parse(text = temp.text))  
   }
   #
@@ -263,9 +263,9 @@ CalcSum_inXTS_byTargetCol.basket <- function(data, basket.weights, target) {
   # 
   temp.text <- 
     names(data)[grep(target, names(data))] %>% 
-    paste("data$", ., sep = "") %>%
-    paste(., basket.weights, sep = " * ", collapse = " + ") %>%
-    paste("data <- ", ., sep = "") 
+    paste('data$', ., sep = '') %>%
+    paste(., basket.weights, sep = ' * ', collapse = ' + ') %>%
+    paste('data <- ', ., sep = '') 
   eval(parse(text = temp.text))
   #
   return(data)
@@ -284,10 +284,10 @@ CalcSum_inXTS_byTargetCol.basket <- function(data, basket.weights, target) {
 #'
 #' @export
 NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
-  if (convert.to == "RUB") {
+  if (convert.to == 'RUB') {
     data <- (data * tick.price / tick.val) * norm.data
   }
-  if (convert.to == "USD") {
+  if (convert.to == 'USD') {
     data <- (data * tick.price / tick.val) / norm.data  
   }
   #
@@ -309,10 +309,10 @@ SplitSwitchPosition <- function(data) {
   # индекс строки-переворота
   temp.ind <- index(data[data$action == 2 | data$action == -2])
   if (length(temp.ind) == 0) {
-    cat("TestStrategy INFO: No Switch Position there", "\n")
+    cat('TestStrategy INFO: No Switch Position there', '\n')
     rm(temp.ind)
   } else {
-    cat("TestStrategy INFO:  Split SwitchPosition...", "\n") 
+    cat('TestStrategy INFO:  Split SwitchPosition...', '\n') 
     # temp копия нужных строк (строки начала новой сделки)
     temp <- 
       data[temp.ind] %>% 
@@ -383,7 +383,7 @@ CalcPosition.num <- function(x) {
   action[1] <- x[1]
   result <- 
     abs(sign(action)) %>%
-    # защита от нумерации позиций "вне рынка"
+    # защита от нумерации позиций 'вне рынка'
     {
       abs(sign(x)) * . 
     } %>%
@@ -623,3 +623,26 @@ CalcPrice.slips <- function(price, action, data.source, slips) {
     #
     return(price)
 }
+#
+###
+#' Очистка таблицы состояний от пустых сделок
+#'
+#' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
+#' 
+#' @param data Входной xts ряд состояний
+#'  
+#' @return data Очищенный xts ряд состояний
+#'
+#' @export
+StatesTable.clean <- function(data) {
+  data %<>%
+    # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
+    {
+      df <- . 
+      if ((df$n == 0 && df$diff.n ==0) != FALSE) {
+        df <- df[-which(df$n == 0 & df$diff.n ==0)]
+      }
+      return(df)
+    } 
+  return(data)
+} 

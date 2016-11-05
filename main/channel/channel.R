@@ -28,9 +28,8 @@ data.source <-
 # переход к нужному периоду свечей
 data.source <- ExpandData.toPeriod(x = data.source, per = '15min')
 data.source.list <- list(data.source)
-rm(data.source)
-
 colnames(data.source.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
+rm(data.source)
 #
 data.source.list[[1]] <- 
   # удаление NA (по свечам)
@@ -69,10 +68,13 @@ data.strategy.list <- StrategyGear.Turtles(data.source = data.source.list[[1]],
                                            return_type = 'ret',
                                            exp.vector = exp.vector)
 
+## формирование таблицы сделок
+# чистим от лишних записей
+data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
 # лист с данными по сделкам (по тикерам и за всю корзину)
 dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE)#TRUE
-# очистка мусора по target = "temp"
-CleanGarbage(target = "temp", env = ".GlobalEnv")
+# очистка мусора по target = 'temp'
+CleanGarbage(target = 'temp', env = '.GlobalEnv')
 gc()
 ## оценка perfomance-параметров
 perfomanceTable <- 
@@ -85,9 +87,9 @@ perfomanceTable <-
   cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
 ## запись в файл 
 if (firstTime == TRUE) {
-  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ",", col.names = TRUE )  
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ',', col.names = TRUE )  
   firstTime <- FALSE
 } else {
-  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ",", col.names = FALSE, append = TRUE )  
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ',', col.names = FALSE, append = TRUE )  
 }
 #

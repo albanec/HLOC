@@ -3,8 +3,8 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ### Загрузка дочерних библиотек
-source("lib/evaluation/evaluation_profit_days.R")
-source("lib/evaluation/evaluation_profit_deals.R")
+source('lib/evaluation/evaluation_profit_days.R')
+source('lib/evaluation/evaluation_profit_deals.R')
 #
 ###
 #' Расчёт итоговой таблицы с данными по доходностям 
@@ -57,7 +57,7 @@ ProfitTable <- function(data, dealsTable, balance, ...) {
       x <- .
       args <- list(...) 
       args.names <- names(args)
-      if (("nbar" %in% args.names) && ("nbar.trade" %in% args.names) == TRUE ) {
+      if (('nbar' %in% args.names) && ('nbar.trade' %in% args.names) == TRUE ) {
         fullReturn.bar <- fullReturn / args$nbar
         fullReturn.nbar.trade <- fullReturn / args$nbar.trade
         x <- cbind(x, ReturnBar = fullReturn.bar, ReturnBarTrade = fullReturn.nbar.trade)

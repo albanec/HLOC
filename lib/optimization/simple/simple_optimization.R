@@ -25,14 +25,14 @@ SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
     library(magrittr)
     library(tidyr)
     library(PerformanceAnalytics)
-    source("main/simple/linker.R")
+    source('main/simple/linker.R')
   })
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      "data.source.list", 
-      "add.per", "k.mm", "balance.start", 
-      "basket.weights", "slips", "commissions", "ret.type"
+      'data.source.list', 
+      'add.per', 'k.mm', 'balance.start', 
+      'basket.weights', 'slips', 'commissions', 'ret.type'
     )
   )
   #
@@ -147,8 +147,8 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = TRUE, convert = TRUE)
-      # очистка мусора по target = "temp"
-      CleanGarbage(target = "temp", env = ".GlobalEnv")
+      # очистка мусора по target = 'temp'
+      CleanGarbage(target = 'temp', env = '.GlobalEnv')
       # 
       ### оценка perfomance-параметров
       perfomanceTable <- 
