@@ -54,7 +54,7 @@ data.strategy.list <- TestStr.gear(data.source = data.source.list[[1]],
 # чистим от лишних записей
 data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
 # лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], convert = FALSE)#TRUE
+dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE)#TRUE
 # очистка мусора по target = "temp"
 CleanGarbage(target = "temp", env = ".GlobalEnv")
 gc()

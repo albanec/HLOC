@@ -84,14 +84,14 @@ MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
 MergeData_inList.byRow <- function(data.list) {
   #
   while (length(data.list) > 1) {
-  idxdata.list <- seq(from=1, to=length(data.list), by=2)
-  data.list <- lapply(idxdata.list, 
-                      function(i) {
-                        if(i == length(data.list)) { 
-                          return(data.list[[i]]) 
-                        }
-                        return(rbind(data.list[[i]], data.list[[i+1]]))
-                      })
+    idxdata.list <- seq(from = 1, to = length(data.list), by = 2)
+    data.list <- lapply(idxdata.list, 
+                        function(i) {
+                          if(i == length(data.list)) { 
+                            return(data.list[[i]]) 
+                          }
+                          return(rbind(data.list[[i]], data.list[[i + 1]]))
+                        })
   }
   #
   return(data.list[[1]])

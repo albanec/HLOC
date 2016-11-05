@@ -12,7 +12,7 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-DealsTables.calc <- function(data, convert = FALSE, ...) {
+DealsTables.calc <- function(data, basket = FALSE, convert = FALSE, ...) {
   if (!exists("data.names")) {
     data.names <- 
       grep(".equity", names(data)) %>%
@@ -37,22 +37,28 @@ DealsTables.calc <- function(data, convert = FALSE, ...) {
            }) %>%
     # объединение данных внутри листа в один df
     MergeData_inList.byRow(.)
-  ### расчёт таблицы сделок (данные по корзине)
-  dealsTable_byBasket <- 
-    lapply(pos.num.list,
-           function (x) {
-             CalcOneDealSummary.df(data, n = x, data.names = data.names, type = "basket")
-           }) %>%
-    MergeData_inList.byRow(.)
-  #
   if (convert != FALSE) {
-    dealsTable_byTickers %<>%
-      DealsTable.convert(data.deals = ., type = "tickers")
-    dealsTable_byBasket %<>%
-      DealsTable.convert(data.deals = ., type = "basket")
+    dealsTable_byTickers %<>% DealsTable.convert(data.deals = ., type = "tickers")
+  }
+  ### расчёт таблицы сделок (данные по корзине)
+  if (basket == TRUE) {
+    dealsTable_byBasket <- 
+      lapply(pos.num.list,
+             function (x) {
+               CalcOneDealSummary.df(data, n = x, data.names = data.names, type = "basket")
+             }) %>%
+      MergeData_inList.byRow(.)
+    if (convert != FALSE) {
+      dealsTable_byBasket %<>% DealsTable.convert(data.deals = ., type = "basket")  
+    }
+    result.list <- list(dealsTable_byBasket, dealsTable_byTickers)
+    names(result.list) <- c('byBasket', 'byTickers')
+  } else {
+    result.list <- list(dealsTable_byTickers)
+    names(result.list) <- c('byTickers')
   }
   #
-  return(list(dealsTable_byBasket, dealsTable_byTickers))
+  return(result.list)
 }
 #
 ###
@@ -135,9 +141,9 @@ CalcOneDealSummary.df <- function(data, type, n, ...) {
   #
   if (!exists("data.names")) {
     data.names <- 
-      grep(".Open", names(data)) %>%
+      grep(".Price", names(data)) %>%
       names(data)[.] %>%
-      sub(".Open", "", .)   
+      sub(".Price", "", .)   
   }
   deal.summary <- 
     # вытаскиваем данные по сделке n
@@ -165,7 +171,7 @@ CalcOneDealSummary.df <- function(data, type, n, ...) {
               # правильно прописываем названия столбцов с нужными данными (в names.set)
               temp.text <- 
                 paste("names.set <- c(\"pos\", \"pos.num\", \"pos.bars\", \"pos.add\", \"pos.drop\", ",
-                      "\"",x,".n\", \"",x,".diff.n\", \"",x,".Open\", ",
+                      "\"",x,".n\", \"",x,".diff.n\", \"",x,".Price\", ",
                       "\"",x,".commiss\", \"",x,".equity\", \"",x,".perfReturn\") ;" ,
                       sep = "")                  
               eval(parse(text = temp.text))
@@ -174,7 +180,7 @@ CalcOneDealSummary.df <- function(data, type, n, ...) {
                 temp.data[, (which(colnames(temp.data) %in% names.set))] %>%
                 # для удобства переименуем 
                 {        
-                  names(.) <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "Open", "n", "diff.n",  
+                  names(.) <- c("pos", "pos.num", "pos.bars", "pos.add", "pos.drop", "Price", "n", "diff.n",  
                                 "commiss", "deal.return", "equity") 
                   return(.)
                 } %>%
@@ -350,7 +356,7 @@ CalcOneDealSummary.df <- function(data, type, n, ...) {
       ## цена тикера на открытии (не используется в "basket" режиме)
       if (type == "tickers") {
         df$OpenValue <- ifelse(.$pos != 0 & .$pos.drop == 0, 
-                               .$Open, 
+                               .$Price, 
                                NA)
       } else {
         df$OpenValue <- NA
@@ -386,7 +392,7 @@ CalcOneDealSummary.df <- function(data, type, n, ...) {
       ## цена тикера на закрытии (не используется в "basket" режиме)
       if (type == "tickers") {
         df$CloseValue <- ifelse(.$pos == 0 | .$pos.drop != 0, 
-                                .$Open, 
+                                .$Price, 
                                 NA)
       } else {
         df$CloseValue <- NA

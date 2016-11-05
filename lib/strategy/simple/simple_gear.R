@@ -339,12 +339,12 @@ SimpleStr.gear <- function(data.source,
   # 
   # 2.1.3 добавление нужных исходных данных в data и data.state 
   #
-  # Выгружаем и рассчитываем уникальные данные по инструментам (Open, ret, cret, pos)
+  # Выгружаем и рассчитываем уникальные данные по инструментам (Price, ret, cret, pos)
   # все действия проходят внутри одного цикла перебера имён инструментов
   #
   # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
     # котировки берём из data.source
-  cat("TestStrategy INFO:  Loading Tickers Open from data.source...", "\n")
+  cat("TestStrategy INFO:  Loading Tickers Price from data.source...", "\n")
   # индексы строк data.state
   data.state.ind <- index(data.state)
   ## соотшение позиций внутри корзины
@@ -358,29 +358,29 @@ SimpleStr.gear <- function(data.source,
       {
         t <- paste(             
           # перенос Open'ов в data.state (в пунктах) с учётом проскальзываний
-          "data.state$",.,".Open <- ", 
+          "data.state$",.,".Price <- ", 
             "merge(data.state, data.source$",.,".Open[data.state.ind]) %$% ",
             "na.locf(",.,".Open) %>% 
             { . + slips[i] * data.state$state } ; ",
           # перенос Open'ов в data 
-          "data$",.,".Open <- ", 
+          "data$",.,".Price <- ", 
             "merge(data, data.source$",.,".Open[data.ind]) %$% ",
             "na.locf(",.,".Open) ; ",  
           # перенос данных по Open'ам на свечах изменения позиций (в пунктах) в data
-          "temp <- merge(data$",.,".Open, data.state$",.,".Open[data.state.ind]) ; ",
+          "temp <- merge(data$",.,".Price, data.state$",.,".Price[data.state.ind]) ; ",
           "temp[, 1][which(!is.na(temp[, 2]))] <- temp[, 2][which(!is.na(temp[, 2]))] ; ",
-          "data$",.,".Open <- temp[, 1] ;",  
+          "data$",.,".Price <- temp[, 1] ;",  
           # расчёт позиций по инструментам корзины в data.state
           "data.state$",.,".pos <- data.state$pos * temp.vector[i] ; ",
           # расчёт return'ов по сделкам (в пунктах) в data.state 
           "data.state$",.,".ret <- ",
-            "(data.state$",.,".Open - lag(data.state$",.,".Open)) * lag(data.state$",.,".pos) ; ",  
+            "(data.state$",.,".Price - lag(data.state$",.,".Price)) * lag(data.state$",.,".pos) ; ",  
           "data.state$",.,".ret[1] <- 0 ;",
           # расчёт позиций по инструментам корзины в data
           "data$",.,".pos <- data$pos * temp.vector[i] ; ",           
           # расчёт return'ов по позициям (в пунктах) в data 
           "data$",.,".ret <- ",
-            "(data$",.,".Open - lag(data$",.,".Open)) * lag(data$",.,".pos) ; ",  
+            "(data$",.,".Price - lag(data$",.,".Price)) * lag(data$",.,".pos) ; ",  
           "data$",.,".ret[1] <- 0 ;",
           sep = "")
         return(t)

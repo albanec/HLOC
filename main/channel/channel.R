@@ -68,3 +68,26 @@ data.strategy.list <- StrategyGear.Turtles(data.source = data.source.list[[1]],
                                            slips = slips, commissions = commissions, 
                                            return_type = 'ret',
                                            exp.vector = exp.vector)
+
+# лист с данными по сделкам (по тикерам и за всю корзину)
+dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE)#TRUE
+# очистка мусора по target = "temp"
+CleanGarbage(target = "temp", env = ".GlobalEnv")
+gc()
+## оценка perfomance-параметров
+perfomanceTable <- 
+  PerfomanceTable(data = data.strategy.list[[1]], 
+                  data.state = data.strategy.list[[2]],
+                  dealsTable = dealsTable.list,
+                  balance = balance.start, 
+                  ret.type = ret.type) %>%
+  # добавление использованных параметров
+  cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
+## запись в файл 
+if (firstTime == TRUE) {
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ",", col.names = TRUE )  
+  firstTime <- FALSE
+} else {
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ",", col.names = FALSE, append = TRUE )  
+}
+#
