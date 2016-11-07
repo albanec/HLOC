@@ -7,15 +7,15 @@
 #' 
 #' @param data Входной xts ряд сделок
 #' @param basket Расчитывать по корзине, или нет (T/F)
-#' @param data.names Вектор тикеров (необязательно)
+#' @param ticker.names Вектор тикеров (необязательно)
 #' @param convert Переносить открытия/закрытия в одну строку или нет (по умолчанию нет)
 #'
 #' @return list List, содержащий все сделки
 #'
 #' @export
-DealsTables.calc <- function(data, basket = FALSE, convert = FALSE, ...) {
-  if (!exists('data.names')) {
-    data.names <- 
+DealsTables.calc <- function(data, basket = FALSE, convert = FALSE, ticker.names = NULL) {
+  if (!is.null('ticker.names')) {
+    ticker.names <- 
       grep('.equity', names(data)) %>%
       names(data)[.] %>%
       sub('.equity', '', .)   
@@ -34,7 +34,7 @@ DealsTables.calc <- function(data, basket = FALSE, convert = FALSE, ...) {
     # посделочный расчёт, на выходе лист с df по каждой сделке
     lapply(pos.num.list,
            function (x) {
-             DealSummary(data, n = x, data.names = data.names, type = 'byTicker')
+             DealSummary(data, n = x, ticker.names = ticker.names, type = 'byTicker')
            }) %>%
     # объединение данных внутри листа в один df
     MergeData_inList.byRow(.)
@@ -46,7 +46,7 @@ DealsTables.calc <- function(data, basket = FALSE, convert = FALSE, ...) {
     dealsTable_byBasket <- 
       lapply(pos.num.list,
              function (x) {
-               DealSummary(data, n = x, data.names = data.names, type = 'byBasket')
+               DealSummary(data, n = x, ticker.names = ticker.names, type = 'byBasket')
              }) %>%
       MergeData_inList.byRow(.)
     if (convert != FALSE) {
@@ -88,10 +88,8 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
       }
   } else {
     colNum <-
-      c('CloseSignal', 'CloseDate', 'CloseCommiss', 
-        'DealReturn', 'DealReturnPercent', 
-        'DealEquity', 'DealEquityPercent', 'Equity', 
-        'PositionBars') %>%
+      c('CloseSignal', 'CloseDate', 'CloseCommiss', 'DealReturn', 'DealReturnPercent', 'DealEquity', 
+        'DealEquityPercent', 'Equity', 'PositionBars') %>%
       {
         which(colnames(data.deals) %in% .) 
       }
@@ -133,7 +131,7 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
 #' @param data Входной xts ряд сделок
 #' @param type ???
 #' @param n Номер сделки
-#' @param data.names Вектор тикеров
+#' @param ticker.names Вектор тикеров
 #' @type Считать по тикерам или по портфелю
 #' @param bto_add.name Написание увеличения позиции long
 #' @param sto.name Написание открытия short
@@ -146,14 +144,14 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
 #' @return DealsTable data.frame содержащий все сделки
 #'
 #' @export
-DealsSummary <- function(data, type, n, data.names = NULL,
+DealSummary <- function(data, type, n, ticker.names = NULL,
                          bto.name, bto_add.name,
                          sto.name, sto_add.name,
                          stc.name, stc_drop.name,
                          btc.name, btc_drop.name) {
   #
-  if (!is.null('data.names')) {
-    data.names <- 
+  if (!is.null('ticker.names')) {
+    ticker.names <- 
       grep('.Price', names(data)) %>%
       names(data)[.] %>%
       sub('.Price', '', .)   
@@ -161,13 +159,13 @@ DealsSummary <- function(data, type, n, data.names = NULL,
   # вытаскиваем данные по сделке n
   data <- data[data$pos.num == n] 
   # лист тикеров
-  data.names.list <- as.list(data.names)
+  ticker.names.list <- as.list(ticker.names)
   
   ## расчёт данных сделок (по тикеру или корзине)
   if (type == 'byTicker') {
     data <- 
       # данные по каждому тикеру выкидываем в отдельный подлист
-      lapply(data.names.list, 
+      lapply(ticker.names.list, 
              function(x) {
                # правильно прописываем названия столбцов с нужными данными (в names.set)
                temp.text <- 
@@ -187,13 +185,12 @@ DealsSummary <- function(data, type, n, data.names = NULL,
                return(result)
              }) %>%
       MergeData_inList.byRow(.)
-
   } else {
     names.set <- c('pos', 'pos.num', 'pos.bars', 'pos.add', 'pos.drop', 'balance', 
                    'n', 'diff.n', 'commiss', 'equity', 'perfReturn') 
     data <- data[, (which(colnames(data) %in% names.set))]
     names(data) <- c('pos', 'pos.num', 'pos.bars', 'pos.add', 'pos.drop', 'balance',
-                          'n', 'diff.n', 'commiss', 'equity', 'deal.return') 
+                     'n', 'diff.n', 'commiss', 'equity', 'deal.return') 
     data$pos.num %<>% DealSummary.pos_num(x = .)
   }
 
@@ -311,7 +308,7 @@ DealSummary.summary_df <- function(data, type,
                                  'Короткая')
   ## имя тикера
   if (type == 'byTicker') {
-    summary$Ticker <- data.names
+    summary$Ticker <- ticker.names
   } else {
     summary$Ticker <- 'Basket'
   }
