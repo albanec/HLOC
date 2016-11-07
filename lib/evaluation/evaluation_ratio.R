@@ -35,9 +35,9 @@ RatioTable <- function(returns, ret.type) {
   sterling.data <- SterlingRatio.calc(returns, scale = 1, geometric = TF)
   # формирование таблицы
   ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = 'SharpRatio'), 
-                                  Ratio.transformMetric(sortino.data, metric.name = 'SortinoRatio'), 
-                                  Ratio.transformMetric(calmar.data, metric.name = 'CalmarRatio'),
-                                  Ratio.transformMetric(sterling.data, metric.name = 'SterlingRatio'))
+                                 Ratio.transformMetric(sortino.data, metric.name = 'SortinoRatio'), 
+                                 Ratio.transformMetric(calmar.data, metric.name = 'CalmarRatio'),
+                                 Ratio.transformMetric(sterling.data, metric.name = 'SterlingRatio'))
   #pMetric[,1] <- 
   return(ratioTable)
 }

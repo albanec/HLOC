@@ -17,29 +17,30 @@ source('lib/evaluation/evaluation_profit_deals.R')
 #' @return profitTable DF с данными по profit'у
 #'
 #' @export
-ProfitTable <- function(data, dealsTable, balance, ...) {
+ProfitTable <- function(data, dealsTable, balance_start, ...) {
   ### расчёт итоговой доходности 
   # здесь для анализа используется equty, чтобы лишний раз не считать разницу
   fullReturn <- 
     last(data$equity) %>%
     as.numeric(.)
-  fullReturn.percent <- fullReturn * 100 / balance    
-  ### доходность в год
+  fullReturn.percent <- fullReturn * 100 / balance_start    
+  ## доходность в год
   fullReturn.annual <- 
     index(data) %>%
     ndays(.) %>%
     {
       fullReturn * 250 / .
     }    
-  ### доходность в месяц
+  ## доходность в месяц
   fullReturn.monthly <-
     index(data) %>%
     ndays(.) %>%
     {
       fullReturn * 20 / .
     }
+ 
   ### расчёт метрик по дням
-  profitTable.byDays <- ProfitTable.byDays(data, balance)
+  profitTable.byDays <- ProfitTable.byDays(data)
   ### расчёт метрик по сделкам для корзины
   profitTable.byDeals <-  
     ProfitList_byDeals(data = dealsTable[[1]]) %>%

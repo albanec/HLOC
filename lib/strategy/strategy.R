@@ -4,6 +4,7 @@
 #
 ### Загрузка дочерних библиотек
 source('lib/strategy/strategy_indicators.R')
+source('lib/strategy/strategy_mm.R')
 ###
 #' Переход к состояниям (фильтрация сигналов)
 #' 

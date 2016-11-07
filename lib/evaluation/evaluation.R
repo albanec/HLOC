@@ -16,14 +16,15 @@ source('lib/evaluation/evaluation_ratio.R')
 #' просадкам (DrawdownsTable) + коэффициентам продуктивности (ratioTable)) 
 #' по данным отработки стратегии (data.strategy.list[[1]]) 
 #' 
-#' @param data Входной xts данных отработки стратегии 
+#' @param data Входной xts данных отработки стратегии (data.strategy.list[[1]])
 #' @param  balance Стартовый баланс
 #'  
 #' @return perfomanceTable.list Итоговая perfomance-таблица (list)
 #'
 #' @export
-PerfomanceTable <- function(data, data.state, dealsTable,
-                            balance, ret.type, fast = FALSE, ...) {
+PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.strategy.list[[2]], 
+                            dealsTable = dealsTable.list,
+                            balance_start, ret.type, fast = FALSE, ...) {
   #
   ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
   if (fast == TRUE) {
@@ -40,7 +41,7 @@ PerfomanceTable <- function(data, data.state, dealsTable,
     fullReturn <- 
       last(data$equity) %>%
       as.numeric(.)
-    fullReturn.percent <- fullReturn * 100 / balance   
+    fullReturn.percent <- fullReturn * 100 / balance_start   
     #
     # sharp.data <-  
     #   SharpeRatio.annualized(returns, scale = 1, geometric = TF) %>%
@@ -60,11 +61,11 @@ PerfomanceTable <- function(data, data.state, dealsTable,
   ## profit метрики
   cat('INFO(PerfomanceTable):  Calc ProfitTable', '\n')
   profitTable <- ProfitTable(data = data, dealsTable = dealsTable, DrawdownsTable = DrawdownsTable,
-                             balance = balance.start, 
+                             balance_start = balance_start, 
                              nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
   ## расчёт коэффициентов
   cat('INFO(PerfomanceTable):  Calc RatioTable', '\n')
-  ratioTable <- RatioTable(returns = data$perfReturn, ret.type)
+  ratioTable <- RatioTable(returns = data$perfReturn, ret.type = ret.type)
   # фактор восстановления
   rf <- 
     profitTable$Return / DrawdownsTable$MaxDrawdown %>%

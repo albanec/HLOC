@@ -6,7 +6,7 @@ source('main/test/linker.R')
 from_date <- '2016-03-01'
 to_date <- '2016-03-31'
 period <- '15min'
-tickers <- c('SPFB.Si')
+tickers <- c('SPFB.SI')
 im_dir <- 'data/im'
 ret_type <- 'ret'
 balance_start <- 1000000
@@ -20,7 +20,7 @@ expiration_dates.filename <- 'data/expiration/expiration_dates.csv'
 
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data.source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_source.csv')
+data.source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data.source <- 
   paste(from_date,'::',to_date, sep = '') %>%
@@ -45,10 +45,7 @@ data.source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data.source.
 # перевод return'ов в валюту
 data.source.list[[1]]$SPFB.SI.cret <- data.source.list[[1]]$SPFB.SI.ret 
 data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret 
-#
-colnames(data.source.list[[1]]) <- c('Open', 'High', 'Low','Close', 'Volume', 'SPFB.SI.IM', 'SPFB.SI.ret', 'IM',
-                                     'SPFB.SI.cret', 'cret')
-#
+
 ### выгрузка дат экспирации
 expiration.dates <- Read_CSV.toDF(file.path = expiration_dates.filename, sep = ',')
 colnames(expiration.dates) <- expiration.dates[1, ]
@@ -57,16 +54,17 @@ expiration.dates <-
   as.vector(.) %>%
   ymd(x = ., tz = 'MSK')
 #
-exp.vector <- expiration.dates
+# exp.vector <- expiration.dates
 
 ### один прогон вычислений 
-### отработка робота
+## отработка робота
 data.strategy.list <- StrategyGear.Turtles(data.source = data.source.list[[1]],
                                            per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, 
                                            k.mm = k_mm, balance_start = balance_start, 
-                                           slips = slips, commissions = commissions, 
+                                           slips = slips, commiss = commissions, 
                                            return_type = 'ret',
-                                           exp.vector = exp.vector)
+                                           exp.vector = expiration.dates, 
+                                           ticker = tickers)
 
 ## формирование таблицы сделок
 # чистим от лишних записей
@@ -81,11 +79,12 @@ perfomanceTable <-
   PerfomanceTable(data = data.strategy.list[[1]], 
                   data.state = data.strategy.list[[2]],
                   dealsTable = dealsTable.list,
-                  balance = balance.start, 
-                  ret.type = ret.type) %>%
+                  balance_start = balance_start, 
+                  ret.type = ret_type) %>%
   # добавление использованных параметров
-  cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per, k.mm_ = k.mm)
+  cbind.data.frame(., per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_slowSMA, k_mm = k_mm)
 ## запись в файл 
+firstTime <- TRUE
 if (firstTime == TRUE) {
   write.table(perfomanceTable, file = perfomanceDB.filename, sep = ',', col.names = TRUE )  
   firstTime <- FALSE

@@ -8,12 +8,11 @@
 #' Функция вычисляет параметры по доходностям дней торговли и формирует итоговый DF
 #' 
 #' @param data Полные данные (после  отработки стратегии)
-#' @param balance Стартовый баланс
 #'
 #' @return profitTable.byDays DF с данными по profit'у (по дням)
 #'
 #' @export
-ProfitTable.byDays <- function(data, balance, ...) {
+ProfitTable.byDays <- function(data) {
   # разбор дней
   ### статистика по дням
   trdaysStatsList <- TradingDaysStats.calc(data = data)
@@ -116,9 +115,13 @@ TradingDaysStats.calc <- function(data) {
         index(.) %>%
         duplicated(.) %>%
         which(.)
-      result <-
-      {
-        .[-duplicated.ind]
+      if (length(duplicated.ind) != 0) {
+        result <-
+          {
+            .[-duplicated.ind]
+          }  
+      } else {
+        result <- .
       }
       return(result)
     }
