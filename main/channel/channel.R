@@ -3,8 +3,8 @@ source('main/test/linker.R')
 #
 ### входные параметры
 # temp.dir <- 'data/temp'
-from_date <- '2016-03-01'
-to_date <- '2016-03-31'
+from_date <- '2016-04-01'
+to_date <- '2016-04-30'
 period <- '15min'
 tickers <- c('SPFB.SI')
 im_dir <- 'data/im'
@@ -13,9 +13,9 @@ balance_start <- 1000000
 k_mm <- 0.02  # mm на заход в сделку
 slips <- 10 # в пунктах
 commissions <- 3  # в рублях
-per_DCI <- 50 
-per_slowSMA <- 50 
-per_fastSMA <- 40 
+per_DCI <- 40 
+per_slowSMA <- 60 
+per_fastSMA <- 30 
 expiration_dates.filename <- 'data/expiration/expiration_dates.csv'
 
 ## подготовка исходных данных
@@ -70,7 +70,7 @@ data.strategy.list <- StrategyGear.Turtles(data.source = data.source.list[[1]],
 # чистим от лишних записей
 data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
 # лист с данными по сделкам (по тикерам и за всю корзину)
-dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE)#TRUE
+dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)#TRUE
 # очистка мусора по target = 'temp'
 CleanGarbage(target = 'temp', env = '.GlobalEnv')
 gc()
@@ -82,7 +82,8 @@ perfomanceTable <-
                   balance_start = balance_start, 
                   ret.type = ret_type) %>%
   # добавление использованных параметров
-  cbind.data.frame(., per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_slowSMA, k_mm = k_mm)
+  cbind.data.frame(., per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, k_mm = k_mm)
+
 ## запись в файл 
 firstTime <- TRUE
 if (firstTime == TRUE) {

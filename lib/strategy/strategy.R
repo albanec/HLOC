@@ -454,24 +454,24 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
            result <- get('result', envir = temp.env)
            #data[x, ] <- FUN(data, x, ...) 
            result$open[x] <- ifelse(cache.state == 0 | is.na(cache.state),
-                               ifelse(bto[x] != 0,
-                                      bto[x],
-                                      sto[x]),
-                               ifelse(stc[x] == cache.state,
-                                      0,
-                                      ifelse(btc[x] == cache.state,
-                                             0,
-                                             cache.state)
-                                      )
-                              )
+                                    ifelse(bto[x] != 0,
+                                           bto[x],
+                                           sto[x]),
+                                    ifelse(stc[x] == cache.state,
+                                           0,
+                                           ifelse(btc[x] == cache.state,
+                                                  0,
+                                                  cache.state)
+                                           )
+                                   )
            result$close[x] <- ifelse(cache.state != 0 | !is.na(cache.state),
-                                ifelse(btc[x] == cache.state,
-                                       btc[x],
-                                       ifelse(stc[x] == cache.state,
-                                              stc[x],
-                                              0)
-                                       ),
-                                0)
+                                     ifelse(btc[x] == cache.state,
+                                            btc[x],
+                                            ifelse(stc[x] == cache.state,
+                                                   stc[x],
+                                                   0)
+                                            ),
+                                     0)
            cache.state <- result$open[x]
            #
            assign('cache.state', cache.state, envir = temp.env)
@@ -489,6 +489,7 @@ CalcPosition.byOrders <- function(bto, stc, sto, btc) {
 #' 
 #' @param signals Данные ордеров (bto/stc/sto/btc)
 #' @param exp.vector Вектор с датами экспирации
+#' @param pos Расчёт по состояниям или ордерам
 #'
 #' @return result.list Лист с очищенными рядами сигналов
 #'
@@ -565,36 +566,27 @@ CleanSignal.gap <- function(signals) {
   signals[ends, bto_col] <- 0
   signals[ends, sto_col] <- 0
   #data <- na.omit(data)
-  # выходы на следующей свече по Open
-  temp.ind_stc <- which(signals$gap == 1 & signals[, stc_col] != 0)
-  if (length(temp.ind_stc) != 0) {
-    signals[temp.ind_stc + 1, stc_col] <- ifelse(signals[temp.ind_stc, stc_col] != 0,
-                                             signals[temp.ind_stc, stc_col],
-                                             0)
-   #signals[temp.ind_stc, stc_col] <- 0
-  }
-  #rm(temp.ind)
-  temp.ind_btc <- which(signals$gap == 1 & signals[, btc_col] != 0)
-  if (length(temp.ind_btc) != 0) {
-    signals[temp.ind_btc + 1, btc_col] <- ifelse(signals[temp.ind_btc, btc_col] != 0,
-                                             signals[temp.ind_btc, btc_col],
-                                             0)
-    #signals[temp.ind_btc, btc_col] <- 0
-  }
-  #rm(temp.ind)
+  
+  # # выходы на следующей свече по Open
+  # temp.ind <- which(signals$gap == 1 & signals[, stc_col] != 0)
+  # if (length(temp.ind) != 0) {
+  #   signals[temp.ind + 1, stc_col] <- ifelse(signals[temp.ind, stc_col] != 0,
+  #                                            signals[temp.ind, stc_col],
+  #                                            0)
+  #  #signals[temp.ind, stc_col] <- 0
+  # }
+  # rm(temp.ind)
+  # temp.ind <- which(signals$gap == 1 & signals[, btc_col] != 0)
+  # if (length(temp.ind) != 0) {
+  #   signals[temp.ind + 1, btc_col] <- ifelse(signals[temp.ind, btc_col] != 0,
+  #                                            signals[temp.ind, btc_col],
+  #                                            0)
+  #   #signals[temp.ind, btc_col] <- 0
+  # }
+  # rm(temp.ind)
   signals[ends, stc_col] <- 0
   signals[ends, btc_col] <- 0
   
-  # перенос индикаторов gap'ов на следующую свечу (нужно для подгрузки котировок)
-  # индикаторы gap переносятся только в том случае, если с gap идут "легитимные" сигналы
-  temp.ind <- c(temp.ind_stc, temp.ind_btc)
-  rm(temp.ind_stc)
-  rm(temp.ind_btc)
-  signals$gap[-temp.ind] <- 0   
-  rm(temp.ind)
-  
-  signals$gap <- lag(signals$gap)
-  signals$gap[1] <- 0
   gap <- signals$gap
   signals$gap <- NULL
   rm(ends)
@@ -602,6 +594,27 @@ CleanSignal.gap <- function(signals) {
   #
   return(result.list)
 }
+
+# CleanSignal.gap_close <- function(pos, gap, stc, btc, na = FALSE) {
+#   cache <- gap
+#   temp.ind <- which(gap!=0 | lag(gap!=0))
+#   pos <- pos[temp.ind, ]
+#   gap <- gap[temp.ind, ]
+#   stc <- stc[temp.ind, ]
+#   btc <- btc[temp.ind, ]
+
+#   gap <- ifelse(pos != 0,
+#                 ifelse(pos == lag(stc) | pos == lag(btc),
+#                        1,
+#                        0),
+#                 0)
+#   cache$result <- gap
+#   if (na == FALSE) {
+#     cache$result[is.na(cache$result)] <- 0
+#   }
+#   #
+#   return(cache$result)
+# }
 #
 ###
 #' Функция фильтрации канальных индикаторах на утренних gap'ах

@@ -214,7 +214,7 @@ DealSummary <- function(data, type, n, ticker.names = NULL,
   data %<>% Convert.XTStoDF(.) 
   
   ### расчёт итогового DF
-  deal_summary <- DealSummary.summary_df(data, type,
+  deal_summary <- DealSummary.summary_df(data, type, ticker.names,
                                          bto.name, bto_add.name,
                                          sto.name, sto_add.name,
                                          stc.name, stc_drop.name,
@@ -279,7 +279,7 @@ DealSummary.pos_num <- function(x) {
 #' @return summary data.frame, содержащий данные по сделке
 #'
 #' @export
-DealSummary.summary_df <- function(x, type,
+DealSummary.summary_df <- function(x, type, ticker.names = NULL,
                                    bto.name, bto_add.name,
                                    sto.name, sto_add.name,
                                    stc.name, stc_drop.name,
@@ -292,6 +292,13 @@ DealSummary.summary_df <- function(x, type,
   # stc_drop.name = 'ЗакрПозиПоРынк',
   # btc.name = 'ЗакрПозиПоРынк1',
   # btc_drop.name = 'ЗакрПозиПоРынк1'
+
+  if (is.null(ticker.names)) {
+    ticker.names <- 
+      grep('.Price', names(data)) %>%
+      names(data)[.] %>%
+      sub('.Price', '', .)   
+  } 
 
   summary <- 
     nrow(x) %>%
