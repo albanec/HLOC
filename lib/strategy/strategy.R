@@ -566,25 +566,33 @@ CleanSignal.gap <- function(signals) {
   signals[ends, sto_col] <- 0
   #data <- na.omit(data)
   # выходы на следующей свече по Open
-  temp.ind <- which(signals$gap == 1 & signals[, stc_col] != 0)
-  if (length(temp.ind) != 0) {
-    signals[temp.ind + 1, stc_col] <- ifelse(signals[temp.ind, stc_col] != 0,
-                                             signals[temp.ind, stc_col],
+  temp.ind_stc <- which(signals$gap == 1 & signals[, stc_col] != 0)
+  if (length(temp.ind_stc) != 0) {
+    signals[temp.ind_stc + 1, stc_col] <- ifelse(signals[temp.ind_stc, stc_col] != 0,
+                                             signals[temp.ind_stc, stc_col],
                                              0)
-   #signals[temp.ind, stc_col] <- 0
+   #signals[temp.ind_stc, stc_col] <- 0
   }
-  rm(temp.ind)
-  temp.ind <- which(signals$gap == 1 & signals[, btc_col] != 0)
-  if (length(temp.ind) != 0) {
-    signals[temp.ind + 1, btc_col] <- ifelse(signals[temp.ind, btc_col] != 0,
-                                             signals[temp.ind, btc_col],
+  #rm(temp.ind)
+  temp.ind_btc <- which(signals$gap == 1 & signals[, btc_col] != 0)
+  if (length(temp.ind_btc) != 0) {
+    signals[temp.ind_btc + 1, btc_col] <- ifelse(signals[temp.ind_btc, btc_col] != 0,
+                                             signals[temp.ind_btc, btc_col],
                                              0)
-    #signals[temp.ind, btc_col] <- 0
+    #signals[temp.ind_btc, btc_col] <- 0
   }
-  rm(temp.ind)
+  #rm(temp.ind)
   signals[ends, stc_col] <- 0
   signals[ends, btc_col] <- 0
+  
   # перенос индикаторов gap'ов на следующую свечу (нужно для подгрузки котировок)
+  # индикаторы gap переносятся только в том случае, если с gap идут "легитимные" сигналы
+  temp.ind <- c(temp.ind_stc, temp.ind_btc)
+  rm(temp.ind_stc)
+  rm(temp.ind_btc)
+  signals$gap[-temp.ind] <- 0   
+  rm(temp.ind)
+  
   signals$gap <- lag(signals$gap)
   signals$gap[1] <- 0
   gap <- signals$gap
