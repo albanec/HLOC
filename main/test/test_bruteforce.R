@@ -48,7 +48,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ### BruteForce оптимизация (в один поток)
 # system.time(
 #   {
-#     PerfomanceTable <- TestStr_BruteForceOpt(var.begin = 1, var.end = 100,
+#     PerfomanceTable <- BruteForceOpt.test_str(var.begin = 1, var.end = 100,
 #                                              data.xts = data.source.list[[1]], 
 #                                              add.per, k.mm, balance.start, 
 #                                              basket.weights, slips, commissions, ret.type,
@@ -59,7 +59,7 @@ data.source.list[[1]]$cret <- data.source.list[[1]]$SPFB.SI.cret
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    PerfomanceTable <- TestStr_BruteForceOpt.Parallel(
+    PerfomanceTable <- BruteForceOpt_Parallel.test_str(
       #input_data = 'data.source.list',
       sma_begin = 10, sma_end = 100, sma_step = 1,
       rolling_opt = FALSE
@@ -72,13 +72,13 @@ system.time(
 PerfomanceTable <- MergeData_inList.byRow(PerfomanceTable)
 ### КА
 ## Подготовка к КА
-data_for_cluster <- CalcKmean_DataPreparation(data = PerfomanceTable, n.mouth = 12, 
+data_for_cluster <- CalcKmean.preparation(data = PerfomanceTable, n.mouth = 12, 
                                               hi = TRUE, q.hi = 0.5, 
                                               one.scale = TRUE)
 data_for_cluster$profit <- NULL
 data_for_cluster$draw <- NULL
 ## Вычисление параметров кластеризации 
-clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
+clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
                                       plusplus = FALSE, test.range = 30)
 ## Вычисление самох кластеров
 clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 

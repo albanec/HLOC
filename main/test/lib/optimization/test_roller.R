@@ -1,4 +1,4 @@
-TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.source.list', 
+TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data.source.list', 
                                            sma_begin, sma_end, sma_step,
                                            # add.per_begin, add.per_end, add.per_step,
                                            rolling_opt = FALSE, ...) {
@@ -59,11 +59,11 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
             parallel_cluster,
             ., 
             function(x){
-              TestStr_OneThreadRun(data.xts = data_slice,
-                                   sma.per = x, add.per = 10, k.mm, basket.weights,
-                                   slips, commissions,
-                                   balance.start, ret.type,
-                                   rolling_opt = TRUE)
+              OneThreadRun.test_str(data.xts = data_slice,
+                                    sma.per = x, add.per = 10, k.mm, basket.weights,
+                                    slips, commissions,
+                                    balance.start, ret.type,
+                                    rolling_opt = TRUE)
             }
           ) 
         result %<>%
@@ -81,13 +81,13 @@ TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data.sour
     bf_data.list,
     function(x) {
       ## Подготовка к КА
-      data_for_cluster <- CalcKmean_DataPreparation(data = x, n.mouth = 6, 
+      data_for_cluster <- CalcKmean.preparation(data = x, n.mouth = 6, 
                                                     hi = TRUE, q.hi = 0.5, 
                                                     one.scale = FALSE)
       data_for_cluster$profit <- NULL
       data_for_cluster$draw <- NULL 
       ## Вычисление параметров кластеризации 
-      clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
+      clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
                                             plusplus = FALSE, test.range = 30)
       ## Вычисление самох кластеров
       clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 

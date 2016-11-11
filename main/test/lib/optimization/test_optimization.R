@@ -11,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt.Parallel <- function(#input_data = 'data.source.list', 
+BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list', 
                                            sma_begin, sma_end, sma_step,
                                            # add.per_begin, add.per_end, add.per_step,
                                            rolling_opt = FALSE, ...) {
@@ -65,7 +65,7 @@ TestStr_BruteForceOpt.Parallel <- function(#input_data = 'data.source.list',
       parallel_cluster,
       ., 
       function(x){
-        TestStr_OneThreadRun(data.xts = data.source.list[[1]],
+        OneThreadRun.test_str(data.xts = data.source.list[[1]],
                              sma.per = x, add.per = 10, k.mm, basket.weights,
                              slips, commissions, 
                              balance.start, ret.type,
@@ -105,7 +105,7 @@ TestStr_BruteForceOpt.Parallel <- function(#input_data = 'data.source.list',
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-TestStr_BruteForceOpt <- function(var.begin, var.end,
+BruteForceOpt.test_str <- function(var.begin, var.end,
                                   data.xts, add.per, k.mm, basket.weights, 
                                   slips, commissions, 
                                   balance.start, ret.type,
@@ -115,7 +115,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
     var.begin:var.end %>% 
     lapply(., 
            function(x){
-             TestStr_OneThreadRun(data.xts = data.xts,
+             OneThreadRun.test_str(data.xts = data.xts,
                                   sma.per = x, add.per, k.mm, basket.weights,
                                   slips, commissions, 
                                   balance.start, ret.type,
@@ -145,7 +145,7 @@ TestStr_BruteForceOpt <- function(var.begin, var.end,
 #' @return list(data, data.state) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr_OneThreadRun <- function(data.xts, 
+OneThreadRun.test_str <- function(data.xts, 
                                  sma.per, add.per, k.mm, basket.weights, 
                                  slips, commissions,
                                  balance.start, ret.type, 

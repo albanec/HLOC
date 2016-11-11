@@ -18,7 +18,7 @@
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
-CalcKmean_DataPreparation <- function(data, n.mouth ,
+CalcKmean.preparation <- function(data, n.mouth ,
                                       hi = TRUE, q.hi = 0.5, 
                                       low = FALSE, q.low = 0,
                                       one.scale = FALSE) {
@@ -69,7 +69,7 @@ CalcKmean_DataPreparation <- function(data, n.mouth ,
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
-CalcKmean_Parameters <- function(data, test.range = 30, iter.max = 100, plusplus = FALSE) {
+CalcKmean.parameters <- function(data, test.range = 30, iter.max = 100, plusplus = FALSE) {
   #
   n <- nrow(data)
   if (n < test.range) {
@@ -88,7 +88,7 @@ CalcKmean_Parameters <- function(data, test.range = 30, iter.max = 100, plusplus
   for (i in cluster.range){
     #cat(i , '\n')
     if (plusplus == TRUE) {
-      cluster.data <- CalcKmean_PlusPlus(data, n.opt = i, iter.max = iter.max)
+      cluster.data <- CalcKmean.plusplus(data, n.opt = i, iter.max = iter.max)
     } else {
       cluster.data <- kmeans(data, centers = i, iter.max)  
     }
@@ -126,7 +126,7 @@ CalcKmean_Parameters <- function(data, test.range = 30, iter.max = 100, plusplus
 #' @return cluster.data Лист с данными кластера
 #'
 #' @export
-CalcKmean_PlusPlus <- function(data, n.opt, iter.max = 100) {
+CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
   #
   # количество точек
   n <- nrow(data)
@@ -218,7 +218,7 @@ CalcKmean <- function(data, n.opt, iter.max = 100, plusplus = FALSE, var.digits 
   #
   # вычисление кластера
   if (plusplus == TRUE) {
-    cluster.data <- CalcKmean_PlusPlus(data, n.opt, iter.max)
+    cluster.data <- CalcKmean.plusplus(data, n.opt, iter.max)
   } else {
     cluster.data <- kmeans(data, centers = n.opt, iter.max)
   }
@@ -245,7 +245,7 @@ CalcKmean <- function(data, n.opt, iter.max = 100, plusplus = FALSE, var.digits 
 #' @return 
 #'
 #' @export
-PlotKmean_SS <- function(ss.df, n.opt) {
+PlotKmean.ss <- function(ss.df, n.opt) {
   # Зависимости:
   require(plotly)
   # ----------
@@ -284,7 +284,7 @@ PlotKmean_SS <- function(ss.df, n.opt) {
 #' @return 
 #'
 #' @export
-PlotKmean_Clusters <- function(data.list, cluster.color = FALSE, dimension = '3d', 
+PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d', 
                                plot.title = 'ClustersPlot', xaxis.name = 'FastMA', yaxis.name = 'SlowMA', 
                                zaxis.name = 'PER', 
                                point.size = 4, point.opacity = 0.8, 

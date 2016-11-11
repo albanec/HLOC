@@ -73,13 +73,13 @@ system.time(
 #       PerfomanceTable_learning,
 #       function(x) {
 #         ## Подготовка к КА
-#         data_for_cluster <- CalcKmean_DataPreparation(data = x, n.mouth = 6, 
+#         data_for_cluster <- CalcKmean.preparation(data = x, n.mouth = 6, 
 #                                                       hi = TRUE, q.hi = 0.5, 
 #                                                       one.scale = FALSE)
 #         data_for_cluster$profit <- NULL
 #         data_for_cluster$draw <- NULL 
 #         ## Вычисление параметров кластеризации 
-#         clustPar.data <- CalcKmean_Parameters(data = data_for_cluster, iter.max = 100, 
+#         clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
 #                                               plusplus = FALSE, test.range = 30)
 #         ## Вычисление самох кластеров
 #         clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
@@ -90,7 +90,7 @@ system.time(
 # )
 system.time(
   {
-    learning_data <- TestStr_RollerOpt_learningTime(data_slices, sma_begin = 10, sma_end = 100, sma_step = 1,
+    learning_data <- TestStr_RollerOpt.learningTime(data_slices, sma_begin = 10, sma_end = 100, sma_step = 1,
                                                     rolling_opt = TRUE)
   }
 )
