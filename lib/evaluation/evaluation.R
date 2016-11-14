@@ -24,7 +24,7 @@ source('lib/evaluation/evaluation_ratio.R')
 #' @export
 PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.strategy.list[[2]], 
                             dealsTable = dealsTable.list,
-                            balance_start, ret.type, fast = FALSE, ...) {
+                            balance_start, ret.type, fast = FALSE) {
   #
   ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
   if (fast == TRUE) {
