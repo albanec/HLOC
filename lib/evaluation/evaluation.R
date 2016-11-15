@@ -35,7 +35,7 @@ PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.st
     #   as.numeric(.)
     max.drawdown.percent <-
       min(drawdowns[[2]]$DepthPercent) %>%
-      as.numeric(.)  
+      as.numeric(.) 
     remove(drawdowns)
     # вычисление итоговой доходности (в процентах)
     fullReturn <- 
@@ -72,15 +72,15 @@ PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.st
     abs(.) %>%
     data.frame(RecoveryFactor = .)
   # коэф. выигрыша
-  win.ratio <- 
+  payoff.ratio <- 
     profitTable$MeanGoodDealReturn / profitTable$MeanBadDealReturn %>%
     abs(.) %>%
-    data.frame(WinRatio = .)
+    data.frame(PayoffRatio = .)
   #
   ### итоговая таблица
   cat('INFO(PerfomanceTable):  Build PerfomanceTable', '\n')
   perfomanceTable <- cbind(datesTable, ratioTable, 
-                           rf, win.ratio, 
+                           rf, payoff.ratio, 
                            DrawdownsTable, profitTable)
  #
   cat('INFO(PerfomanceTable):  Calc PerfomanceMetrics ... OK', '\n')

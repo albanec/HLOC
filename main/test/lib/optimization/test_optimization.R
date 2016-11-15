@@ -158,30 +158,6 @@ OneThreadRun.test_str <- function(data.xts,
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
   if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
-    # perfomanceTable <- 
-    #   rep(NA, 66) %>%
-    #   data.frame(., row.names = NULL) %>% 
-    #   t(.) %>%
-    #   {
-    #     colnames(.) <- c(
-    #       'StartDate', 'EndDate', 'Period', 'NumTradeDays', 'NumBars', 'NumBarsTrade', 
-    #       'NumBarsNoTrade', 'SharpRatio', 'SortinoRatio', 'CalmarRatio', 'SterlingRatio', 
-    #       'RecoveryFactor', 'WinRatio', 'MaxDrawdownDay', 'MaxDrawdown', 'MaxDrawdownPercent', 
-    #       'MeanDrawdown', 'MeanDrawdownPercent', 'MaxDrawdownDays', 'MeanDrawdownDays', 
-    #       'NowDrawdownDays', 'NowDrawdownPeriods', 'NowDrawdown', 'NowDrawdownPercent', 
-    #       'Return', 'ReturnPercent', 'ReturnAnnual', 'ReturnMonthly', 'ReturnBar', 
-    #       'ReturnBarTrade', 'BestDay', 'BestDayReturn', 'BestDayReturnPercent', 'MeanGoodDayReturn', 
-    #       'MeanGoodDayReturnPercent', 'NumGoogDay', 'NumGoogDayPercent', 'MaxGoodDays', 
-    #       'FullGoodDayReturn', 'WorstDay', 'WorstDayReturn', 'WorstDayReturnPercent', 
-    #       'MeanBadDayReturn', 'MeanBadDayReturnPercent', 'NumBadDay', 'NumBadDayPercent', 
-    #       'MaxBadDays', 'FullBadDayReturn', 'ProfitFactorDaily', 'DealsNum', 'NumGoogDeals', 
-    #       'NumBadDeals', 'MaxGoodDeals', 'MaxBadDeals', 'FullGoodDealReturn', 'FullBadDealReturn', 
-    #       'MeanGoodDealReturn', 'MeanGoodDealReturnPercent', 'MeanBadDealReturn', 
-    #       'MeanBadDealReturnPercent', 'MeanDealBars', 'MeanGoodDealBars', 'MeanBadDealBars', 
-    #       'MeanDealReturn', 'MeanDealReturnPercent', 'ProfitFactorDeals'
-    #     )
-    #     return(.)
-    #   }
     return()
   } else {
     ### Формирование таблицы сделок

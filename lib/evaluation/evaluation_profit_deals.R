@@ -64,10 +64,14 @@ ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
   numGoogDeals <- 
     goodDeal.index %>%
     length(.)
+  ### Win rate
+  winRatePercent <- numGoogDeals * 100 / deals.num
   ### Всего сделок в минус
   numBadDeals <- 
     badDeal.index %>%
     length(.)
+  ### Loss rate
+  lossRatePercent <- numBadDeals * 100 / deals.num
   ### Расчёт последовательностей сделок
   # подготовка данных для анализа
   dealsSeries <- 
@@ -139,7 +143,9 @@ ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
   result <- data.frame(
                        DealsNum = deals.num,            
                        NumGoogDeals = numGoogDeals,
+                       WinRate = winRatePercent,
                        NumBadDeals = numBadDeals,
+                       LossRate = lossRatePercent,
                        MaxGoodDeals = maxGoodDeals,
                        MaxBadDeals = maxBadDeals,
                        FullGoodDealReturn = goodDeal.sum,
@@ -152,7 +158,7 @@ ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
                        MeanGoodDealBars = meanGoodDealBars,
                        MeanBadDealBars = meanBadDealBars,
                        MeanDealReturn = meanDealReturn,
-                       MeanDealReturnPercent = meanDealReturn,
+                       MeanDealReturnPercent = meanDealReturnPercent,
                        ProfitFactorDeals = pf.deals,
                        #
                        row.names = NULL)       

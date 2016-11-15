@@ -328,7 +328,7 @@ OneThreadRun <- function(data.xts, FUN,
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)
       if (length(ticker) == 1) {
-        dealsTable.list[[1]]$DealReturnPercent <- dealsTable.list[[1]]$DealReturn / balance_start
+        dealsTable.list[[1]]$DealReturnPercent <- dealsTable.list[[1]]$DealReturn * 100 / balance_start
       }
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
