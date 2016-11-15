@@ -100,8 +100,8 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
       }
   } else {
     colNum <-
-      c('CloseSignal', 'CloseDate', 'CloseCommiss', 'DealReturn', 'DealReturnPercent', 'DealEquity', 
-        'DealEquityPercent', 'Equity', 'PositionBars') %>%
+      c('CloseSignal', 'CloseDate', 'CloseCommiss', 'DealReturn', 'DealReturnPercent',
+        'DealEquity', 'DealEquityPercent', 'Equity', 'PositionBars') %>%
       {
         which(colnames(data.deals) %in% .) 
       }
@@ -121,7 +121,9 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
     {              
       data.deals[openRowIndex, colNum] <- data.deals[closeRowIndex, colNum]
       data.deals$DealReturn[openRowIndex] <- data.deals$DealEquity[closeRowIndex]
-      data.deals$DealReturnPercent[openRowIndex] <- data.deals$DealEquityPercent[closeRowIndex] 
+      data.deals$DealReturnPercent[openRowIndex] <- data.deals$DealEquityPercent[closeRowIndex]
+      data.deals$MarketCompliance[openRowIndex] <- data.deals$MarketCompliance[closeRowIndex] 
+      data.deals$Balance[openRowIndex] <- data.deals$Balance[closeRowIndex] 
       return(data.deals)
     } %>%
     # очистка ненужных данных (удаление лога закрытий)
@@ -180,10 +182,10 @@ DealSummary <- function(data, type, n, ticker.names = NULL,
       lapply(ticker.names.list, 
              function(x) {
                # правильно прописываем названия столбцов с нужными данными (в names.set)
-               temp.text <- paste0('names.set <- c(\"pos\", \"pos.num\", \"pos.bars\", \"pos.add\", \"pos.drop\", ',
-                                  '\"',x,'.n\", \"',x,'.diff.n\", \"',x,'.Price\", ',
-                                  '\"',x,'.commiss\", \"',x,'.equity\", \"',x,'.perfReturn\") ;',
-                                  sep = '')
+               temp.text <- paste0('names.set <- c(\"pos\", \"pos.num\", \"pos.bars\", \"pos.add\", \"pos.drop\", 
+                                   \"balance\",\"im.balance\",\"',x,'.n\", \"',x,'.diff.n\", \"',x,'.Price\", ',
+                                   '\"',x,'.commiss\", \"',x,'.equity\", \"',x,'.perfReturn\") ;',
+                                   sep = '')
                eval(parse(text = temp.text))
                # вытаскиваем нужные столбцы (по names.set)
                result <- data[, (which(colnames(data) %in% names.set))]
@@ -203,7 +205,7 @@ DealSummary <- function(data, type, n, ticker.names = NULL,
              }) %>%
       MergeData_inList.byRow(.)
   } else {
-    names.set <- c('pos', 'pos.num', 'pos.bars', 'pos.add', 'pos.drop', 'balance', 
+    names.set <- c('pos', 'pos.num', 'pos.bars', 'pos.add', 'pos.drop', 'balance', 'im.balance',
                    'n', 'diff.n', 'commiss', 'equity', 'perfReturn') 
     data <- data[, (which(colnames(data) %in% names.set))]
     names(data)[names(data) == 'perfReturn'] <- 'deal.return' 
@@ -323,10 +325,12 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
                CloseCommiss = integer(.),
                DealReturn = numeric(.),
                DealReturnPercent = numeric(.),
+               MarketCompliance = numeric(.),
                DealEquity = numeric(.),
                DealEquityPercent = numeric(.),
                Equity = numeric(.),
                PositionBars = numeric(.),
+               Balance = numeric(.),
                row.names = NULL)
   
   ## номера позиций
@@ -409,22 +413,31 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
   ## return позиции
   summary$DealReturn <- x$deal.return
   ## return позиции в %
-  if (type == 'byBasket') {
-    summary$DealReturnPercent <- x$deal.return * 100 / first(x$balance)
-  } else {
-    summary$DealReturnPercent <- NA  
-  }
+  #if (type == 'byBasket') {
+    summary$DealReturnPercent <- x$deal.return * 100 / (first(x$balance) + first(x$im.balance))
+  #} else {
+  #  summary$DealReturnPercent <- NA  
+  #}
   ## equity внутри сделки
   summary$DealEquity <- cumsum(x$deal.return)
-  if (type == 'byBasket') {
-    summary$DealEquityPercent <- summary$DealEquity * 100 / first(x$balance)
+  #if (type == 'byBasket') {
+    summary$DealEquityPercent <- summary$DealEquity * 100 / (first(x$balance) + first(x$im.balance))
+  #} else {
+  #  summary$DealEquityPercent <- NA
+  #}
+  ## Banchmark соответствия рынку
+  if (type == 'byTicker') {
+    summary$MarketCompliance <- sign(last(summary$DealReturn)) * 
+                                 (first(summary$OpenValue) - last(summary$CloseValue)) * 100 / first(summary$OpenValue)
   } else {
-    summary$DealEquityPercent <- NA
+    summary$MarketCompliance <- NA
   }
   ## изменения equity тикера
   summary$Equity <- x$equity
   ## тики позиций
   summary$PositionBars <- x$pos.bars
+  ## Баланс
+  summary$Balance <- x$balance + x$im.balance
   #
   return(summary)
 }
