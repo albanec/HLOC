@@ -196,7 +196,8 @@ OneThreadRun.test_str <- function(data.xts,
                                              fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)
+      basket <- TRUE
+      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = basket, convert = TRUE)
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                              data.state = data.strategy.list[[2]],

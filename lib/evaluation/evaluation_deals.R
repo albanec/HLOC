@@ -267,6 +267,7 @@ DealSummary.pos_num <- function(x) {
 #' 
 #' @param data Входной xts ряд одной сделки
 #' @param type Тип анализа (byTicker/byBasket)
+#' @param ticker.names Вектор тикеров
 #' @param bto.name Написание открытия long
 #' @param bto_add.name Написание увеличения позиции long
 #' @param sto.name Написание открытия short

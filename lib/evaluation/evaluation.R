@@ -29,7 +29,7 @@ PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.st
   ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
   if (fast == TRUE) {
     # вычисление максимальной просадки (в процентах)
-    drawdowns <- Drawdowns.dd_data(data = data$balance, fullData = TRUE)
+    drawdowns <- Drawdowns.dd_data(data = data$balance + data$im.balance, fullData = TRUE)
     # max.drawdown <- 
     #   min(drawdowns[[2]]$Depth) %>%
     #   as.numeric(.)
@@ -57,7 +57,7 @@ PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.st
   datesTable <- DatesTable(data = data, data.state = data.state)    
   ## расчёт drawdown'ов
   cat('INFO(PerfomanceTable):  Calc DrawdownsTable', '\n')
-  DrawdownsTable <- DrawdownsTable(data.balance = data$balance)
+  DrawdownsTable <- DrawdownsTable(data.balance = data$balance + data$im.balance)
   ## profit метрики
   cat('INFO(PerfomanceTable):  Calc ProfitTable', '\n')
   profitTable <- ProfitTable(data = data, dealsTable = dealsTable, DrawdownsTable = DrawdownsTable,
