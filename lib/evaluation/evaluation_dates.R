@@ -59,7 +59,7 @@ DatesTable <- function(data, data.state) {
   ### таблица временных метрик
   datesTable <- cbind.data.frame(from.date, to.date, trading.days, period, nbar, nbar.trade, nbar.out)
   colnames(datesTable) <- c('DateStart', 'DateEnd', 'DaysNum', 'BarsPeriod',  
-                            'BarsNum', 'TradesBarsNum', 'TradesBarsOutNum')
+                            'BarsNum', 'BarsNumIn', 'BarsNumOut')
   #
   return(datesTable)
 }

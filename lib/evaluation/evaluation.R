@@ -62,18 +62,18 @@ PerfomanceTable <- function(data = data.strategy.list[[1]], data.state = data.st
   cat('INFO(PerfomanceTable):  Calc ProfitTable', '\n')
   profitTable <- ProfitTable(data = data, tradesTable = tradesTable, DrawdownsTable = DrawdownsTable,
                              balance_start = balance_start, 
-                             nbar = datesTable$NumBars, nbar.trade = datesTable$NumBarsTrade)
+                             nbar = datesTable$BarsNum, nbar.trade = datesTable$BarsNumIn)
   ## расчёт коэффициентов
   cat('INFO(PerfomanceTable):  Calc RatioTable', '\n')
   ratioTable <- RatioTable(returns = data$perfReturn, ret.type = ret.type)
   # фактор восстановления
   rf <- 
-    profitTable$Return / DrawdownsTable$MaxDrawdown %>%
+    profitTable$Profit / DrawdownsTable$DrawdownMax %>%
     abs(.) %>%
     data.frame(RatioRecoveryFactor = .)
   # коэф. выигрыша
   payoff.ratio <- 
-    profitTable$MeanGoodtradeReturn / profitTable$MeanBadtradeReturn %>%
+    profitTable$TradesWinAverageProfit / profitTable$TradesLossAverageLoss %>%
     abs(.) %>%
     data.frame(RatioPayoff = .)
   #

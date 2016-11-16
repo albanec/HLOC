@@ -124,6 +124,8 @@ TradesTable.convert <- function(data.trades, type = 'byTicker') {
       data.trades[openRowIndex, colNum] <- data.trades[closeRowIndex, colNum]
       data.trades$TradeReturn[openRowIndex] <- data.trades$TradeProfit[closeRowIndex]
       data.trades$TradeReturnPercent[openRowIndex] <- data.trades$TradeProfitPercent[closeRowIndex]
+      data.trades$TradeProfit[openRowIndex] <- data.trades$TradeProfit[closeRowIndex]
+      data.trades$TradeProfitPercent[openRowIndex] <- data.trades$TradeProfitPercent[closeRowIndex]
       data.trades$MarketCompliance[openRowIndex] <- data.trades$MarketCompliance[closeRowIndex] 
       #data.trades$Balance[openRowIndex] <- data.trades$Balance[closeRowIndex] 
       return(data.trades)
@@ -131,10 +133,10 @@ TradesTable.convert <- function(data.trades, type = 'byTicker') {
     # очистка ненужных данных (удаление лога закрытий)
     {
       data.trades <- data.trades[-closeRowIndex, ]
-      data.trades$TradeProfit <- NULL
-      data.trades$TradeProfitPercent <- NULL
-      names(data.trades)[names(data.trades) == 'TradeReturn'] <- 'TradeProfit'
-      names(data.trades)[names(data.trades) == 'TradeReturnPercent'] <- 'TradeProfitPercent'
+      #data.trades$TradeProfit <- NULL
+      #data.trades$TradeProfitPercent <- NULL
+      #names(data.trades)[names(data.trades) == 'TradeReturn'] <- 'TradeProfit'
+      #names(data.trades)[names(data.trades) == 'TradeReturnPercent'] <- 'TradeProfitPercent'
       return(data.trades)
     }
   #

@@ -142,24 +142,24 @@ ProfitTable.byTrades.oneTicker <- function(data, ticker.name, ...) {
   ### Формирование итоговой таблицы
   result <- data.frame(
                        TradesNum = trades.num,            
-                       TradesAveregeBarsHeld = averageTradeBars,
-                       TradesAveregeProfit = averageTradeReturn,
-                       TradesAveregeProfitPercent = averageTradeReturnPercent,
+                       TradesAverageBarsHeld = averageTradeBars,
+                       TradesAverageProfit = averageTradeReturn,
+                       TradesAverageProfitPercent = averageTradeReturnPercent,
                        TradesProfitFactor = pf.trades,
                        TradesWin = numGoogTrades,
                        TradesWinMax = maxGoodTrades,
                        TradesWinRate = winRatePercent,
                        TradesGrossProfit = goodTrade.sum,
-                       TradesWinAveregeProfit = averageGoodTradeReturn,
-                       TradesWinAveregeProfitPercent = averageGoodTradeReturnPercent,
-                       TradesWinAveregeBarsHeld = averageGoodTradeBars, 
+                       TradesWinAverageProfit = averageGoodTradeReturn,
+                       TradesWinAverageProfitPercent = averageGoodTradeReturnPercent,
+                       TradesWinAverageBarsHeld = averageGoodTradeBars, 
                        TradesLoss = numBadTrades,
                        TradesLossMax = maxBadTrades,
                        TradesLossRate = lossRatePercent,
                        TradesGrossLoss = badTrade.sum,
-                       TradesLossAveregeLoss = averageBadTradeReturn,
-                       TradesLossAveregeLossPercent = averageBadTradeReturnPercent,
-                       TradesLossAveregeBarsHeld = averageBadTradeBars,
+                       TradesLossAverageLoss = averageBadTradeReturn,
+                       TradesLossAverageLossPercent = averageBadTradeReturnPercent,
+                       TradesLossAverageBarsHeld = averageBadTradeBars,
                        row.names = NULL)       
   #
   return(result)
