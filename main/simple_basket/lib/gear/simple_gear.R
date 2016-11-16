@@ -86,7 +86,7 @@ SimpleStr.gear <- function(data.source,
     length(.)
   if (temp.length == 0) {
     # если это условие не выполняется, то отработка робота д.б. завершена с нулувым триггером
-    message('WARNING(TestStrategy_gear): No Deals Here!!!', '\n')
+    message('WARNING(TestStrategy_gear): No Trades Here!!!', '\n')
     remove(temp.length)
     return(list(NA, NA))
   }
@@ -440,7 +440,7 @@ SimpleStr.gear <- function(data.source,
   #
   ## 2.2 Расчёт самих сделок
   #
-  cat('TestStrategy INFO:  Start Calculation Deals...', '\n')
+  cat('TestStrategy INFO:  Start Calculation Trades...', '\n')
   for (n in 1:nrow(data.state)) {
     # на первой строке рассчитываются стартовые значения
     if (n == 1) {
@@ -510,7 +510,7 @@ SimpleStr.gear <- function(data.source,
         data.state$commiss[[n]]
     }
   }
-  cat('TestStrategy INFO:  Calculation Deals    OK', '\n')
+  cat('TestStrategy INFO:  Calculation Trades    OK', '\n')
   #
   # расчёт equity по корзине в data.state
   data.state$perfReturn <- data.state$margin - data.state$commiss

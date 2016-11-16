@@ -57,9 +57,9 @@ DatesTable <- function(data, data.state) {
   ### бары вне рынка
   nbar.out <- nbar - nbar.trade
   ### таблица временных метрик
-  datesTable <- cbind.data.frame(from.date, to.date, period, trading.days, nbar, nbar.trade, nbar.out)
-  colnames(datesTable) <- c('StartDate', 'EndDate', 'Period', 'NumTradeDays', 
-                            'NumBars', 'NumBarsTrade', 'NumBarsNoTrade')
+  datesTable <- cbind.data.frame(from.date, to.date, trading.days, period, nbar, nbar.trade, nbar.out)
+  colnames(datesTable) <- c('DateStart', 'DateEnd', 'DaysNum', 'BarsPeriod',  
+                            'BarsNum', 'TradesBarsNum', 'TradesBarsOutNum')
   #
   return(datesTable)
 }

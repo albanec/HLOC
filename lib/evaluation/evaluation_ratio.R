@@ -34,10 +34,10 @@ RatioTable <- function(returns, ret.type) {
   # SterlingRatio
   sterling.data <- SterlingRatio.calc(returns, scale = 1, geometric = TF)
   # формирование таблицы
-  ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = 'SharpRatio'), 
-                                 Ratio.transformMetric(sortino.data, metric.name = 'SortinoRatio'), 
-                                 Ratio.transformMetric(calmar.data, metric.name = 'CalmarRatio'),
-                                 Ratio.transformMetric(sterling.data, metric.name = 'SterlingRatio'))
+  ratioTable <- cbind.data.frame(Ratio.transformMetric(sharp.data, metric.name = 'RatioSharp'), 
+                                 Ratio.transformMetric(sortino.data, metric.name = 'RatioSortino'), 
+                                 Ratio.transformMetric(calmar.data, metric.name = 'RatioCalmar'),
+                                 Ratio.transformMetric(sterling.data, metric.name = 'RatioSterling'))
   #pMetric[,1] <- 
   return(ratioTable)
 }

@@ -63,33 +63,33 @@ ProfitTable.byDays <- function(data) {
   ### Формирование итоговой таблицы
   profitTable.byDays <- data.frame(
                                    # прибыльные дни
-                                   BestDay = trdaysStatsList[[1]]$Date[bestDay.index],
-                                   BestDayReturn = trdaysStatsList[[1]]$Return[bestDay.index],
-                                   BestDayReturnPercent = trdaysStatsList[[1]]$Return.percent[bestDay.index],
-                                   MeanGoodDayReturn = meanGoodDayReturn,
-                                   MeanGoodDayReturnPercent = meanGoodDayReturn.percent,
-                                   NumGoogDay = numGoogDay,
-                                   NumGoogDayPercent = last(trdaysStatsList[[1]]$Num) %>%
-                                                       {
-                                                         numGoogDay * 100 / .
-                                                       },
-                                   MaxGoodDays = maxGoodDays,
-                                   FullGoodDayReturn = goodDay.sum,
+                                   DaysBest = trdaysStatsList[[1]]$Date[bestDay.index],
+                                   DaysBestProfit = trdaysStatsList[[1]]$Return[bestDay.index],
+                                   DaysBestProfitPercent = trdaysStatsList[[1]]$Return.percent[bestDay.index],
+                                   DaysWinNum = numGoogDay,
+                                   DaysWinMax = maxGoodDays,
+                                   DaysWinRate = last(trdaysStatsList[[1]]$Num) %>%
+                                                 {
+                                                   numGoogDay * 100 / .
+                                                 },
+                                   DaysWinAverageProfit = meanGoodDayReturn,
+                                   DaysWinAverageProfitPercent = meanGoodDayReturn.percent,
+                                   DaysGrossProfit = goodDay.sum,
                                    # убыточные дни
-                                   WorstDay = trdaysStatsList[[1]]$Date[worstDay.index], 
-                                   WorstDayReturn = trdaysStatsList[[1]]$Return[worstDay.index], 
-                                   WorstDayReturnPercent = trdaysStatsList[[1]]$Return.percent[worstDay.index],
-                                   MeanBadDayReturn = meanBadDayReturn,
-                                   MeanBadDayReturnPercent = meanBadDayReturn.percent,
-                                   NumBadDay = numBadDay,
-                                   NumBadDayPercent = last(trdaysStatsList[[1]]$Num) %>%
-                                                       {
-                                                         numBadDay * 100 / .
-                                                       },
-                                   MaxBadDays = maxBadDays,
-                                   FullBadDayReturn = badDay.sum,
+                                   DaysWorst = trdaysStatsList[[1]]$Date[worstDay.index], 
+                                   DaysWorstLoss = trdaysStatsList[[1]]$Return[worstDay.index], 
+                                   DaysWorstLossPercent = trdaysStatsList[[1]]$Return.percent[worstDay.index],
+                                   DaysLossNum = numBadDay,
+                                   DaysLossMax = maxBadDays,
+                                   DaysLossRate = last(trdaysStatsList[[1]]$Num) %>%
+                                                   {
+                                                     numBadDay * 100 / .
+                                                   },
+                                   DaysLossAverageLoss = meanBadDayReturn,
+                                   DaysLossAverageLossPercent = meanBadDayReturn.percent,
+                                   DaysGrossLoss = badDay.sum,
                                    # профит-фактор по дням
-                                   ProfitFactorDaily = pf.daily,
+                                   DaysProfitFactor = pf.daily,
                                    #
                                    row.names = NULL)          
   # 

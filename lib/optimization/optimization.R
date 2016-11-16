@@ -321,19 +321,19 @@ OneThreadRun <- function(data.xts, FUN,
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                          data.state = 0,
-                                         dealsTable = 0,
+                                         tradesTable = 0,
                                          balance = balance_start, ret.type = 0, 
                                          fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)
+      tradesTable.list <- TradesTable.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)
       if (length(ticker) == 1) {
-        dealsTable.list[[1]]$DealReturnPercent <- dealsTable.list[[1]]$DealReturn * 100 / balance_start
+        tradesTable.list[[1]]$TradeReturnPercent <- tradesTable.list[[1]]$TradeReturn * 100 / balance_start
       }
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
                                          data.state = data.strategy.list[[2]],
-                                         dealsTable = dealsTable.list,
+                                         tradesTable = tradesTable.list,
                                          balance_start = balance_start, 
                                          ret.type = return_type)
     }

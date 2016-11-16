@@ -19,21 +19,21 @@
 #'
 #' @export
 CalcKmean.preparation <- function(data, n.mouth ,
-                                      hi = TRUE, q.hi = 0.5, 
-                                      low = FALSE, q.low = 0,
-                                      one.scale = FALSE) {
+                                  hi = TRUE, q.hi = 0.5, 
+                                  low = FALSE, q.low = 0,
+                                  one.scale = FALSE) {
   #
   # выделение столбцов с переменными
   df <- Subset_byTarget.col(data = data, target = '_')
   # добавление столбцов с профитом и просадкой
   df$profit <- 
     {
-      which(colnames(data) %in% 'Return')
+      which(colnames(data) %in% 'ProfitPercent')
     } %>%
     data[, .] 
   df$draw <- 
     {
-      which(colnames(data) %in% 'MaxDrawdown')
+      which(colnames(data) %in% 'DrawdownMaxPercent')
     } %>%
     data[, .] 
   # создание нормированной метрики

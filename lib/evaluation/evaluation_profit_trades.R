@@ -15,13 +15,13 @@
 #'
 #' @export
 #
-ProfitList_byDeals <- function(data, ...) {
+ProfitList_byTrades <- function(data, ...) {
   # подготовка данных для обработки (фильтрация субсделок)
   names.set <- unique(data$Ticker)
   ### Расчёт
   result.list <- lapply(names.set, 
                         function(x){
-                          ProfitTable.byDeals.oneTicker(data = data, ticker.name = x)
+                          ProfitTable.byTrades.oneTicker(data = data, ticker.name = x)
                         })
   names(result.list) <- names.set
   #
@@ -39,7 +39,7 @@ ProfitList_byDeals <- function(data, ...) {
 #' @return result DF с данными по profit'у сделок тикера
 #'
 #' @export
-ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
+ProfitTable.byTrades.oneTicker <- function(data, ticker.name, ...) {
   # подготовка данных для обработки (фильтрация субсделок)
   data %<>%
     # выделение нужных строк
@@ -55,28 +55,28 @@ ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
       return(result)
     }   
   ### Всего сделок
-  deals.num <- last(data$PositionNum)
+  trades.num <- last(data$PositionNum)
   ### разбор статистики
   # индексы прибыльных/убыточных сделок
-  goodDeal.index <- which(data$DealReturn >= 0)
-  badDeal.index <- which(data$DealReturn < 0)
+  goodTrade.index <- which(data$TradeReturn >= 0)
+  badTrade.index <- which(data$TradeReturn < 0)
   ### Всего сделок в плюс
-  numGoogDeals <- 
-    goodDeal.index %>%
+  numGoogTrades <- 
+    goodTrade.index %>%
     length(.)
   ### Win rate
-  winRatePercent <- numGoogDeals * 100 / deals.num
+  winRatePercent <- numGoogTrades * 100 / trades.num
   ### Всего сделок в минус
-  numBadDeals <- 
-    badDeal.index %>%
+  numBadTrades <- 
+    badTrade.index %>%
     length(.)
   ### Loss rate
-  lossRatePercent <- numBadDeals * 100 / deals.num
+  lossRatePercent <- numBadTrades * 100 / trades.num
   ### Расчёт последовательностей сделок
   # подготовка данных для анализа
-  dealsSeries <- 
+  tradesSeries <- 
   {
-    ifelse(data$DealReturn >= 0, 
+    ifelse(data$TradeReturn >= 0, 
            1,
           -1)
   } %>%
@@ -85,82 +85,81 @@ ProfitTable.byDeals.oneTicker <- function(data, ticker.name, ...) {
     data.frame(DayType = .[[2]], SeriesLength = .[[1]])
   }
   ### Max сделок в плюс
-  maxGoodDeals <-
-    which(dealsSeries$DayType == 1) %>%
+  maxGoodTrades <-
+    which(tradesSeries$DayType == 1) %>%
     {
-      max(dealsSeries$SeriesLength[.])
+      max(tradesSeries$SeriesLength[.])
     }
   ### Max сделок в минус
-  maxBadDeals <-
-    which(dealsSeries$DayType == -1) %>%
+  maxBadTrades <-
+    which(tradesSeries$DayType == -1) %>%
     {
-      max(dealsSeries$SeriesLength[.])
+      max(tradesSeries$SeriesLength[.])
     }  
   ### Профит-фактор
   ## всего заработано (по сделкам)
-  goodDeal.sum <- sum(data$DealReturn[goodDeal.index])
+  goodTrade.sum <- sum(data$TradeReturn[goodTrade.index])
   ## всего слито (по сделкам)
-  badDeal.sum <- sum(data$DealReturn[badDeal.index])
+  badTrade.sum <- sum(data$TradeReturn[badTrade.index])
   ## PF
-  pf.deals <- goodDeal.sum / abs(badDeal.sum)
+  pf.trades <- goodTrade.sum / abs(badTrade.sum)
   ### Средний доход по сделкам
-  meanGoodDealReturn <- 
-    data$DealReturn[goodDeal.index] %>%
+  averageGoodTradeReturn <- 
+    data$TradeReturn[goodTrade.index] %>%
     mean(.)
   ### Средний доход по сделкам в %
-  meanGoodDealReturnPercent <- 
-    data$DealReturnPercent[goodDeal.index] %>%
+  averageGoodTradeReturnPercent <- 
+    data$TradeReturnPercent[goodTrade.index] %>%
     mean(.)
   ### Средний минус
-  meanBadDealReturn <- 
-    data$DealReturn[badDeal.index] %>%
+  averageBadTradeReturn <- 
+    data$TradeReturn[badTrade.index] %>%
     mean(.)
   ### Средний минус в %
-  meanBadDealReturnPercent <- 
-    data$DealReturnPercent[badDeal.index] %>%
+  averageBadTradeReturnPercent <- 
+    data$TradeReturnPercent[badTrade.index] %>%
     mean(.)
   ### Среднее баров на сделку
-  meanDealBars <- 
-    mean(data$PositionBars) %>%
+  averageTradeBars <- 
+    mean(data$BarsHeld) %>%
     trunc(.)
   ### Среднее баров на прибыльную сделку
-  meanGoodDealBars <- 
-    mean(data$PositionBars[goodDeal.index]) %>%
+  averageGoodTradeBars <- 
+    mean(data$BarsHeld[goodTrade.index]) %>%
     trunc(.)
   ### Среднее баров на убыточную сделку
-  meanBadDealBars <- 
-    mean(data$PositionBars[badDeal.index]) %>%
+  averageBadTradeBars <- 
+    mean(data$BarsHeld[badTrade.index]) %>%
     trunc(.) %>%
     {
       ifelse(. == 0, 1, .)
     }
   ### Средний П/У на сделку
-  meanDealReturn <- mean(data$DealReturn)
+  averageTradeReturn <- mean(data$TradeReturn)
   ### Средний П/У на сделку в %
-  meanDealReturnPercent <- mean(data$DealReturnPercent)
+  averageTradeReturnPercent <- mean(data$TradeReturnPercent)
   # 
   ### Формирование итоговой таблицы
   result <- data.frame(
-                       DealsNum = deals.num,            
-                       NumGoogDeals = numGoogDeals,
-                       WinRate = winRatePercent,
-                       NumBadDeals = numBadDeals,
-                       LossRate = lossRatePercent,
-                       MaxGoodDeals = maxGoodDeals,
-                       MaxBadDeals = maxBadDeals,
-                       FullGoodDealReturn = goodDeal.sum,
-                       FullBadDealReturn = badDeal.sum,
-                       MeanGoodDealReturn = meanGoodDealReturn,
-                       MeanGoodDealReturnPercent = meanGoodDealReturnPercent,
-                       MeanBadDealReturn = meanBadDealReturn,
-                       MeanBadDealReturnPercent = meanBadDealReturnPercent,
-                       MeanDealBars = meanDealBars,
-                       MeanGoodDealBars = meanGoodDealBars,
-                       MeanBadDealBars = meanBadDealBars,
-                       MeanDealReturn = meanDealReturn,
-                       MeanDealReturnPercent = meanDealReturnPercent,
-                       ProfitFactorDeals = pf.deals,
-                       #
+                       TradesNum = trades.num,            
+                       TradesAveregeBarsHeld = averageTradeBars,
+                       TradesAveregeProfit = averageTradeReturn,
+                       TradesAveregeProfitPercent = averageTradeReturnPercent,
+                       TradesProfitFactor = pf.trades,
+                       TradesWin = numGoogTrades,
+                       TradesWinMax = maxGoodTrades,
+                       TradesWinRate = winRatePercent,
+                       TradesGrossProfit = goodTrade.sum,
+                       TradesWinAveregeProfit = averageGoodTradeReturn,
+                       TradesWinAveregeProfitPercent = averageGoodTradeReturnPercent,
+                       TradesWinAveregeBarsHeld = averageGoodTradeBars, 
+                       TradesLoss = numBadTrades,
+                       TradesLossMax = maxBadTrades,
+                       TradesLossRate = lossRatePercent,
+                       TradesGrossLoss = badTrade.sum,
+                       TradesLossAveregeLoss = averageBadTradeReturn,
+                       TradesLossAveregeLossPercent = averageBadTradeReturnPercent,
+                       TradesLossAveregeBarsHeld = averageBadTradeBars,
                        row.names = NULL)       
   #
   return(result)

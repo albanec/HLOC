@@ -13,7 +13,7 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-DealsTables.calc <- function(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE, ticker.names = NULL,
+TradesTable.calc <- function(data = data.strategy.list[[2]], basket = FALSE, convert = FALSE, ticker.names = NULL,
                              bto.name = 'BTO', bto_add.name = 'BTO_add',
                              sto.name = 'STO', sto_add.name = 'STO_add',
                              stc.name = 'STC', stc_drop.name = 'STC_drop',
@@ -34,11 +34,11 @@ DealsTables.calc <- function(data = data.strategy.list[[2]], basket = FALSE, con
     as.list(.)
   #
   ### расчёт таблицы сделок (данные по каждому тикеру)
-  dealsTable_byTickers <- 
+  tradesTable_byTickers <- 
     # посделочный расчёт, на выходе лист с df по каждой сделке
     lapply(pos.num.list,
            function (x) {
-             DealSummary(data, type = 'byTicker', n = x, ticker.names = ticker.names, 
+             TradeSummary(data, type = 'byTicker', n = x, ticker.names = ticker.names, 
                          bto.name, bto_add.name,
                          sto.name, sto_add.name,
                          stc.name, stc_drop.name,
@@ -47,14 +47,14 @@ DealsTables.calc <- function(data = data.strategy.list[[2]], basket = FALSE, con
     # объединение данных внутри листа в один df
     MergeData_inList.byRow(.)
   if (convert != FALSE) {
-    dealsTable_byTickers %<>% DealsTable.convert(data.deals = ., type = 'byTicker')
+    tradesTable_byTickers %<>% TradesTable.convert(data.trades = ., type = 'byTicker')
   }
   ### расчёт таблицы сделок (данные по корзине)
   if (basket == TRUE) {
-    dealsTable_byBasket <- 
+    tradesTable_byBasket <- 
       lapply(pos.num.list,
              function (x) {
-               DealSummary(data, type = 'byBasket', n = x, ticker.names = ticker.names, 
+               TradeSummary(data, type = 'byBasket', n = x, ticker.names = ticker.names, 
                            bto.name = , bto_add.name,
                            sto.name, sto_add.name,
                            stc.name, stc_drop.name,
@@ -62,12 +62,12 @@ DealsTables.calc <- function(data = data.strategy.list[[2]], basket = FALSE, con
              }) %>%
       MergeData_inList.byRow(.)
     if (convert != FALSE) {
-      dealsTable_byBasket %<>% DealsTable.convert(data.deals = ., type = 'byBasket')  
+      tradesTable_byBasket %<>% TradesTable.convert(data.trades = ., type = 'byBasket')  
     }
-    result.list <- list(dealsTable_byBasket, dealsTable_byTickers)
+    result.list <- list(tradesTable_byBasket, tradesTable_byTickers)
     names(result.list) <- c('byBasket', 'byTicker')
   } else {
-    result.list <- list(dealsTable_byTickers)
+    result.list <- list(tradesTable_byTickers)
     names(result.list) <- c('byTicker')
   }
   #
@@ -79,62 +79,66 @@ DealsTables.calc <- function(data = data.strategy.list[[2]], basket = FALSE, con
 #' 
 #' Функция производит вывод данных по открытию/закрытию позиций в одну строку
 #' 
-#' @param data.deal Данные таблицы сделок
+#' @param data.trade Данные таблицы сделок
 #' @param type Тип данных для анализа (tickers/basket)
 #'
 #' @return result Изменённая таблица данных сделок
 #'
 #' @export
-DealsTable.convert <- function(data.deals, type = 'byTicker') {
+TradesTable.convert <- function(data.trades, type = 'byTicker') {
   ## Номера столбцов, касающихся закрытия 
-  numDeals <- 
+  numtrades <- 
     # ряд номеров позиций
-    last(data.deals$PositionNum) %>%
+    last(data.trades$PositionNum) %>%
     1:. 
   # Выделение нужных столбцов (касаются закрытия)
   if (type == 'byTicker') {
     colNum <-
-      c('CloseSignal', 'CloseDate', 'CloseValue', 'CloseCommiss', 'DealReturn', 'Equity', 'PositionBars') %>%
+      c('ExitSignal', 'ExitDate', 'ExitPrice', 'ExitCommiss', 'TradeReturn', #'Equity', 
+        'BarsHeld') %>%
       {
-        which(colnames(data.deals) %in% .) 
+        which(colnames(data.trades) %in% .) 
       }
   } else {
     colNum <-
-      c('CloseSignal', 'CloseDate', 'CloseCommiss', 'DealReturn', 'DealReturnPercent',
-        'DealEquity', 'DealEquityPercent', 'Equity', 'PositionBars') %>%
+      c('ExitSignal', 'ExitDate', 'ExitCommiss', 'TradeReturn', 'TradeReturnPercent',
+        'TradeProfit', 'TradeProfitPercent', #'Equity', 
+        'BarsHeld') %>%
       {
-        which(colnames(data.deals) %in% .) 
+        which(colnames(data.trades) %in% .) 
       }
   }
   ### Перенос данных в нужные строки
   # индексы строк открытия
   openRowIndex <- which(
-    (data.deals$PositionNum %in% numDeals) & !is.na(data.deals$OpenSignal)
+    (data.trades$PositionNum %in% numtrades) & !is.na(data.trades$EntrySignal)
   )
   # индексы строк закрытия
   closeRowIndex <- which(
-    (data.deals$N == 0) & !is.na(data.deals$CloseSignal)
+    (data.trades$N == 0) & !is.na(data.trades$ExitSignal)
   )
   ## Вывод данных по открытию/закрытию позиций в одну строку
-  data.deals <- 
+  data.trades <- 
     # инъекция данных
     {              
-      data.deals[openRowIndex, colNum] <- data.deals[closeRowIndex, colNum]
-      data.deals$DealReturn[openRowIndex] <- data.deals$DealEquity[closeRowIndex]
-      data.deals$DealReturnPercent[openRowIndex] <- data.deals$DealEquityPercent[closeRowIndex]
-      data.deals$MarketCompliance[openRowIndex] <- data.deals$MarketCompliance[closeRowIndex] 
-      data.deals$Balance[openRowIndex] <- data.deals$Balance[closeRowIndex] 
-      return(data.deals)
+      data.trades[openRowIndex, colNum] <- data.trades[closeRowIndex, colNum]
+      data.trades$TradeReturn[openRowIndex] <- data.trades$TradeProfit[closeRowIndex]
+      data.trades$TradeReturnPercent[openRowIndex] <- data.trades$TradeProfitPercent[closeRowIndex]
+      data.trades$MarketCompliance[openRowIndex] <- data.trades$MarketCompliance[closeRowIndex] 
+      #data.trades$Balance[openRowIndex] <- data.trades$Balance[closeRowIndex] 
+      return(data.trades)
     } %>%
     # очистка ненужных данных (удаление лога закрытий)
     {
-      data.deals <- data.deals[-closeRowIndex, ]
-      data.deals$DealEquity <- NULL
-      data.deals$DealEquityPercent <- NULL
-      return(data.deals)
+      data.trades <- data.trades[-closeRowIndex, ]
+      data.trades$TradeProfit <- NULL
+      data.trades$TradeProfitPercent <- NULL
+      names(data.trades)[names(data.trades) == 'TradeReturn'] <- 'TradeProfit'
+      names(data.trades)[names(data.trades) == 'TradeReturnPercent'] <- 'TradeProfitPercent'
+      return(data.trades)
     }
   #
-  return(data.deals)
+  return(data.trades)
 }
 #
 ###
@@ -155,10 +159,10 @@ DealsTable.convert <- function(data.deals, type = 'byTicker') {
 #' @param btc.name Написание закрытия short
 #' @param btc_drop.name Написание сброса позиции short
 #'
-#' @return DealsTable data.frame содержащий все сделки
+#' @return tradesTable data.frame содержащий все сделки
 #'
 #' @export
-DealSummary <- function(data, type, n, ticker.names = NULL,
+TradeSummary <- function(data, type, n, ticker.names = NULL,
                         bto.name, bto_add.name,
                         sto.name, sto_add.name,
                         stc.name, stc_drop.name,
@@ -196,10 +200,10 @@ DealSummary <- function(data, type, n, ticker.names = NULL,
                names(result)[names(result) == paste0(x,'.Price', sep = '')] <- 'Price'
                names(result)[names(result) == paste0(x,'.commiss', sep = '')] <- 'commiss'
                names(result)[names(result) == paste0(x,'.equity', sep = '')] <- 'equity'
-               names(result)[names(result) == paste0(x,'.perfReturn', sep = '')] <- 'deal.return'
+               names(result)[names(result) == paste0(x,'.perfReturn', sep = '')] <- 'trade.return'
             
                # нумерация субсделок (x.0 - открытия/закрытия и x.1...n - для изменений внутри)
-               result$pos.num %<>% DealSummary.pos_num(x = .)
+               result$pos.num %<>% TradeSummary.pos_num(x = .)
                #
                return(result)
              }) %>%
@@ -208,34 +212,34 @@ DealSummary <- function(data, type, n, ticker.names = NULL,
     names.set <- c('pos', 'pos.num', 'pos.bars', 'pos.add', 'pos.drop', 'balance', 'im.balance',
                    'n', 'diff.n', 'commiss', 'equity', 'perfReturn') 
     data <- data[, (which(colnames(data) %in% names.set))]
-    names(data)[names(data) == 'perfReturn'] <- 'deal.return' 
-    data$pos.num %<>% DealSummary.pos_num(x = .)
+    names(data)[names(data) == 'perfReturn'] <- 'trade.return' 
+    data$pos.num %<>% TradeSummary.pos_num(x = .)
   }
   
   # конвертируем таблицу в DF      
   data %<>% Convert.XTStoDF(.) 
   
   ### расчёт итогового DF
-  deal_summary <- DealSummary.summary_df(data, type, ticker.names,
-                                         bto.name, bto_add.name,
-                                         sto.name, sto_add.name,
-                                         stc.name, stc_drop.name,
-                                         btc.name, btc_drop.name)
+  trade_summary <- TradeSummary.summary_df(data, type, ticker.names,
+                                           bto.name, bto_add.name,
+                                           sto.name, sto_add.name,
+                                           stc.name, stc_drop.name,
+                                           btc.name, btc_drop.name)
   
-  deal_summary <- deal_summary[, -1]
+  trade_summary <- trade_summary[, -1]
   #
-  return(deal_summary)
+  return(trade_summary)
 } 
 #
 ###
-#' Вычисление номеров сделок в нужном для DealsTable виде (вспомогательная функция)
+#' Вычисление номеров сделок в нужном для TradesTable виде (вспомогательная функция)
 #' 
 #' @param x XTS с номерами позиций из data.state
 #'
-#' @return x Ряд сделок в нужном для DealsTable виде
+#' @return x Ряд сделок в нужном для TradesTable виде
 #'
 #' @export
-DealSummary.pos_num <- function(x) {
+TradeSummary.pos_num <- function(x) {
   row.num <- nrow(x)
   x <- 
     row.num %>%
@@ -282,7 +286,7 @@ DealSummary.pos_num <- function(x) {
 #' @return summary data.frame, содержащий данные по сделке
 #'
 #' @export
-DealSummary.summary_df <- function(x, type, ticker.names = NULL,
+TradeSummary.summary_df <- function(x, type, ticker.names = NULL,
                                    bto.name, bto_add.name,
                                    sto.name, sto_add.name,
                                    stc.name, stc_drop.name,
@@ -307,36 +311,36 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
     nrow(x) %>%
     # форомирование скелета DF
     data.frame(PositionNum = numeric(.),
-               PositionType = character(.),
+               Position = character(.),
                Ticker = character(.),
                N = numeric(.),
                diff.N = integer(.),
-               OpenSignal = character(.),
-               OpenDate = character(.) %>% 
+               EntrySignal = character(.),
+               EntryDate = character(.) %>% 
                           as.numeric() %>% 
                           as.Date(),
-               OpenValue = integer(.),
-               OpenCommiss = integer(.),
-               CloseSignal = character(.),
-               CloseDate = character(.) %>% 
+               EntryPrice = integer(.),
+               EntryCommiss = integer(.),
+               ExitSignal = character(.),
+               ExitDate = character(.) %>% 
                            as.numeric() %>% 
                            as.Date(),
-               CloseValue = integer(.),
-               CloseCommiss = integer(.),
-               DealReturn = numeric(.),
-               DealReturnPercent = numeric(.),
+               ExitPrice = integer(.),
+               ExitCommiss = integer(.),
+               TradeReturn = numeric(.),
+               TradeReturnPercent = numeric(.),
                MarketCompliance = numeric(.),
-               DealEquity = numeric(.),
-               DealEquityPercent = numeric(.),
-               Equity = numeric(.),
-               PositionBars = numeric(.),
-               Balance = numeric(.),
+               TradeProfit = numeric(.),
+               TradeProfitPercent = numeric(.),
+               #Equity = numeric(.),
+               BarsHeld = numeric(.),
+               #Balance = numeric(.),
                row.names = NULL)
   
   ## номера позиций
   summary$PositionNum <- x$pos.num
   ## тип позиции
-  summary$PositionType <- ifelse(x$pos[1] == 1, 
+  summary$Position <- ifelse(x$pos[1] == 1, 
                                  'Длинная', 
                                  'Короткая')
   ## имя тикера
@@ -350,7 +354,7 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
   ## изменения контрактов тикера на текущей сделке
   summary$diff.N <- x$diff.n
   ## сигнал открытия
-  summary$OpenSignal <- ifelse(x$pos == 1, 
+  summary$EntrySignal <- ifelse(x$pos == 1, 
                                ifelse(x$pos.add == 1, 
                                       bto_add.name,
                                       ifelse(x$pos.drop == 0, 
@@ -364,25 +368,25 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
                                                     NA)),
                                       NA))
   # дата открытия позиции
-  summary$OpenDate <- 
+  summary$EntryDate <- 
     ifelse(x$pos != 0 & x$pos.drop == 0, 
            x$date, 
            NA) %>%
     as.POSIXct(., origin = '1970-01-01') 
   ## цена тикера на открытии (не используется в "basket" режиме)
   if (type == 'byTicker') {
-    summary$OpenValue <- ifelse(x$pos != 0 & x$pos.drop == 0, 
+    summary$EntryPrice <- ifelse(x$pos != 0 & x$pos.drop == 0, 
                                 x$Price, 
                                 NA)
   } else {
-    summary$OpenValue <- NA
+    summary$EntryPrice <- NA
   }
   ## комиссия на закрытии
-  summary$OpenCommiss <- ifelse(x$pos != 0 & x$pos.drop == 0, 
+  summary$EntryCommiss <- ifelse(x$pos != 0 & x$pos.drop == 0, 
                                 x$commiss, 
                                 NA)
   ## сигнал закрытия
-  summary$CloseSignal <- ifelse(x$pos == 0,
+  summary$ExitSignal <- ifelse(x$pos == 0,
                                 ifelse(x$pos[1] == 1, 
                                        stc.name,
                                        btc.name), 
@@ -393,51 +397,51 @@ DealSummary.summary_df <- function(x, type, ticker.names = NULL,
                                        NA)
                                 )
   ## дата закрытия
-  summary$CloseDate <- 
+  summary$ExitDate <- 
     ifelse(x$pos == 0 | x$pos.drop != 0, 
            x$date, 
            NA) %>%
     as.POSIXct(., origin = '1970-01-01') 
   ## цена тикера на закрытии (не используется в 'byBasket' режиме)
   if (type == 'byTicker') {
-    summary$CloseValue <- ifelse(x$pos == 0 | x$pos.drop != 0, 
+    summary$ExitPrice <- ifelse(x$pos == 0 | x$pos.drop != 0, 
                                  x$Price, 
                                  NA)
   } else {
-    summary$CloseValue <- NA
+    summary$ExitPrice <- NA
   }
   ## коммиссия на закрытии
-  summary$CloseCommiss <- ifelse(x$pos == 0 | x$pos.drop != 0, 
+  summary$ExitCommiss <- ifelse(x$pos == 0 | x$pos.drop != 0, 
                                  x$commiss, 
                                  NA)
   ## return позиции
-  summary$DealReturn <- x$deal.return
+  summary$TradeReturn <- x$trade.return
   ## return позиции в %
   #if (type == 'byBasket') {
-    summary$DealReturnPercent <- x$deal.return * 100 / (first(x$balance) + first(x$im.balance))
+    summary$TradeReturnPercent <- x$trade.return * 100 / (first(x$balance) + first(x$im.balance))
   #} else {
-  #  summary$DealReturnPercent <- NA  
+  #  summary$tradeReturnPercent <- NA  
   #}
   ## equity внутри сделки
-  summary$DealEquity <- cumsum(x$deal.return)
+  summary$TradeProfit <- cumsum(x$trade.return)
   #if (type == 'byBasket') {
-    summary$DealEquityPercent <- summary$DealEquity * 100 / (first(x$balance) + first(x$im.balance))
+    summary$TradeProfitPercent <- summary$TradeProfit * 100 / (first(x$balance) + first(x$im.balance))
   #} else {
-  #  summary$DealEquityPercent <- NA
+  #  summary$TradeProfitPercent <- NA
   #}
   ## Banchmark соответствия рынку
   if (type == 'byTicker') {
-    summary$MarketCompliance <- sign(last(summary$DealReturn)) * 
-                                 (first(summary$OpenValue) - last(summary$CloseValue)) * 100 / first(summary$OpenValue)
+    summary$MarketCompliance <- sign(last(summary$TradeReturn)) * 
+                                (first(summary$EntryPrice) - last(summary$ExitPrice)) * 100 / first(summary$EntryPrice)
   } else {
     summary$MarketCompliance <- NA
   }
   ## изменения equity тикера
-  summary$Equity <- x$equity
+  #summary$Equity <- x$equity
   ## тики позиций
-  summary$PositionBars <- x$pos.bars
+  summary$BarsHeld <- x$pos.bars
   ## Баланс
-  summary$Balance <- x$balance + x$im.balance
+  #summary$Balance <- x$balance + x$im.balance
   #
   return(summary)
 }

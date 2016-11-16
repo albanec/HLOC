@@ -141,12 +141,12 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
       perfomanceTable <- 
         PerfomanceTable(data = data.strategy.list[[1]], 
                             data.state = 0,
-                            dealsTable = 0,
+                            tradesTable = 0,
                             balance = balance.start, ret.type = 0, 
                             fast = TRUE) 
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      dealsTable.list <- DealsTables.calc(data = data.strategy.list[[2]], basket = TRUE, convert = TRUE)
+      tradesTable.list <- TradesTable.calc(data = data.strategy.list[[2]], basket = TRUE, convert = TRUE)
       # очистка мусора по target = 'temp'
       CleanGarbage(target = 'temp', env = '.GlobalEnv')
       # 
@@ -154,7 +154,7 @@ SimpleStr_OneThreadRun <- function(data.source = data.source.list[[1]],
       perfomanceTable <- 
         PerfomanceTable(data = data.strategy.list[[1]], 
                             data.state = data.strategy.list[[2]],
-                            dealsTable = dealsTable.list,
+                            tradesTable = tradesTable.list,
                             balance = balance.start, 
                             ret.type = ret.type)  
     }

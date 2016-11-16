@@ -10,7 +10,7 @@
 #' @return result Ряд данных с числом контрактов в сделках
 #'
 #' @export
-CalcDeals_inStates.testStr <- function(data) {
+CalcTrades_inStates.testStr <- function(data) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
@@ -129,7 +129,7 @@ TestStr.gear <- function(data.source,
     length(.)
   if (temp.length == 0) {
     # если это условие не выполняется, то отработка робота д.б. завершена с нулувым триггером
-    message('WARNING(TestStrategy_gear): No Deals Here!!!', '\n')
+    message('WARNING(TestStrategy_gear): No Trades Here!!!', '\n')
     remove(temp.length)
     return(list(NA, NA))
   }
@@ -466,9 +466,9 @@ TestStr.gear <- function(data.source,
   #
   ## 2.2 Расчёт самих сделок
   #
-  cat('TestStrategy INFO:  Start Calculation Deals...', '\n')
+  cat('TestStrategy INFO:  Start Calculation trades...', '\n')
   #
-  data.state$n <- CalcDeals_inStates.testStr(data = data.state)
+  data.state$n <- CalcTrades_inStates.testStr(data = data.state)
   # Изменение контрактов на такте
   data.state$diff.n <- data.state$n - lag(data.state$n)
   data.state$diff.n[1] <- 0
@@ -502,7 +502,7 @@ TestStr.gear <- function(data.source,
   data.state$balance <- balance.start + data.state$equity - data.state$im.balance
   data.state$balance[1] <- balance.start 
   #
-  cat('TestStrategy INFO:  Calculation Deals  OK', '\n')
+  cat('TestStrategy INFO:  Calculation trades  OK', '\n')
   #
   ## Перенос данных из state в full таблицу
   # перенос данных по количеству контрактов корзины 
