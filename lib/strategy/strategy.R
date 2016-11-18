@@ -98,7 +98,7 @@ CalcStates.inData <- function(x) {
 #' @return state.data Данные с рядом состояний  
 #'
 #' @export
-CalcStates.buildStatesTable <- function(data) {
+CalcStates.table <- function(data) {
   require(quantmod) 
   # ----------
   state.data <- 
@@ -436,7 +436,7 @@ CleanSignal.duplicate <- function(x) {
 #' @return result DF c $open и $close сделок
 #'
 #' @export
-CalcPosition.byOrders <- function(bto, stc, sto, btc) {
+CalcPosition_byOrders <- function(bto, stc, sto, btc) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   rows <- length(bto)
@@ -668,3 +668,75 @@ StatesTable.clean <- function(data) {
     } 
   return(data)
 } 
+#
+###
+#' Функция для расчёта позиций
+#'
+#' @param data.source XTS с исходными котировками
+#' @param exp.vector Вектор с датами экспирации
+#' @param gap_filter Фильтрация на gap'ах
+#' @param FUN_AddIndicators Функция расчета индикаторов
+#' @param FUN_AddSignals Функция расчета торговых сигналов
+#' @param FUN_CleanOrders Функция очистки ордеров
+#' @param FUN_CalcPosition_byOrders Функция расчета позиций
+#' @param ... Исходные параметры индикаторов
+#'
+#' @return
+#'
+#' @export
+AddPositions <- function(data.source, exp.vector, gap_filter = TRUE,
+                         FUN_AddIndicators, FUN_AddSignals, 
+                         FUN_CleanOrders, FUN_CalcPosition_byOrders,
+                         ...) {
+  #
+  FUN_AddIndicators <- match.fun(FUN_AddIndicators)
+  FUN_AddSignals <- match.fun(FUN_AddSignals)
+  FUN_CleanOrders <- match.fun(FUN_CleanOrders)
+  FUN_CalcPosition_byOrders <- match.fun(FUN_CalcPosition_byOrders)
+  dots <- list(...)
+  
+  ### Расчёт индикаторов и позиций
+  ## 1.1 Добавляем индикаторы (fastSMA & slowSMA, DCI) и позиции
+  data <- xts()
+  #
+  data <- FUN_addIndicators(ohlc_source = data.source, ...)
+  #
+  ## Расчёт сигналов и позиций
+  #cat('TurtlesStrategy INFO:  Calculate $sig and $pos...', '\n')
+  data <- FUN_addSignals(data = data)
+  # выделение сигналов на ордера в отдельный XTS
+  order.xts <- xts()
+  order.xts$bto <- Subset_byTarget.col(data = data, target = '.bto')
+  order.xts$sto <- Subset_byTarget.col(data = data, target = '.sto')
+  order.xts$stc <- Subset_byTarget.col(data = data, target = '.stc')
+  order.xts$btc <- Subset_byTarget.col(data = data, target = '.btc')
+  
+  ### фильтрация канальных индикаторах на утренних gap'ах
+  if (gap_filter == TRUE) {
+    order.list <- CleanSignal.gap(signals = order.xts)
+    data$gap <- order.list[[2]]  
+  } else {
+    order.list <- list(order.xts)
+  }
+  rm(order.xts)
+
+  ### фильтрация сделок на склейках фьючерсов
+  if (!is.null(exp.vector)) {
+    order.list[[1]] <- CleanSignal.expiration(signals = order.list[[1]], 
+                                              exp.vector = exp.vector)
+  }
+  #
+  data <- na.omit(data)
+  
+  ### Фильтрация ордеров в сделках
+  temp.list <- FUN_СleanOrders(orders = order.list[[1]], data = data)
+  order.list[[1]] <- temp.list[[1]]
+  data <- temp.list[[2]]
+  rm(temp.list)  
+  
+  ### Добавление столбцов сделок в основную таблицу  
+  data <- FUN_CalcPosition_byOrders(orders = order.list[[1]])
+  rm(order.list)
+  #
+  return (data)
+}
