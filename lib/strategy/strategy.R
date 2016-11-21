@@ -70,12 +70,11 @@ CrossLine.down <- function(x1, x2, eq = FALSE) {
 #' 
 #' @param data Ряд позиций (data$pos)
 #'
-#' @return data$state Ряд состояний
+#' @return state Ряд состояний
 #'
 #' @export
 CalcStates.inData <- function(x) {
-  require(quantmod) 
-  # ----------
+  #
   x <-
     na.locf(x) %>%
     {
@@ -83,30 +82,30 @@ CalcStates.inData <- function(x) {
     } %>%
     xts(., order.by = index(x))
   ind <- which(x != lag(x))
-  result <- rep(NA, length(x))
-  result[ind] <- x[ind]
-  result[1] <- x[1]
+  state <- rep(NA, length(x))
+  state[ind] <- x[ind]
+  state[1] <- x[1]
   #
-  return(result)
+  return(state)
 }
 #
 ###
 #' Генерирует таблицу сделок
 #' 
-#' @param data Данные
+#' @param x Полные данные отработки стратегии
 #'
-#' @return state.data Данные с рядом состояний  
+#' @return result Данные с рядом состояний  
 #'
 #' @export
-CalcStates.table <- function(data) {
-  require(quantmod) 
-  # ----------
-  state.data <- 
-    data %>% CalcStates.inData(.) %>%
-    merge(data, .) %>%
+CalcStates.table <- function(x) {
+  #
+  result <- 
+    x$pos %>% 
+    CalcStates.inData(.) %>%
+    {merge(x, state = .)} %>%
     na.omit(.)
   #
-  return(state.data)
+  return(result)
 }
 #
 ###
@@ -253,19 +252,19 @@ NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, t
 #' Расчёт суммарного параметра (согласно весам инструмента в портфеле)
 #' 
 #' @param data xts с данными корзины
-#' @param basket.weights Веса инструментов внутри корзины
+#' @param basket_weights Веса инструментов внутри корзины
 #' @param target Ключ поиска нужных столбцов
 #'
 #' @return data Суммированные данные (столбец)
 #'
 #' @export
-CalcSum_inXTS_byTargetCol.basket <- function(data, basket.weights, target) {
+CalcSum_inXTS_byTargetCol.basket <- function(data, basket_weights, target) {
   #require()
   # 
   temp.text <- 
     names(data)[grep(target, names(data))] %>% 
     paste('data$', ., sep = '') %>%
-    paste(., basket.weights, sep = ' * ', collapse = ' + ') %>%
+    paste(., basket_weights, sep = ' * ', collapse = ' + ') %>%
     paste('data <- ', ., sep = '') 
   eval(parse(text = temp.text))
   #
@@ -621,27 +620,27 @@ CleanSignal.gap <- function(signals) {
 #' 
 #' @param price Данные цен на сделках
 #' @param action Данные action
-#' @param data.source Данные с котировками
+#' @param data_source Данные с котировками
 #' @param slips Слипы
 #'
 #' @return price XTS с ценами
 #'
 #' @export
-CalcPrice.slips <- function(price, action, data.source, slips) {
+CalcPrice.slips <- function(price, action, data_source, slips) {
     price <- price + slips * sign(action)
     price.ind <- index(price)
     low.ind <- 
     { 
-        which(price < Lo(data.source[price.ind])) 
+        which(price < Lo(data_source[price.ind])) 
     } %>% 
         price.ind[.]
     high.ind <- 
     { 
-        which(price > Hi(data.source[price.ind])) 
+        which(price > Hi(data_source[price.ind])) 
     } %>% price.ind[.]
     
-    price[low.ind] <- Lo(data.source[low.ind])
-    price[high.ind] <- Hi(data.source[high.ind])
+    price[low.ind] <- Lo(data_source[low.ind])
+    price[high.ind] <- Hi(data_source[high.ind])
     #
     return(price)
 }
@@ -672,7 +671,7 @@ StatesTable.clean <- function(data) {
 ###
 #' Функция для расчёта позиций
 #'
-#' @param data.source XTS с исходными котировками
+#' @param data_source XTS с исходными котировками
 #' @param exp.vector Вектор с датами экспирации
 #' @param gap_filter Фильтрация на gap'ах
 #' @param FUN_AddIndicators Функция расчета индикаторов
@@ -684,7 +683,7 @@ StatesTable.clean <- function(data) {
 #' @return
 #'
 #' @export
-AddPositions <- function(data.source, exp.vector, gap_filter = TRUE,
+AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
                          FUN_AddIndicators, FUN_AddSignals, 
                          FUN_CleanOrders, FUN_CalcPosition_byOrders,
                          ...) {
@@ -699,17 +698,17 @@ AddPositions <- function(data.source, exp.vector, gap_filter = TRUE,
   ## 1.1 Добавляем индикаторы (fastSMA & slowSMA, DCI) и позиции
   data <- xts()
   #
-  data <- FUN_addIndicators(ohlc_source = data.source, ...)
+  data <- FUN_AddIndicators(ohlc_source = data_source, ...)
   #
   ## Расчёт сигналов и позиций
   #cat('TurtlesStrategy INFO:  Calculate $sig and $pos...', '\n')
-  data <- FUN_addSignals(data = data)
+  data <- FUN_AddSignals(data = data, ohlc_source = data_source)
   # выделение сигналов на ордера в отдельный XTS
   order.xts <- xts()
-  order.xts$bto <- Subset_byTarget.col(data = data, target = '.bto')
-  order.xts$sto <- Subset_byTarget.col(data = data, target = '.sto')
-  order.xts$stc <- Subset_byTarget.col(data = data, target = '.stc')
-  order.xts$btc <- Subset_byTarget.col(data = data, target = '.btc')
+  order.xts$bto <- Subset_byTarget.col(data = data, target = 'bto')
+  order.xts$sto <- Subset_byTarget.col(data = data, target = 'sto')
+  order.xts$stc <- Subset_byTarget.col(data = data, target = 'stc')
+  order.xts$btc <- Subset_byTarget.col(data = data, target = 'btc')
   
   ### фильтрация канальных индикаторах на утренних gap'ах
   if (gap_filter == TRUE) {
@@ -726,16 +725,17 @@ AddPositions <- function(data.source, exp.vector, gap_filter = TRUE,
                                               exp.vector = exp.vector)
   }
   #
+  #order.list[[1]] <- na.omit(order.list[[1]])
   data <- na.omit(data)
   
   ### Фильтрация ордеров в сделках
-  temp.list <- FUN_СleanOrders(orders = order.list[[1]], data = data)
+  temp.list <- FUN_CleanOrders(orders = order.list[[1]], data = data)
   order.list[[1]] <- temp.list[[1]]
   data <- temp.list[[2]]
   rm(temp.list)  
   
   ### Добавление столбцов сделок в основную таблицу  
-  data <- FUN_CalcPosition_byOrders(orders = order.list[[1]])
+  data <- FUN_CalcPosition_byOrders(orders = order.list[[1]], data = data)
   rm(order.list)
   #
   return (data)

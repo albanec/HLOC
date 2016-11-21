@@ -9,17 +9,17 @@
 #' Формирует таблицу с коэффициентами (Шарп, Сортино, Кальмар, Стерлинг).
 #' 
 #' @param returns Данные return'ов
-#' @param ret.type Тип return'ов (ret/sret/lret)
+#' @param ret_type Тип return'ов (ret/sret/lret)
 #'  
 #' @return ratioTable Таблица с коэффициентами
 #'
 #' @export
-RatioTable <- function(returns, ret.type) {
+RatioTable <- function(returns, ret_type) {
   require(PerformanceAnalytics)
   #
   # от типа используемых return'ов сильно зависят дальнейшие вычисления;
   # функции пакета PerfomanceAnalythics по умолчанию настроены на расчёт SR (т.е. на геометрический рассчёт)
-  if (ret.type == 'sret') {
+  if (ret_type == 'sret') {
     TF <- TRUE
   } else {
     TF <- FALSE

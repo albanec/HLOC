@@ -8,7 +8,7 @@
 #' Формирует таблицу временных параметров работы стратегии
 #' 
 #' @param data XTS с данными отработки стратегии
-#' @param data.state XTS с данными состояний стратегии
+#' @param states XTS с данными состояний стратегии
 #' @param from.date Дата начала торговли
 #' @param to.date Дата окончания торговли
 #' @param period Период свечей
@@ -16,7 +16,7 @@
 #' @return datesTable Таблица с временными параметрами
 #'
 #' @export
-DatesTable <- function(data, data.state) {
+DatesTable <- function(data, states) {
   # Зависимости:
   require(PerformanceAnalytics)
   # ----------
@@ -46,12 +46,12 @@ DatesTable <- function(data, data.state) {
     length(.)
   ### бары в рынке
   nbar.trade <-
-    data.state[data.state$pos.bars != 0] %>%
+    states[states$pos.bars != 0] %>%
     {
       which(!duplicated(.$pos.num, fromLast = TRUE))    
     } %>%
     {
-      data.state[.]$pos.bars
+      states[.]$pos.bars
     } %>%
     sum(.)
   ### бары вне рынка

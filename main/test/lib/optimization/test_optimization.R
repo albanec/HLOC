@@ -11,12 +11,12 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list', 
+BruteForceOpt_Parallel.test_str <- function(#input_data = 'data_source.list', 
                                            sma_begin, sma_end, sma_step,
-                                           # add.per_begin, add.per_end, add.per_step,
+                                           # add_perbegin, add_perend, add_perstep,
                                            rolling_opt = FALSE, ...) {
-                                           #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
-                                           #         add.per_begin, add.per_end, add.per_step,
+                                           #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
+                                           #         add_perbegin, add_perend, add_perstep,
                                            #         rolling_opt = FALSE, ...) {                          
   #
   require(parallel)
@@ -36,17 +36,17 @@ BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list',
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      'data.source.list', 
-      'add.per',
-      'k.mm', 'balance.start', 
-      'basket.weights', 'slips', 'commissions', 'ret.type'
+      'data_source.list', 
+      'add_per',
+      'k_mm', 'balance_start', 
+      'basket_weights', 'slips', 'commissions', 'ret_type'
     )
   )
   # Формирование параметров оптимизации
   sma_vector <- seq(sma_begin, sma_end, by = sma_step)
-  # add.per_vector <- seq(add.per_begin, add.per_end, by = add.per_step)
+  # add_pervector <- seq(add_perbegin, add_perend, by = add_perstep)
   vars <- sma_vector
-  #   lapply(add.per, 
+  #   lapply(add_per, 
   #          function(x) {
   #            result <- data.frame(sma, x)
   #            return(result)
@@ -56,7 +56,7 @@ BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list',
   #     list(.[, 1], .[, 2])
   #   }
   # remove(sma_vector)
-  # remove(add.per_vector)
+  # remove(add_pervector)
     sma_vector
   #
   result <- 
@@ -65,11 +65,11 @@ BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list',
       parallel_cluster,
       ., 
       function(x){
-        OneThreadRun.test_str(data.xts = data.source.list[[1]],
-                             sma.per = x, add.per = 10, k.mm, basket.weights,
-                             slips, commissions, 
-                             balance.start, ret.type,
-                             rolling_opt) 
+        OneThreadRun.test_str(data.xts = data_source.list[[1]],
+                              sma_per = x, add_per = 10, k_mm, basket_weights,
+                              slips, commissions, 
+                              balance_start, ret_type,
+                              rolling_opt) 
       }
     )
   stopCluster(parallel_cluster)
@@ -94,32 +94,32 @@ BruteForceOpt_Parallel.test_str <- function(#input_data = 'data.source.list',
 #' @param var.begin Стартовое значение оптимизации
 #' @param var.end Конечное значение оптимизации
 #' @param data.souce Лист с котировками
-#' @param sma.per Периоды SMA
-#' @param add.per Период докупок
-#' @param k.mm Коэффициент MM
-#' @param basket.weights Веса корзины (вектор)
+#' @param sma_per Периоды SMA
+#' @param add_per Период докупок
+#' @param k_mm Коэффициент MM
+#' @param basket_weights Веса корзины (вектор)
 #' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
-#' @param balance.start Стартовый баланс
+#' @param balance_start Стартовый баланс
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
 BruteForceOpt.test_str <- function(var.begin, var.end,
-                                  data.xts, add.per, k.mm, basket.weights, 
-                                  slips, commissions, 
-                                  balance.start, ret.type,
-                                  rolling_opt = FALSE) {
+                                   data.xts, add_per, k_mm, basket_weights, 
+                                   slips, commissions, 
+                                   balance_start, ret_type,
+                                   rolling_opt = FALSE) {
   #
   result <- 
     var.begin:var.end %>% 
     lapply(., 
            function(x){
              OneThreadRun.test_str(data.xts = data.xts,
-                                  sma.per = x, add.per, k.mm, basket.weights,
-                                  slips, commissions, 
-                                  balance.start, ret.type,
-                                  rolling_opt) 
+                                   sma_per = x, add_per, k_mm, basket_weights,
+                                   slips, commissions, 
+                                   balance_start, ret_type,
+                                   rolling_opt) 
            }
     ) %>%
     {
@@ -134,57 +134,57 @@ BruteForceOpt.test_str <- function(var.begin, var.end,
 #' Функция одного прогона вычислений движка test стратегии
 #' 
 #' @param data.xts XTS с котировками
-#' @param sma.per Периоды SMA
-#' @param add.per Период докупок
-#' @param k.mm Коэффициент MM
-#' @param basket.weights Веса корзины (вектор)
+#' @param sma_per Периоды SMA
+#' @param add_per Период докупок
+#' @param k_mm Коэффициент MM
+#' @param basket_weights Веса корзины (вектор)
 #' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
-#' @param balance.start Стартовый баланс
+#' @param balance_start Стартовый баланс
 #'
-#' @return list(data, data.state) Лист с данными отработки и данные сделок
+#' @return list(data, states) Лист с данными отработки и данные сделок
 #'
 #' @export
 OneThreadRun.test_str <- function(data.xts, 
-                                 sma.per, add.per, k.mm, basket.weights, 
-                                 slips, commissions,
-                                 balance.start, ret.type, 
-                                 rolling_opt = FALSE) {
+                                  sma_per, add_per, k_mm, basket_weights, 
+                                  slips, commissions,
+                                  balance_start, ret_type, 
+                                  rolling_opt = FALSE) {
   ### 
   ## Отработка тестового робота
-  data.strategy.list <- TestStr.gear(data.source = data.xts,
-                                     sma.per, add.per, k.mm, balance.start, 
-                                     basket.weights, slips, commissions)
+  data_strategy.list <- TestStr.gear(data_source = data.xts,
+                                     sma_per, add_per, k_mm, balance_start, 
+                                     basket_weights, slips, commissions)
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
-  if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
+  if (length(data_strategy.list[[1]]) == 1 && length(data_strategy.list[[2]]) == 1) {
     return()
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
+    data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
-                                             data.state = 0,
-                                             tradesTable = 0,
-                                             balance = balance.start, ret.type = 0, 
-                                             fast = TRUE)  
+      perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
+                                          states = 0,
+                                          trades_table = 0,
+                                          balance = balance_start, ret_type = 0, 
+                                          fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       basket <- TRUE
-      tradesTable.list <- TradesTable.calc(data = data.strategy.list[[2]], basket = basket, convert = TRUE)
+      trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = basket, convert = TRUE)
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
-                                             data.state = data.strategy.list[[2]],
-                                             tradesTable = tradesTable.list,
-                                             balance = balance.start, 
-                                             ret.type)  
+      perfomanceTable <- PerfomanceTable(data = data_strategy.list[[1]], 
+                                         states = data_strategy.list[[2]],
+                                         trades_table = trades_table.list,
+                                         balance = balance_start, 
+                                         ret_type)  
     }
   }
   perfomanceTable %<>%
     # добавление использованных параметров
-    cbind.data.frame(., sma.per_ = sma.per, add.per_ = add.per) #, k.mm_ = k.mm)
+    cbind.data.frame(., sma_per = sma_per, add_per = add_per) #, k_mm = k_mm)
   #
   return(perfomanceTable)
 }

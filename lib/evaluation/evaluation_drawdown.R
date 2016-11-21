@@ -7,81 +7,81 @@
 #'
 #' Функция вычисляет параметры по просадкам (выводит итоговые данные)
 #' 
-#' @param data.balance Данные balance (после  отработки стратегии)
+#' @param data_balance Данные balance (после  отработки стратегии)
 #'
-#' @return drawdown.table DF с данными по просадкам
+#' @return drawdown_table DF с данными по просадкам
 #'
 #' @export
-DrawdownsTable <- function(data.balance) {
+DrawdownsTable <- function(data_balance) {
   # ----------
   # подготовка данных
   #cat('INFO(DrawdownsTable): Calc Drawdown Data Set', '\n')
-  drawdowns <- Drawdowns.dd_data(data = data.balance, fullData = TRUE)
+  drawdowns <- Drawdowns.dd_data(data = data_balance, fullData = TRUE)
   ### вычисление summary по data set'у
   ## max просадка
   #cat('INFO(DrawdownsTable): Calc MaxDrawdown', '\n')
-  max.drawdown <- 
+  max_drawdown <- 
     min(drawdowns[[2]]$Depth) %>%
     as.numeric(.)
-  max.drawdown.percent <-
+  max_drawdown_percent <-
     min(drawdowns[[2]]$DepthPercent) %>%
     as.numeric(.)  
   ## день max просадки
-  max.dd.day <- 
-    drawdowns[[1]][drawdowns[[1]]$dd == max.drawdown] %>%
+  max_dd_day <- 
+    drawdowns[[1]][drawdowns[[1]]$dd == max_drawdown] %>%
     {
       index(first(.)) 
     } %>%
     as.POSIXct(., origin = '1970-01-01')
   ## средняя просадка
   #cat('Calculating Performance Metric:  MeanDrawdown', '\n')
-  mean.drawdown <- 
+  mean_drawdown <- 
     mean(drawdowns[[2]]$Depth) %>% 
     as.numeric(.)
-  mean.drawdown.percent <-
+  mean_drawdown_percent <-
     mean(drawdowns[[2]]$DepthPercent) %>% 
     as.numeric(.)
   ## max длина просадки в днях
   #cat('Calculating Performance Metric:  MaxDrawdownDays', '\n')
-  max.drawdown.days <- 
+  max_drawdown_days <- 
     max(drawdowns[[2]]$Days) %>%
     as.numeric(.) 
   ## среднее число дней в просадке
   #cat('Calculating Performance Metric:  MeanDrawdownDays', '\n')
-  mean.drawdown.days <- 
+  mean_drawdown_days <- 
     drawdowns[[2]]$Days[drawdowns[[2]]$Days != 0] %>%
     mean(.) %>%
     trunc(.) %>%
     as.numeric(.)
   ## текущее число дней в просадке
   #cat('Calculating Performance Metric:  NowDrawdownDays', '\n')
-  now.drawdown.days <- 
+  now_drawdown_days <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Days),
            0) %>%
     as.numeric(.)
   ## текущее число свечей в просадке
   #cat('Calculating Performance Metric:  NowDrawdownBars', '\n')
-  now.drawdown.periods <- 
+  now_drawdown_periods <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[2]]$Length),
            0) %>%
     as.numeric(.)
   ## текущая просадка 
   #cat('Calculating Performance Metric:  NowDrawdown', '\n')
-  now.drawdown <- 
+  now_drawdown <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[1]]$dd),
            0) %>%
     as.numeric(.)
-  now.drawdown.percent <- 
+  now_drawdown_percent <- 
     ifelse(last(drawdowns[[1]]$dd) != 0,
            last(drawdowns[[1]]$dd.percent),
            0) %>%
     as.numeric(.)
   #
   ### формирование таблицы
-  drawdown.table <- 
+  drawdown_table <- 
     {
       df <-
         data.frame(DrawdownMaxDate = character(1) %>% 
@@ -99,21 +99,21 @@ DrawdownsTable <- function(data.balance) {
                    DrawdownNowPercent = as.numeric(1))     
     } %>%
     {
-      .$DrawdownMaxDate <- max.dd.day
-      .$DrawdownMax <- max.drawdown
-      .$DrawdownMaxPercent <- max.drawdown.percent
-      .$DrawdownAverage <- mean.drawdown
-      .$DrawdownAveragePercent <- mean.drawdown.percent
-      .$DrawdownDaysMax <- max.drawdown.days
-      .$DrawdownDaysAverage <- mean.drawdown.days
-      .$DrawdownNowDays <- now.drawdown.days
-      .$DrawdownNowBars <- now.drawdown.periods
-      .$DrawdownNow <- now.drawdown
-      .$DrawdownNowPercent <- now.drawdown.percent
+      .$DrawdownMaxDate <- max_dd_day
+      .$DrawdownMax <- max_drawdown
+      .$DrawdownMaxPercent <- max_drawdown_percent
+      .$DrawdownAverage <- mean_drawdown
+      .$DrawdownAveragePercent <- mean_drawdown_percent
+      .$DrawdownDaysMax <- max_drawdown_days
+      .$DrawdownDaysAverage <- mean_drawdown_days
+      .$DrawdownNowDays <- now_drawdown_days
+      .$DrawdownNowBars <- now_drawdown_periods
+      .$DrawdownNow <- now_drawdown
+      .$DrawdownNowPercent <- now_drawdown_percent
       return(.)
     }
   #
-  return(drawdown.table)
+  return(drawdown_table)
 }
 #
 ###
@@ -123,24 +123,24 @@ DrawdownsTable <- function(data.balance) {
 #' 
 #' @param data Данные balance
 #'
-#' @return drawdowns Таблица просадок (или list(dd.data, drawdowns))
+#' @return drawdowns Таблица просадок (или list(dd_data, drawdowns))
 #'
 #' @export
 Drawdowns.dd_data <- function(data, fullData = FALSE) {
   # ----------
   # расчёт dd
-  dd.data <- Drawdowns.calc(data = data)
-  n.vec <- 1:max(dd.data$num)
+  dd_data <- Drawdowns.calc(data = data)
+  n.vec <- 1:max(dd_data$num)
   # формирование таблицы со статистикой
   drawdowns <- 
     lapply(n.vec,
            function (x) {
-             Drawdowns.calcSummary(data = dd.data, n = x)
+             Drawdowns.calcSummary(data = dd_data, n = x)
            }) %>%
     MergeData_inList.byRow(.)
   #
   if (fullData == TRUE) {
-    return(list(dd.data, drawdowns))  
+    return(list(dd_data, drawdowns))  
   } else {
     return(drawdowns)  
   }
@@ -154,12 +154,12 @@ Drawdowns.dd_data <- function(data, fullData = FALSE) {
 #' @param data Данные dd
 #' @param n Номер dd
 #' 
-#' @return dd.summary df, содержащий данные по dd c номером n
+#' @return dd_summary df, содержащий данные по dd c номером n
 #'
 #' @export
 Drawdowns.calcSummary <- function(data, n) {
   #
-  dd.summary <- 
+  dd_summary <- 
     # выгружаем данные по dd с номером n
     data[data$num == n] %>%
     Convert.XTStoDF(.) %>%
@@ -205,7 +205,7 @@ Drawdowns.calcSummary <- function(data, n) {
     #   return(df)
     # }
   #
-  return(dd.summary)
+  return(dd_summary)
 }
 #
 ###

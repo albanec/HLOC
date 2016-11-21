@@ -9,91 +9,91 @@
 #' 
 #' @param data Полные данные (после  отработки стратегии)
 #'
-#' @return profitTable.byDays DF с данными по profit'у (по дням)
+#' @return profit_table_byDays DF с данными по profit'у (по дням)
 #'
 #' @export
 ProfitTable.byDays <- function(data) {
   # разбор дней
   ### статистика по дням
-  trdaysStatsList <- TradingDaysStats.calc(data = data)
+  trdays_stats.list <- TradingDaysStats.calc(data = data)
   ### разбор статистики
   # индексы лудших/худших дней
-  bestDay.index  <- which.max(trdaysStatsList[[1]]$Return)
-  worstDay.index  <- which.min(trdaysStatsList[[1]]$Return)
-  goodDay.index <- which(trdaysStatsList[[1]]$Return >= 0)
-  badDay.index <- which(trdaysStatsList[[1]]$Return < 0)
+  best_day.index  <- which.max(trdays_stats.list[[1]]$Return)
+  worst_day.index  <- which.min(trdays_stats.list[[1]]$Return)
+  good_day.index <- which(trdays_stats.list[[1]]$Return >= 0)
+  bad_day.index <- which(trdays_stats.list[[1]]$Return < 0)
   ## средний день в плюс
-  meanGoodDayReturn <- 
-    trdaysStatsList[[1]]$Return[goodDay.index] %>%
+  meanGoodDay_return <- 
+    trdays_stats.list[[1]]$Return[good_day.index] %>%
     mean(.)
-  meanGoodDayReturn.percent <- 
-    trdaysStatsList[[1]]$Return.percent[goodDay.index] %>%
+  meanGoodDay_return_percent <- 
+    trdays_stats.list[[1]]$Return.percent[good_day.index] %>%
     mean(.)
   ## средний день в минус
-  meanBadDayReturn <- 
-    trdaysStatsList[[1]]$Return[badDay.index] %>%
+  meanBadDay_return <- 
+    trdays_stats.list[[1]]$Return[bad_day.index] %>%
     mean(.)
-  meanBadDayReturn.percent <- 
-    trdaysStatsList[[1]]$Return.percent[badDay.index] %>%
+  meanBadDay_return_percent <- 
+    trdays_stats.list[[1]]$Return.percent[bad_day.index] %>%
     mean(.)
   ## всего дней в плюс
   numGoogDay <- 
-    goodDay.index %>%
+    good_day.index %>%
     length(.)
   ## всего дней в минус
   numBadDay <- 
-    badDay.index %>%
+    bad_day.index %>%
     length(.)  
   ## max дней в плюс
   maxGoodDays <-
-    which(trdaysStatsList[[2]]$DayType == 1) %>%
+    which(trdays_stats.list[[2]]$DayType == 1) %>%
     {
-      max(trdaysStatsList[[2]]$SeriesLength[.])
+      max(trdays_stats.list[[2]]$SeriesLength[.])
     }
   ## max дней в минус
   maxBadDays <-
-    which(trdaysStatsList[[2]]$DayType == -1) %>%
+    which(trdays_stats.list[[2]]$DayType == -1) %>%
     {
-      max(trdaysStatsList[[2]]$SeriesLength[.])
+      max(trdays_stats.list[[2]]$SeriesLength[.])
     }  
   ## profit factor
-  goodDay.sum <- sum(trdaysStatsList[[1]]$Return[goodDay.index])
-  badDay.sum <- sum(trdaysStatsList[[1]]$Return[badDay.index])
-  pf.daily <- goodDay.sum / abs(badDay.sum)
+  goodDay_sum <- sum(trdays_stats.list[[1]]$Return[good_day.index])
+  badDay_sum <- sum(trdays_stats.list[[1]]$Return[bad_day.index])
+  pf_daily <- goodDay_sum / abs(badDay_sum)
   ### Формирование итоговой таблицы
-  profitTable.byDays <- data.frame(
-                                   # прибыльные дни
-                                   DaysBest = trdaysStatsList[[1]]$Date[bestDay.index],
-                                   DaysBestProfit = trdaysStatsList[[1]]$Return[bestDay.index],
-                                   DaysBestProfitPercent = trdaysStatsList[[1]]$Return.percent[bestDay.index],
-                                   DaysWinNum = numGoogDay,
-                                   DaysWinMax = maxGoodDays,
-                                   DaysWinRate = last(trdaysStatsList[[1]]$Num) %>%
-                                                 {
-                                                   numGoogDay * 100 / .
-                                                 },
-                                   DaysWinAverageProfit = meanGoodDayReturn,
-                                   DaysWinAverageProfitPercent = meanGoodDayReturn.percent,
-                                   DaysGrossProfit = goodDay.sum,
-                                   # убыточные дни
-                                   DaysWorst = trdaysStatsList[[1]]$Date[worstDay.index], 
-                                   DaysWorstLoss = trdaysStatsList[[1]]$Return[worstDay.index], 
-                                   DaysWorstLossPercent = trdaysStatsList[[1]]$Return.percent[worstDay.index],
-                                   DaysLossNum = numBadDay,
-                                   DaysLossMax = maxBadDays,
-                                   DaysLossRate = last(trdaysStatsList[[1]]$Num) %>%
-                                                   {
-                                                     numBadDay * 100 / .
-                                                   },
-                                   DaysLossAverageLoss = meanBadDayReturn,
-                                   DaysLossAverageLossPercent = meanBadDayReturn.percent,
-                                   DaysGrossLoss = badDay.sum,
-                                   # профит-фактор по дням
-                                   DaysProfitFactor = pf.daily,
-                                   #
-                                   row.names = NULL)          
+  profit_table_byDays <- data.frame(
+                                    # прибыльные дни
+                                    DaysBest = trdays_stats.list[[1]]$Date[best_day.index],
+                                    DaysBestProfit = trdays_stats.list[[1]]$Return[best_day.index],
+                                    DaysBestProfitPercent = trdays_stats.list[[1]]$Return.percent[best_day.index],
+                                    DaysWinNum = numGoogDay,
+                                    DaysWinMax = maxGoodDays,
+                                    DaysWinRate = last(trdays_stats.list[[1]]$Num) %>%
+                                                  {
+                                                    numGoogDay * 100 / .
+                                                  },
+                                    DaysWinAverageProfit = meanGoodDay_return,
+                                    DaysWinAverageProfitPercent = meanGoodDay_return_percent,
+                                    DaysGrossProfit = goodDay_sum,
+                                    # убыточные дни
+                                    DaysWorst = trdays_stats.list[[1]]$Date[worst_day.index], 
+                                    DaysWorstLoss = trdays_stats.list[[1]]$Return[worst_day.index], 
+                                    DaysWorstLossPercent = trdays_stats.list[[1]]$Return.percent[worst_day.index],
+                                    DaysLossNum = numBadDay,
+                                    DaysLossMax = maxBadDays,
+                                    DaysLossRate = last(trdays_stats.list[[1]]$Num) %>%
+                                                    {
+                                                      numBadDay * 100 / .
+                                                    },
+                                    DaysLossAverageLoss = meanBadDay_return,
+                                    DaysLossAverageLossPercent = meanBadDay_return_percent,
+                                    DaysGrossLoss = badDay_sum,
+                                    # профит-фактор по дням
+                                    DaysProfitFactor = pf_daily,
+                                    #
+                                    row.names = NULL)          
   # 
-  return(profitTable.byDays)
+  return(profit_table_byDays)
 }
 #
 ###

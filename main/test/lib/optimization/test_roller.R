@@ -1,17 +1,17 @@
-TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data.source.list', 
+TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data_source.list', 
                                            sma_begin, sma_end, sma_step,
-                                           # add.per_begin, add.per_end, add.per_step,
+                                           # add_perbegin, add_perend, add_perstep,
                                            rolling_opt = FALSE, ...) {
-                                           #function(input_data = 'data.source.list', sma_begin, sma_end, sma_step,
-                                           #         add.per_begin, add.per_end, add.per_step,
+                                           #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
+                                           #         add_perbegin, add_perend, add_perstep,
                                            #         rolling_opt = FALSE, ...) {
   #
   require(parallel)
   # Формирование параметров оптимизации
   sma_vector <- seq(sma_begin, sma_end, by = sma_step)
-  # add.per_vector <- seq(add.per_begin, add.per_end, by = add.per_step)
+  # add_pervector <- seq(add_perbegin, add_perend, by = add_perstep)
   vars <- sma_vector
-  #   lapply(add.per, 
+  #   lapply(add_per, 
   #          function(x) {
   #            result <- data.frame(sma, x)
   #            return(result)
@@ -21,7 +21,7 @@ TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data.sour
   #     list(.[, 1], .[, 2])
   #   }
   # remove(sma_vector)
-  # remove(add.per_vector)
+  # remove(add_pervector)
   #
   # запуск кластера
   parallel_cluster <- 
@@ -40,9 +40,9 @@ TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data.sour
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      'add.per',
-      'k.mm', 'balance.start', 
-      'basket.weights', 'slips', 'commissions', 'ret.type'
+      'add_per',
+      'k_mm', 'balance_start', 
+      'basket_weights', 'slips', 'commissions', 'ret_type'
     )
   )
   bf_data.list <-
@@ -60,9 +60,9 @@ TestStr_RollerOpt.learningTime <- function(data_slices, #input_data = 'data.sour
             ., 
             function(x){
               OneThreadRun.test_str(data.xts = data_slice,
-                                    sma.per = x, add.per = 10, k.mm, basket.weights,
+                                    sma_per = x, add_per = 10, k_mm, basket_weights,
                                     slips, commissions,
-                                    balance.start, ret.type,
+                                    balance_start, ret_type,
                                     rolling_opt = TRUE)
             }
           ) 

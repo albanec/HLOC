@@ -21,7 +21,7 @@ ProfitList_byTrades <- function(data, ...) {
   ### Расчёт
   result.list <- lapply(names.set, 
                         function(x){
-                          ProfitTable.byTrades.oneTicker(data = data, ticker.name = x)
+                          ProfitTable.byTrades.oneTicker(data = data, ticker_name = x)
                         })
   names(result.list) <- names.set
   #
@@ -33,18 +33,18 @@ ProfitList_byTrades <- function(data, ...) {
 #' Функция вычисляет параметры по доходностям сделок и формирует итоговый DF (по данным одного тикера)
 #' 
 #' @param data Таблица сделок с данными по нужному тикеру 
-#' @ticker.name Имя тикера
+#' @ticker_name Имя тикера
 #' @param balance Стартовый баланс
 #'
 #' @return result DF с данными по profit'у сделок тикера
 #'
 #' @export
-ProfitTable.byTrades.oneTicker <- function(data, ticker.name, ...) {
+ProfitTable.byTrades.oneTicker <- function(data, ticker_name, ...) {
   # подготовка данных для обработки (фильтрация субсделок)
   data %<>%
     # выделение нужных строк
     {
-      temp.ind <- which(.$Ticker == ticker.name) 
+      temp.ind <- which(.$Ticker == ticker_name) 
       result <- data[temp.ind, ]
       return(result)
     } %>%

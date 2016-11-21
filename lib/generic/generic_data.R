@@ -26,13 +26,13 @@ Read_CSV.toXTS.FinamQuotes <- function(filename, ...) {
   data <- data[-1, ]
   #
   if ('<TICKER>' %in% colNames.temp) {
-    ticker.name <- 
+    ticker_name <- 
       which(colNames.temp %in% '<TICKER>') %>%
       data[1, .]
   } else {
-    ticker.name <- 'Unkown ticker'
+    ticker_name <- 'Unkown ticker'
   }
-  cat('INFO(Read_CSV.toXTS.FinamQuotes):  Export ticker ... \"',ticker.name,'\" data', '\n', sep = '')
+  cat('INFO(Read_CSV.toXTS.FinamQuotes):  Export ticker ... \"',ticker_name,'\" data', '\n', sep = '')
   #
   if ('<PER>' %in% colNames.temp) {
     per <-  

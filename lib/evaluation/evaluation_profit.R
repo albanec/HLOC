@@ -17,56 +17,56 @@ source('lib/evaluation/evaluation_profit_trades.R')
 #' @return profitTable DF с данными по profit'у
 #'
 #' @export
-ProfitTable <- function(data, tradesTable, balance_start, ...) {
+ProfitTable <- function(data, trades_table, balance_start, ...) {
   ### расчёт итоговой доходности 
   # здесь для анализа используется equty, чтобы лишний раз не считать разницу
-  fullReturn <- 
+  full_return <- 
     last(data$equity) %>%
     as.numeric(.)
-  fullReturn.percent <- fullReturn * 100 / balance_start    
+  full_return_percent <- full_return * 100 / balance_start    
   ## доходность в год
-  fullReturn.annual <- 
+  full_return_annual <- 
     index(data) %>%
     ndays(.) %>%
     {
-      fullReturn * 250 / .
+      full_return * 250 / .
     }    
   ## доходность в месяц
-  fullReturn.monthly <-
+  full_return_monthly <-
     index(data) %>%
     ndays(.) %>%
     {
-      fullReturn * 20 / .
+      full_return * 20 / .
     }
  
   ### расчёт метрик по дням
-  profitTable.byDays <- ProfitTable.byDays(data)
+  profit_table_byDays <- ProfitTable.byDays(data)
   ### расчёт метрик по сделкам для корзины
-  profitTable.byTrades <-  
-    ProfitList_byTrades(data = tradesTable[[1]]) %>%
+  profit_table_byTrades <-  
+    ProfitList_byTrades(data = trades_table[[1]]) %>%
     {
       .[[1]]
     }
   ### формирование итогового DF
-  profitTable <- 
-    data.frame(Profit = fullReturn,
-               ProfitPercent = fullReturn.percent,
-               ProfitAnnual = fullReturn.annual,
-               ProfitMonthly = fullReturn.monthly,
+  profit_table <- 
+    data.frame(Profit = full_return,
+               ProfitPercent = full_return_percent,
+               ProfitAnnual = full_return_annual,
+               ProfitMonthly = full_return_monthly,
                row.names = NULL) %>%
     {
       x <- .
       args <- list(...) 
-      args.names <- names(args)
-      if (('nbar' %in% args.names) && ('nbar.trade' %in% args.names) == TRUE ) {
-        fullReturn.bar <- fullReturn / args$nbar
-        fullReturn.nbar.trade <- fullReturn / args$nbar.trade
-        x <- cbind(x, ProfitBars = fullReturn.bar, ProfitBarsIn = fullReturn.nbar.trade)
+      args_names <- names(args)
+      if (('nbar' %in% args_names) && ('nbar.trade' %in% args_names) == TRUE ) {
+        full_return_bar <- full_return / args$nbar
+        full_return_nbar_trade <- full_return / args$nbar.trade
+        x <- cbind(x, ProfitBars = full_return_bar, ProfitBarsIn = full_return_nbar_trade)
       }
       return(x)
     } %>%
-    cbind(., profitTable.byDays, profitTable.byTrades)
+    cbind(., profit_table_byDays, profit_table_byTrades)
   #
-  return(profitTable)
+  return(profit_table)
 }
 #

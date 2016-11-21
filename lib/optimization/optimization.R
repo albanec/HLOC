@@ -305,48 +305,48 @@ OneThreadRun <- function(data.xts, FUN,
   FUN <- match.fun(FUN) 
   
   ## отработка робота
-  data.strategy.list <- FUN(data.source = data.xts, 
+  data_strategy.list <- FUN(data_source = data.xts, 
                             balance_start = balance_start, slips = slips, commiss = commissions,
                             exp.vector = expiration, ticker, return_type = return_type, ...)
   
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
-  if (length(data.strategy.list[[1]]) == 1 && length(data.strategy.list[[2]]) == 1) {
+  if (length(data_strategy.list[[1]]) == 1 && length(data_strategy.list[[2]]) == 1) {
     return()
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data.strategy.list[[2]] <- StatesTable.clean(data = data.strategy.list[[2]])
+    data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
-                                         data.state = 0,
-                                         tradesTable = 0,
-                                         balance = balance_start, ret.type = 0, 
-                                         fast = TRUE)  
+      perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
+                                          states = 0,
+                                          trades_table = 0,
+                                          balance = balance_start, ret_type = 0, 
+                                          fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      tradesTable.list <- TradesTable.calc(data = data.strategy.list[[2]], basket = FALSE, convert = TRUE)
+      trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
       if (length(ticker) == 1) {
-        tradesTable.list[[1]]$TradeReturnPercent <- tradesTable.list[[1]]$TradeReturn * 100 / balance_start
+        trades_table.list[[1]]$TradeReturnPercent <- trades_table.list[[1]]$TradeReturn * 100 / balance_start
       }
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(data = data.strategy.list[[1]], 
-                                         data.state = data.strategy.list[[2]],
-                                         tradesTable = tradesTable.list,
-                                         balance_start = balance_start, 
-                                         ret.type = return_type)
+      perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
+                                          states = data_strategy.list[[2]],
+                                          trades_table = trades_table.list,
+                                          balance_start = balance_start, 
+                                          ret_type = return_type)
     }
   }
   # добавление использованных параметров
   if (!is.null(var_names)) {
     for (i in 1:length(var_names)) {
       dots <- list(...)
-      temp.text <- paste('perfomanceTable %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')', 
+      temp_text <- paste('perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')', 
                          sep = '')
-      eval(parse(text = temp.text))
+      eval(parse(text = temp_text))
     }
   }
   #
-  return(perfomanceTable)
+  return(perfomance_table)
 }
