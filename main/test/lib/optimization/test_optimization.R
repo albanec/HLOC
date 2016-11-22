@@ -11,7 +11,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_Parallel.test_str <- function(#input_data = 'data_source.list', 
+BruteForceOpt_parallel_mnode.test_str <- function(#input_data = 'data_source.list', 
                                            sma_begin, sma_end, sma_step,
                                            # add_perbegin, add_perend, add_perstep,
                                            rolling_opt = FALSE, ...) {

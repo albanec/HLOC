@@ -59,7 +59,7 @@ data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    PerfomanceTable <- BruteForceOpt_Parallel.test_str(
+    PerfomanceTable <- BruteForceOpt_parallel_mnode.test_str(
       #input_data = 'data_source.list',
       sma_begin = 10, sma_end = 100, sma_step = 1,
       rolling_opt = FALSE

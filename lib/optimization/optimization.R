@@ -152,16 +152,16 @@ RollerOpt.learning <- function(data_slices,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_Parallel <- function(var.df, data.xts,
-                                   FUN, 
-                                   linker_file = 'main/test/linker.R',
-                                   balance_start, slips, commissions,
-                                   expiration, ticker, return_type = 'ret',
-                                   export_varlist = NULL, 
-                                   export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
-                                                   'PerformanceAnalytics', 'lubridate'),
-                                   rolling_opt = FALSE, 
-                                   eval_string) {
+BruteForceOpt_parallel_mnode <- function(var.df, data.xts,
+                                         FUN, 
+                                         linker_file = 'main/test/linker.R',
+                                         balance_start, slips, commissions,
+                                         expiration, ticker, return_type = 'ret',
+                                         export_varlist = NULL, 
+                                         export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                                         'PerformanceAnalytics', 'lubridate'),
+                                         rolling_opt = FALSE, 
+                                         eval_string) {
   #
   .CurrentEnv <- environment()
   #
