@@ -14,10 +14,12 @@
 #' @return result Количество контрактов для покупки
 #'
 #' @export
-CalcMM.byDCIwidth <- function(balance, risk, channelWidth, IM, tick.price) {
+CalcMM.byDCIwidth <- function(balance, IM, ...) { 
+  #risk, channelWidth,  tick.price) {
+  dots <- list(...)
   var1 <-
     {
-      coredata(balance) * risk * tick.price / coredata(channelWidth)
+      coredata(balance) * dots$risk * dots$tick.price / coredata(dots$channelWidth)
     } %>%
     floor(.) %>%
     max(., 1)

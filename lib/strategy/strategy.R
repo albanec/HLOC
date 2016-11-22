@@ -740,3 +740,36 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
   #
   return (data)
 }
+#
+CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars, 
+                                          MM.FUN,  IM, cret, balance_start, commiss, 
+                                          ...) {
+                                            
+  #
+  MM.FUN <- match.fun(MM.FUN)
+
+  cache$n[row_ind] <- ifelse(coredata(pos) == 0,
+                             0, 
+                             ifelse(coredata(pos_bars) == 0,
+                                    MM.FUN(balance = cache$balance[row_ind - 1],
+                                           IM = IM, 
+                                           ...),
+                                    NA))
+  cache$diff.n[row_ind] <- ifelse(row_ind != 1,
+                                  cache$n[row_ind] - cache$n[row_ind - 1],
+                                  0)
+  cache$commiss[row_ind] <- commiss * abs(cache$diff.n[row_ind])
+  cache$margin[row_ind] <- ifelse(row_ind != 1, 
+                                  coredata(cret) * cache$n[row_ind - 1],
+                                  0)
+  cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
+  cache$equity[row_ind] <- ifelse(row_ind != 1,
+                                  sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
+                                  0)
+  cache$im.balance[row_ind] <- IM * cache$n[row_ind]
+  cache$balance[row_ind] <- ifelse(row_ind != 1,
+                                   balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
+                                   cache$balance[row_ind])
+  #
+  return(cache)
+}
