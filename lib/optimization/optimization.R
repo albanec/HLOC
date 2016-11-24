@@ -24,9 +24,9 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export               
-RollerOpt.learning <- function(data_slices,
+RollerOpt_learning <- function(data_slices,
                                var.df,
-                               FUN,
+                               FUN, win_size,
                                linker_file = 'main/test/linker.R',
                                balance_start, slips, commissions,
                                expiration, ticker, return_type = 'ret',
@@ -44,15 +44,15 @@ RollerOpt.learning <- function(data_slices,
    # запуск кластера
   parallel_cluster <- 
     detectCores() %>%
-    makeCluster(.)
+    makeCluster(., type = 'PSOCK', outfile = '')
   ## Подгрузка данных в кластер
   clusterExport(parallel_cluster, envir = .CurrentEnv, 
-                varlist = c('data.xts', 'FUN', 'linker_file', 
+                varlist = c('FUN', 'linker_file', 
                             'balance_start', 'slips', 'commissions', 'expiration', 
                             'ticker', 'return_type', 'rolling_opt', 
                             'export_varlist', 'export_libs', 'eval_string'))
   # подгрузка библиотек
-  clusterEvalQ(parallel_cluster, 
+  clusterEvalQ(parallel_cluster,
                { 
                  sapply(export_libs, library, character.only = TRUE)
                  source(linker_file) 
@@ -75,7 +75,7 @@ RollerOpt.learning <- function(data_slices,
                                          #FUN(x, ...)
                                          FUN <- match.fun(FUN)
                                          temp.text <- paste(
-                                           'df <- FUN(data.xts = data.xts,
+                                           'df <- FUN(data.xts = data_slice,
                                                       rolling_opt = rolling_opt, 
                                                       balance_start = balance_start, 
                                                       slips = slips, commissions = commissions,
@@ -103,7 +103,7 @@ RollerOpt.learning <- function(data_slices,
                               function(x) {
                                 ## Подготовка к КА
                                 data_for_cluster <- CalcKmean.preparation(data = x, 
-                                                                          n.mouth = 6, 
+                                                                          n.mouth = win_size, 
                                                                           hi = TRUE, q.hi = 0.5, 
                                                                           one.scale = FALSE)
                                 data_for_cluster$profit <- NULL
@@ -125,9 +125,8 @@ RollerOpt.learning <- function(data_slices,
     stopCluster(parallel_cluster)
     parallel_cluster <- c()
   }
-  result <- cluster_data.list
-  #  
-  return(result)
+  
+  return(cluster_data.list)
 }
 #
 ###
@@ -152,7 +151,7 @@ RollerOpt.learning <- function(data_slices,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_mnode <- function(var.df, data.xts,
+BruteForceOpt_parallel_cl <- function(var.df, data.xts,
                                          FUN, 
                                          linker_file = 'main/test/linker.R',
                                          balance_start, slips, commissions,
@@ -171,7 +170,7 @@ BruteForceOpt_parallel_mnode <- function(var.df, data.xts,
   # запуск кластера
   parallel_cluster <- 
     detectCores() %>%
-    makeCluster(.)
+    makeCluster(., type = 'PSOK')
   ## Подгрузка данных в кластер
   clusterExport(parallel_cluster, envir = .CurrentEnv, 
                 varlist = c('data.xts', 'FUN', 'linker_file', 

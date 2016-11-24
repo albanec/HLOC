@@ -206,8 +206,8 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #'
 #' @export 
 RollingSlicer <- function(data, start_date, end_date, period = NULL, 
-                                 width, by = NULL, align = c('left', 'right'),
-                                 add_bySlice = FALSE, lookback = FALSE) {
+                          width, by = NULL, align = c('left', 'right'),
+                          add_bySlice = FALSE, lookback = FALSE) {
   ## подготовка
   n_rows <- nrow(data)
   n_cols <- ncol(data)
@@ -271,21 +271,24 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     ind <- 
       nrow(temp_subset) %>%
       seq.int(width, ., by)
-    #
+    
     result.list <- lapply(ind, 
                      function(x) {
                        .subset_xts(temp_subset, (x - width + 1):x)
                      })
-    #
+    
     if (add_bySlice == TRUE) {
       temp_subset <- 
         nrow(temp_subset) %>%
         (width + 1):. %>%
         temp_subset[., ]
+      
       bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period = NULL, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
+      
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+    
     } 
   } else {
     ## если period != NULL, то окна считаются по указанным периодам
@@ -362,7 +365,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         {
           seq.int(width, ., by)
         }
-      #
+      
       result.list <- lapply(ind, 
                        function(x) {
                          win_start <- 
@@ -389,14 +392,16 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         } %>%
         temp_subset[.] %>%
         .[-1, ]
+      
       bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period, 
                                                width = by, by = NULL, align,
                                                add_bySlice = FALSE, lookback = FALSE)
+      
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+    
     }
   } 
    
-  #
   return(result.list)
 }
 #
