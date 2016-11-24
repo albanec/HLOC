@@ -30,7 +30,7 @@ BindToEnv <- function (bindTargetEnv = parent.frame(), objNames, doNotRebind = c
 #' @param k Окно (по умалчанию == 1)
 #' @param p Число worker-процессов
 #' @export
-Delegate_to_mcore <- function(i, n, k = 1, p) {
+Delegate_mcore <- function(i, n, k = 1, p) {
   nOut <- n - k + 1
   nProc <- ceiling(nOut / p)
   result <- ((i - 1) * nProc + 1) : min(i * nProc + k - 1, n) 

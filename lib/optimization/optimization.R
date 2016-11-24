@@ -44,7 +44,7 @@ RollerOpt_learning <- function(data_slices,
    # запуск кластера
   parallel_cluster <- 
     detectCores() %>%
-    makeCluster(., type = 'PSOCK', outfile = '')
+    makeCluster(.)#, type = 'PSOCK')
   ## Подгрузка данных в кластер
   clusterExport(parallel_cluster, envir = .CurrentEnv, 
                 varlist = c('FUN', 'linker_file', 
@@ -129,8 +129,61 @@ RollerOpt_learning <- function(data_slices,
   return(cluster_data.list)
 }
 #
+BruteForceOpt_parallel_mc <- function(var.df, data.xts,
+                                      FUN, 
+                                      linker_file = 'main/test/linker.R',
+                                      balance_start, slips, commissions,
+                                      expiration, ticker, return_type = 'ret',
+                                      export_varlist = NULL, 
+                                      export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                                      'PerformanceAnalytics', 'lubridate'),
+                                      rolling_opt = FALSE, 
+                                      eval_string) {
+  #
+  #.CurrentEnv <- environment()
+  #
+  require(doParallel)
+  FUN <- match.fun(FUN)
+
+  workers <- 4
+  registerDoParallel(cores = workers) 
+  
+  n <- nrow(var.df)
+
+  result <- 
+    foreach(i = 1:workers) %dopar% 
+    {
+      #FUN(x, ...)
+      FUN <- match.fun(FUN)
+      map_range <- Delegate_mcore(i, n, p = workers)
+      x <- var.df[map_range, ]
+      df <- 
+        foreach(i = 1:nrow(x)) %do%
+        {
+          temp_text <- paste(
+            'result <- 
+               OneThreadRun.turtles(data.xts = data_source.list[[1]],
+                                    rolling_opt = rolling_opt, 
+                                    balance_start = balance_start, slips = slips, commissions = commissions,
+                                    expiration = expiration, ticker = ticker, return_type = return_type,',
+                                    eval_string,')', 
+            sep = '')
+          eval(parse(text = temp.text))
+        }
+    }
+  
+  # объединение результатов
+  result %<>%  
+    {
+      .[!is.na(.)]
+    } %>%
+    MergeData_inList.byRow(.)
+ 
+  return(result)
+}
+#
 ###
-#' Функция BF оптимизации движка стратегии (multithread)
+#' Функция BF оптимизации движка стратегии (PSOCK-кластер)
 #' 
 #' @param var.df DF с данными для перебора
 #' @param data.xts XTS с котировками
@@ -170,7 +223,7 @@ BruteForceOpt_parallel_cl <- function(var.df, data.xts,
   # запуск кластера
   parallel_cluster <- 
     detectCores() %>%
-    makeCluster(., type = 'PSOK')
+    makeCluster(.)#, type = 'PSOCK')
   ## Подгрузка данных в кластер
   clusterExport(parallel_cluster, envir = .CurrentEnv, 
                 varlist = c('data.xts', 'FUN', 'linker_file', 
