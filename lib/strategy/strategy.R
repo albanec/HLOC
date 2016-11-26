@@ -188,7 +188,7 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
       data$LR <- lag(data$state) * data$LR
       data$LR[1] <- 0
       data$margin <- cumsum(data$LR)
-      data$equity <- data$Open[[1]] * (exp(as.numeric(last(data$margin))) - 1)
+      data$equity <- data$Open[[1]] * (exp(as.numeric(xts::last(data$margin))) - 1)
     #}
   }
   #
@@ -211,9 +211,9 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
   require(quantmod) 
   # расчет итогового профита
   if (reinvest == TRUE) {
-    profit <- as.numeric(last(data$equity / pip) - s0)        
+    profit <- as.numeric(xts::last(data$equity / pip) - s0)        
   } else {
-    profit <- as.numeric(last(data$equity / pip))    
+    profit <- as.numeric(xts::last(data$equity / pip))    
   }
   #
   return(profit)

@@ -31,7 +31,7 @@ DatesTable <- function(data, states) {
     index(.)
   ### конец торговли
   to.date <-
-    last(data) %>%
+    xts::last(data) %>%
     index(.)
   ### периодичность входных данных
   period <- 

@@ -56,27 +56,27 @@ DrawdownsTable <- function(data_balance) {
   ## текущее число дней в просадке
   #cat('Calculating Performance Metric:  NowDrawdownDays', '\n')
   now_drawdown_days <- 
-    ifelse(last(drawdowns[[1]]$dd) != 0,
-           last(drawdowns[[2]]$Days),
+    ifelse(xts::last(drawdowns[[1]]$dd) != 0,
+           xts::last(drawdowns[[2]]$Days),
            0) %>%
     as.numeric(.)
   ## текущее число свечей в просадке
   #cat('Calculating Performance Metric:  NowDrawdownBars', '\n')
   now_drawdown_periods <- 
-    ifelse(last(drawdowns[[1]]$dd) != 0,
-           last(drawdowns[[2]]$Length),
+    ifelse(xts::last(drawdowns[[1]]$dd) != 0,
+           xts::last(drawdowns[[2]]$Length),
            0) %>%
     as.numeric(.)
   ## текущая просадка 
   #cat('Calculating Performance Metric:  NowDrawdown', '\n')
   now_drawdown <- 
-    ifelse(last(drawdowns[[1]]$dd) != 0,
-           last(drawdowns[[1]]$dd),
+    ifelse(xts::last(drawdowns[[1]]$dd) != 0,
+           xts::last(drawdowns[[1]]$dd),
            0) %>%
     as.numeric(.)
   now_drawdown_percent <- 
-    ifelse(last(drawdowns[[1]]$dd) != 0,
-           last(drawdowns[[1]]$dd.percent),
+    ifelse(xts::last(drawdowns[[1]]$dd) != 0,
+           xts::last(drawdowns[[1]]$dd.percent),
            0) %>%
     as.numeric(.)
   #

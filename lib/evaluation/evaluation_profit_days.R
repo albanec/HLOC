@@ -68,7 +68,7 @@ ProfitTable.byDays <- function(data) {
                                     DaysBestProfitPercent = trdays_stats.list[[1]]$Return.percent[best_day.index],
                                     DaysWinNum = numGoogDay,
                                     DaysWinMax = maxGoodDays,
-                                    DaysWinRate = last(trdays_stats.list[[1]]$Num) %>%
+                                    DaysWinRate = xts::last(trdays_stats.list[[1]]$Num) %>%
                                                   {
                                                     numGoogDay * 100 / .
                                                   },
@@ -81,7 +81,7 @@ ProfitTable.byDays <- function(data) {
                                     DaysWorstLossPercent = trdays_stats.list[[1]]$Return.percent[worst_day.index],
                                     DaysLossNum = numBadDay,
                                     DaysLossMax = maxBadDays,
-                                    DaysLossRate = last(trdays_stats.list[[1]]$Num) %>%
+                                    DaysLossRate = xts::last(trdays_stats.list[[1]]$Num) %>%
                                                     {
                                                       numBadDay * 100 / .
                                                     },
@@ -138,7 +138,7 @@ TradingDaysStats.calc <- function(data) {
   data$trday.num <- na.locf(data$trday.num, fromLast = TRUE) 
   ### раcчёт статистики по дням 
   trdayStats <-
-    last(data$trday.num) %>%
+    xts::last(data$trday.num) %>%
     1:. %>%
     lapply(.,
            function(x) {
@@ -210,7 +210,7 @@ TradingDays.daySummary <- function(data, n) {
       df$Num <- n
         df$Return <- 
         {
-          first(.$balance) - last(.$balance) 
+          first(.$balance) - xts::last(.$balance) 
         }
       df$Return.percent <- 
         first(.$balance) %>%

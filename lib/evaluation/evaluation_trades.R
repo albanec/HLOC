@@ -90,7 +90,7 @@ TradesTable.convert <- function(data_trades, type = 'byTicker') {
   ## Номера столбцов, касающихся закрытия 
   numtrades <- 
     # ряд номеров позиций
-    last(data_trades$PositionNum) %>%
+    xts::last(data_trades$PositionNum) %>%
     1:. 
   # Выделение нужных столбцов (касаются закрытия)
   if (type == 'byTicker') {
@@ -434,8 +434,8 @@ TradeSummary.summary_df <- function(x, type, ticker_names = NULL,
   #}
   ## Banchmark соответствия рынку
   if (type == 'byTicker') {
-    summary$MarketCompliance <- sign(last(summary$TradeReturn)) * 
-                                (first(summary$EntryPrice) - last(summary$ExitPrice)) * 100 / first(summary$EntryPrice)
+    summary$MarketCompliance <- sign(xts::last(summary$TradeReturn)) * 
+                                (first(summary$EntryPrice) - xts::last(summary$ExitPrice)) * 100 / first(summary$EntryPrice)
   } else {
     summary$MarketCompliance <- NA
   }

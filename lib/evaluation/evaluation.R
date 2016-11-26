@@ -39,7 +39,7 @@ PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strate
     remove(drawdowns)
     # вычисление итоговой доходности (в процентах)
     full_return <- 
-      last(data$equity) %>%
+      xts::last(data$equity) %>%
       as.numeric(.)
     full_return_percent <- full_return * 100 / balance_start   
     #

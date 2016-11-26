@@ -253,7 +253,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     # ряд расширяется, если lookback == TRUE  
     if (lookback == TRUE) {
       temp_subset <- 
-        (first(row_nums) - width + 1):last(row_nums) %>%
+        (first(row_nums) - width + 1):xts::last(row_nums) %>%
         data[., ]   
     } else {
       temp_subset <- data[row_nums, ]
@@ -375,7 +375,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
                            {
                              first(which(ends_ == .))
                            } 
-                         win_end <- last(which(ends_ == x))
+                         win_end <- xts::last(which(ends_ == x))
                          #
                          result <- .subset_xts(temp_subset, win_start:win_end)
                          return(result)
@@ -384,7 +384,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     if (add_bySlice == TRUE) {
       temp_subset <- 
         {
-          last(which(ends_ == width))
+          xts::last(which(ends_ == width))
         } %>%
         {
           text <- index(ends_[.])

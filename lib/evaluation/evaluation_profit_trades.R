@@ -55,7 +55,7 @@ ProfitTable.byTrades.oneTicker <- function(data, ticker_name, ...) {
       return(result)
     }   
   ### Всего сделок
-  trades.num <- last(data$PositionNum)
+  trades.num <- xts::last(data$PositionNum)
   ### разбор статистики
   # индексы прибыльных/убыточных сделок
   goodTrade.index <- which(data$TradeReturn >= 0)

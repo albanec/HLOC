@@ -13,14 +13,14 @@
 #' @return data XTS ряд, полученный из файла
 #'
 #' @export
-Read_CSV.toXTS.FinamQuotes <- function(filename, ...) {
-  #
+Read_CSV.toXTS.FinamQuotes <- function(filename) {
+  require(tidyr)
+  require(foreach)
+  require(lubridate)
+
   ## считывание .csv
+  cat('INFO(Read_CSV.toXTS.FinamQuotes):  Load file ... ',filename, '\n', sep = '')
   data <- Read_CSV.toDF(file.path = filename, sep = ',')
-  #
-  if (length(data) != 0) {
-    cat('INFO(Read_CSV.toXTS.FinamQuotes):  Load file ... ',filename, '\n', sep = '')
-  } 
   ## проверка полей-заголовков
   colNames.temp <- data[1, ]
   data <- data[-1, ]
@@ -50,56 +50,65 @@ Read_CSV.toXTS.FinamQuotes <- function(filename, ...) {
   }
   cat('INFO(Read_CSV.toXTS.FinamQuotes):  Data period ... \"',per,'\"', '\n', sep = '')
   ### формирование XTS
+  ## выделяем полезные данные
   data <- 
-    ## выделяем полезные данные
     c('<DATE>', '<TIME>', '<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
     {
       which(colNames.temp %in% .) 
     } %>%  
-    data[, .] %>%
-    ## обработка
+    data[, .] 
+  ## обработка
+  ## выделение и обработка котировок
+  quotes <- 
+    c('<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
     {
-      x <- .
-      ## выделение и обработка котировок
-      quotes <- 
-        c('<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
-        {
-          which(colNames.temp %in% .) 
-        } %>%
-        x[, .] %>%
-        # конвертирование котировок в numeric
-        {
-          apply(as.matrix(.), 2, as.numeric) 
-        } %>%
-        # переименование столбцов
-        {
-          colnames(.) <- c('Open', 'High', 'Low', 'Close', 'Volume')
-          return(.) 
-        }
-      ## формирование временного ряда
-      ts <-
-        c('<DATE>', '<TIME>') %>%
-        {
-          which(colNames.temp %in% .) 
-        } %>%
-        x[, .] %>%
-        ## конвертирование в integer
-        {
-          result <- apply(as.matrix(.), 2, as.integer)
-          colnames(result) <- c('date', 'time')
-          return(result)
-        } %>%
-        # конвертация в DF и объеденение столбцов даты и времени в один 
-        as.data.frame(.) %>%
-        unite(., 'trueTime', date, time, sep = ' ')    
-      ## результирующий XTS
-      result <- xts(quotes, 
-                    order.by = strptime(ts$trueTime, '%Y%m%d %H%M%S') %>%
-                               as.POSIXct(.), 
-                    src = 'finam', 
-                    updated = Sys.time())
-      return(result)
-    } 
+      which(colNames.temp %in% .) 
+    } %>%
+    data[, .] %>%
+    # конвертирование котировок в numeric
+    {
+      foreach(i = 1:ncol(.), 
+              .combine = cbind) %do% 
+      {
+        as.numeric(.[, i]) %>%
+        data.frame(.)
+      } 
+    } %>%
+    # переименование столбцов
+    {
+      colnames(.) <- c('Open', 'High', 'Low', 'Close', 'Volume')
+      return(.) 
+    }
+  ## формирование временного ряда
+  ts <-
+    c('<DATE>', '<TIME>') %>%
+    {
+      which(colNames.temp %in% .) 
+    } %>%
+    data[, .] %>%
+    ## конвертирование в integer
+    {
+      foreach(i = 1:ncol(.), 
+              .combine = cbind) %do% 
+      {
+        as.integer(.[, i]) %>%
+        data.frame(.)
+      }
+    } %>%
+    {
+      colnames(.) <- c('date', 'time')
+      return(.)
+    } %>%
+    # конвертация в DF и объеденение столбцов даты и времени в один 
+    unite(., 'trueTime', date, time, sep = ' ')    
+  ## результирующий XTS
+  data <- xts(quotes, 
+              order.by = lubridate::fast_strptime(ts$trueTime, '%Y%m%d %H%M%S') %>%
+                         as.POSIXct(.), 
+              src = 'finam', 
+              updated = Sys.time())
+  rm(quotes)
+  rm(ts)
   #
   return(data)
 }
@@ -108,14 +117,23 @@ Read_CSV.toXTS.FinamQuotes <- function(filename, ...) {
 #' Функция считывания простых .csv
 #' 
 #' @param file.path Путь к файлу
+#' @param fast Чтение через fread (T/F)
 #' @param sep Тип разделителя
 #'
 #' @return file Считанный файл
 #'
 #' @export
-Read_CSV.toDF <- function(file.path, sep = ';') {
+Read_CSV.toDF <- function(file.path, fast = TRUE, sep = ';') {
   #
-  file <- read.table(file=file.path, header=F, stringsAsFactors = F, sep = sep, as.is=T) 
+  if (fast == TRUE) {
+    require(data.table)
+    require(magrittr)
+    file <- 
+      fread(input = file.path, sep = sep, header = F, stringsAsFactors = F) %>%
+      as.data.frame(.)
+  } else {
+    file <- read.table(file = file.path, header = F, stringsAsFactors = F, sep = sep, as.is = T)   
+  }
   #
   return(file)
 }
@@ -131,7 +149,7 @@ Read_CSV.toDF <- function(file.path, sep = ';') {
 #' @return data XTS ряд, полученный из файла
 #'
 #' @export
-Read_CSV.toXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ',') {
+Read_CSV.toXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ',', fast = FALSE) {
   # ----------
   require(xts)
   # ----------
@@ -144,8 +162,16 @@ Read_CSV.toXTS <- function(filename, period = FALSE, tframe = FALSE, sep = ',') 
   }
   filename <- paste(filename, 'csv', sep = '.')
   #
-  data <- read.csv(file = filename, sep = sep)
-  data <- xts(data[,-1], order.by = as.POSIXct(data$Index))
+  if (fast == TRUE) {
+    require(data.table)
+    require(magrittr)
+    file <- 
+      fread(input = filename, sep = sep, header = F, stringsAsFactors = F) %>%
+      as.data.frame(.)
+  } else {
+    data <- read.csv(file = filename, sep = sep)
+  }
+  data <- xts(data[,-1], order.by = as.POSIXct(data[, 1]))
   cat('Read OK :  ', file.path(getwd(), filename), '\n')
   #
   return(data)
