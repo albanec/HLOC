@@ -157,21 +157,21 @@ BruteForceOpt_parallel_mc <- function(var.df, data.xts,
       FUN <- match.fun(FUN)
       map_range <- Delegate_mcore(i, n, p = workers)
       x <- var.df[map_range, ]
-      df <- 
-        foreach(i = 1:nrow(x)) %do%
-        {
-          temp_text <- paste(
-            'result <- 
-               OneThreadRun.turtles(data.xts = data_source.list[[1]],
-                                    rolling_opt = rolling_opt, 
-                                    balance_start = balance_start, slips = slips, commissions = commissions,
-                                    expiration = expiration, ticker = ticker, return_type = return_type,',
-                                    eval_string,')', 
-            sep = '')
-          eval(parse(text = temp.text))
-        }
+      temp_text <- paste(
+        'df <- 
+          foreach(i = 1:nrow(x)) %do%
+          {
+            result <- 
+              OneThreadRun.turtles(data.xts = data_source.list[[1]],
+                                   rolling_opt = rolling_opt, 
+                                   balance_start = balance_start, slips = slips, commissions = commissions,
+                                   expiration = expiration, ticker = ticker, return_type = return_type,',
+                                   eval_string,') 
+          }',
+        sep = '')
+      eval(parse(text = temp.text)) 
     }
-  
+    
   # объединение результатов
   result %<>%  
     {

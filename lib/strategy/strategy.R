@@ -494,6 +494,7 @@ CalcPosition_byOrders <- function(bto, stc, sto, btc) {
 #'
 #' @export
 CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
+  require(lubridate)
   
   if (pos == FALSE) {
     # выделение данных ордеров
@@ -506,7 +507,7 @@ CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
 
   temp.ind <- 
     index(signals) %>%
-    strptime(x = ., format = '%Y-%m-%d') %>%
+    lubridate::fast_strptime(x = ., format = '%Y-%m-%d') %>%
     unique(.) %>%
     as.POSIXct(., origin = '1970-01-01', tz='MSK')
   temp.ind <- 
