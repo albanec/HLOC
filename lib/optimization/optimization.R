@@ -24,17 +24,17 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export               
-RollerOpt_learning <- function(data_slices,
-                               var.df,
-                               FUN, win_size,
-                               linker_file = 'main/test/linker.R',
-                               balance_start, slips, commissions,
-                               expiration, ticker, return_type = 'ret',
-                               export_varlist = NULL,
-                               export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
-                                               'PerformanceAnalytics', 'lubridate'),
-                               rolling_opt = FALSE, 
-                               eval_string) {
+RollerOpt_learning_cl <- function(data_slices,
+                                  var.df,
+                                  FUN, win_size,
+                                  linker_file = 'main/test/linker.R',
+                                  balance_start, slips, commissions,
+                                  expiration, ticker, return_type = 'ret',
+                                  export_varlist = NULL,
+                                  export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                                  'PerformanceAnalytics', 'lubridate'),
+                                  rolling_opt = FALSE, 
+                                  eval_string) {
   #
   .CurrentEnv <- environment()                          
   #
@@ -74,7 +74,7 @@ RollerOpt_learning <- function(data_slices,
                                        function(x) {
                                          #FUN(x, ...)
                                          FUN <- match.fun(FUN)
-                                         temp.text <- paste(
+                                         temp.text <- paste0(
                                            'df <- FUN(data.xts = data_slice,
                                                       rolling_opt = rolling_opt, 
                                                       balance_start = balance_start, 
@@ -129,6 +129,77 @@ RollerOpt_learning <- function(data_slices,
   return(cluster_data.list)
 }
 #
+RollerOpt_learning_mc <- function(data_slices,
+                                  var.df,
+                                  FUN, win_size,
+                                  linker_file = 'main/test/linker.R',
+                                  balance_start, slips, commissions,
+                                  expiration, ticker, return_type = 'ret',
+                                  export_varlist = NULL,
+                                  export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                                  'PerformanceAnalytics', 'lubridate'),
+                                  rolling_opt = FALSE, 
+                                  eval_string) {
+  #
+  .CurrentEnv <- environment()                          
+  #
+  require(doParallel)
+  FUN <- match.fun(FUN)
+
+  workers <- detectCores() - 1
+  registerDoParallel(cores = workers)
+
+  # Вычисление оптимизаций на обучающих периодах
+  n_vars <- nrow(var.df)
+  bf_data.list <- foreach(i = length(data_slices$widthSlice)) %do% {
+    temp_slice <- data_slices$widthSlice[[i]]
+    result <- foreach(i = 1:workers) %dopar% {
+      FUN <- match.fun(FUN)
+      map_range <- Delegate_mcore(i, n_vars, p = workers)
+      x <- var.df[map_range, ]
+      temp_text <- paste0(
+        'df <- foreach(i = 1:nrow(x)) %do% {
+          result <- FUN(data.xts = temp_slice,
+                        rolling_opt = rolling_opt, 
+                        balance_start = balance_start, slips = slips, commissions = commissions,
+                        expiration = expiration, ticker = ticker, return_type = return_type,',
+                        eval_string,') 
+        }', sep = '')
+      eval(parse(text = temp.text)) 
+      rm(temp_text)
+    } 
+    result %<>%
+      {
+        .[!is.na(.)]
+      } %>%
+      MergeData_inList.byRow(.)
+  }
+
+  # КА
+  cluster_data.list <- foreach(i = 1:length(bf_data.list)) %do% {
+    x <- bf_data.list[[i]]
+    ## Подготовка к КА
+    data_for_cluster <- CalcKmean.preparation(data = x, 
+                                              n.mouth = win_size, 
+                                              hi = TRUE, q.hi = 0.5, 
+                                              one.scale = FALSE)
+    data_for_cluster$profit <- NULL
+    data_for_cluster$draw <- NULL
+    ## Вычисление параметров кластеризации 
+    clustPar.data <- CalcKmean.parameters(data = data_for_cluster, 
+                                          iter.max = 100, 
+                                          plusplus = FALSE, 
+                                          test.range = 30)
+    ## Вычисление самох кластеров
+    clustFull.data <- CalcKmean(data = data_for_cluster, 
+                                clustPar.data[[2]], 
+                                plusplus = FALSE, 
+                                var.digits = 0)
+  }
+  #
+  return(cluster_data.list)
+}
+#
 BruteForceOpt_parallel_mc <- function(var.df, data.xts,
                                       FUN, 
                                       linker_file = 'main/test/linker.R',
@@ -145,32 +216,27 @@ BruteForceOpt_parallel_mc <- function(var.df, data.xts,
   require(doParallel)
   FUN <- match.fun(FUN)
 
-  workers <- 4
+  workers <- detectCores() - 1  
   registerDoParallel(cores = workers) 
   
-  n <- nrow(var.df)
+  n_vars <- nrow(var.df)
 
-  result <- 
-    foreach(i = 1:workers) %dopar% 
-    {
-      #FUN(x, ...)
-      FUN <- match.fun(FUN)
-      map_range <- Delegate_mcore(i, n, p = workers)
-      x <- var.df[map_range, ]
-      temp_text <- paste(
-        'df <- 
-          foreach(i = 1:nrow(x)) %do%
-          {
-            result <- 
-              OneThreadRun.turtles(data.xts = data_source.list[[1]],
-                                   rolling_opt = rolling_opt, 
-                                   balance_start = balance_start, slips = slips, commissions = commissions,
-                                   expiration = expiration, ticker = ticker, return_type = return_type,',
-                                   eval_string,') 
-          }',
-        sep = '')
-      eval(parse(text = temp.text)) 
-    }
+  result <- foreach(i = 1:workers) %dopar% {
+    FUN <- match.fun(FUN)
+    map_range <- Delegate_mcore(i, n_vars, p = workers)
+    x <- var.df[map_range, ]
+    temp_text <- paste0(
+      'df <- foreach(i = 1:nrow(x)) %do% {
+        result <- FUN(data.xts = data_source.list[[1]],
+                      rolling_opt = rolling_opt, 
+                      balance_start = balance_start, slips = slips, commissions = commissions,
+                      expiration = expiration, ticker = ticker, return_type = return_type,',
+                      eval_string,') 
+      }',
+      sep = '')
+    eval(parse(text = temp.text)) 
+    rm(temp_text)
+  }
     
   # объединение результатов
   result %<>%  
@@ -249,7 +315,7 @@ BruteForceOpt_parallel_cl <- function(var.df, data.xts,
               function(x) {
                 #FUN(x, ...)
                 FUN <- match.fun(FUN)
-                temp.text <- paste(
+                temp.text <- paste0(
                   'df <- FUN(data.xts = data.xts,
                              rolling_opt = rolling_opt, 
                              balance_start = balance_start, slips = slips, commissions = commissions,
@@ -311,7 +377,7 @@ BruteForceOpt <- function(var.df, data.xts,
     var.df %>% 
     apply(., 1, 
           function(x){
-            temp.text <- paste(
+            temp.text <- paste0(
               'df <- FUN(data.xts = data.xts,
                          rolling_opt = rolling_opt, 
                          balance_start = balance_start, slips = slips, commissions = commissions,
@@ -394,8 +460,9 @@ OneThreadRun <- function(data.xts, FUN,
   if (!is.null(var_names)) {
     for (i in 1:length(var_names)) {
       dots <- list(...)
-      temp_text <- paste('perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')', 
-                         sep = '')
+      temp_text <- paste0(
+        'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')', 
+        sep = '')
       eval(parse(text = temp_text))
     }
   }

@@ -90,7 +90,7 @@ system.time(
 # )
 system.time(
   {
-    learning_data <- TestStr_RollerOpt_learningTime(data_slices, sma_begin = 10, sma_end = 100, sma_step = 1,
+    learning_data <- TestStr_RollerOpt_cl(data_slices, sma_begin = 10, sma_end = 100, sma_step = 1,
                                                     rolling_opt = TRUE)
   }
 )

@@ -1,10 +1,10 @@
-TestStr_RollerOpt_learningTime <- function(data_slices, #input_data = 'data_source.list', 
-                                           sma_begin, sma_end, sma_step,
-                                           # add_perbegin, add_perend, add_perstep,
-                                           rolling_opt = FALSE, ...) {
-                                           #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
-                                           #         add_perbegin, add_perend, add_perstep,
-                                           #         rolling_opt = FALSE, ...) {
+TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'data_source.list', 
+                                 sma_begin, sma_end, sma_step,
+                                 # add_perbegin, add_perend, add_perstep,
+                                 rolling_opt = FALSE, ...) {
+                                 #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
+                                 #         add_perbegin, add_perend, add_perstep,
+                                 #         rolling_opt = FALSE, ...) {
   #
   require(parallel)
   # Формирование параметров оптимизации
