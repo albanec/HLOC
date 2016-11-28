@@ -1,5 +1,5 @@
 # Загрузка библиотек
-source('main/test/linker.R')
+source('bots/test/linker.R')
 #
 ### входные параметры
 # temp.dir <- 'data/temp'
@@ -22,7 +22,7 @@ commissions <- c(10, 0, 0)  # в рублях
 data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
-  paste(from.date,'::',to.date, sep = '') %>%
+  paste0(from.date,'::',to.date) %>%
   data_source[.]
 # переход к нужному периоду свечей
 data_source <- ExpandData.toPeriod(x = data_source, per = '15min')

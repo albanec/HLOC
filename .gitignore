@@ -3,5 +3,5 @@
 *.RData
 .Ruserdata
 data/temp/*.csv
-/main/aist/*
+/bots/aist/*
 

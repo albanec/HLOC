@@ -1,5 +1,5 @@
 # Загрузка библиотек
-source('main/test/linker.R')
+source('bots/test/linker.R')
 #
 ### входные параметры
 # temp.dir <- 'data/temp'
@@ -22,7 +22,7 @@ commissions <- c(10, 0, 0)  # в рублях
 data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
-  paste(from.date,'::',to.date, sep = '') %>%
+  paste0(from.date,'::',to.date) %>%
   data_source[.]
 # переход к нужному периоду свечей
 data_source <- ExpandData.toPeriod(x = data_source, per = '15min')
@@ -44,44 +44,3 @@ data_source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data_source.
 data_source.list[[1]]$SPFB.SI.cret <- data_source.list[[1]]$SPFB.SI.ret 
 data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret 
 #
-#
-### BruteForce оптимизация (в один поток)
-# system.time(
-#   {
-#     PerfomanceTable <- BruteForceOpt.test_str(var.begin = 1, var.end = 100,
-#                                              data.xts = data_source.list[[1]], 
-#                                              add_per, k_mm, balance_start, 
-#                                              basket_weights, slips, commissions, ret_type,
-#                                              rolling_opt = FALSE)
-#   }
-# )
-#
-### Parallel BruteForce оптимизация 
-system.time(
-  {
-    PerfomanceTable <- BruteForceOpt_parallel_cl.test_str(
-      #input_data = 'data_source.list',
-      sma_begin = 10, sma_end = 100, sma_step = 1,
-      rolling_opt = FALSE
-      #add_per, k_mm, balance_start, 
-      #basket_weights, slips, commissions, ret_type
-    )
-  }
-)
-#
-PerfomanceTable <- MergeData_inList.byRow(PerfomanceTable)
-### КА
-## Подготовка к КА
-data_for_cluster <- CalcKmean.preparation(data = PerfomanceTable, n.mouth = 12, 
-                                              hi = TRUE, q.hi = 0.5, 
-                                              one.scale = TRUE)
-data_for_cluster$profit <- NULL
-data_for_cluster$draw <- NULL
-## Вычисление параметров кластеризации 
-clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
-                                      plusplus = FALSE, test.range = 30)
-## Вычисление самох кластеров
-clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
-                            plusplus = FALSE, var.digits = 2)
-# вывод данных
-#print(clustFull.data[2])

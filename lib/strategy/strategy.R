@@ -124,9 +124,8 @@ CalcReturn_inXTS <- function(data, price = 'Close', type = 'sret') {
     names(data)[grep('Close', names(data))] %>%
     sub('.Close', '', .)
   for (i in 1:length(data.names)) {
-    temp.text <- paste('data$',data.names[i],'.',type,' <- ',
-                       'CalcReturn(data$',data.names[i],'.',price,', type = \"',type,'\")', 
-                       sep='')
+    temp.text <- paste0('data$',data.names[i],'.',type,' <- ',
+                        'CalcReturn(data$',data.names[i],'.',price,', type = \"',type,'\")')
     eval(parse(text = temp.text))
   }
   #
@@ -236,12 +235,11 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
 NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
   x <- norm.data
   for (i in 1:length(names)) {
-    temp.text <- paste('data$',outnames[i],' <- ',
-                       'NormData.price(data = data$',names[i],',',
-                                                   'norm.data = x, convert.to = \"',convert.to,'\",',
-                                                   'tick.val = ',tick.val[i],',',
-                                                   'tick.price = ', tick.price[i],')',
-                       sep = '')
+    temp.text <- paste0('data$',outnames[i],' <- ',
+                        'NormData.price(data = data$',names[i],',',
+                                        'norm.data = x, convert.to = \"',convert.to,'\",',
+                                        'tick.val = ',tick.val[i],',',
+                                        'tick.price = ', tick.price[i],')')
     eval(parse(text = temp.text))  
   }
   #
@@ -263,9 +261,9 @@ CalcSum_inXTS_byTargetCol.basket <- function(data, basket_weights, target) {
   # 
   temp.text <- 
     names(data)[grep(target, names(data))] %>% 
-    paste('data$', ., sep = '') %>%
+    paste0('data$', .) %>%
     paste(., basket_weights, sep = ' * ', collapse = ' + ') %>%
-    paste('data <- ', ., sep = '') 
+    paste0('data <- ', .) 
   eval(parse(text = temp.text))
   #
   return(data)
@@ -507,7 +505,7 @@ CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
 
   temp.ind <- 
     index(signals) %>%
-    lubridate::fast_strptime(x = ., format = '%Y-%m-%d') %>%
+    strptime(., '%Y-%m-%d') %>%
     unique(.) %>%
     as.POSIXct(., origin = '1970-01-01', tz='MSK')
   temp.ind <- 

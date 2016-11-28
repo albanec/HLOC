@@ -1,5 +1,5 @@
 # Загрузка библиотек
-source('main/simple/linker.R')
+source('bots/simple/linker.R')
 #
 ### Входные параметры
 # temp.dir <- 'data/temp'

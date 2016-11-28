@@ -27,7 +27,7 @@
 RollerOpt_learning_cl <- function(data_slices,
                                   var.df,
                                   FUN, win_size,
-                                  linker_file = 'main/test/linker.R',
+                                  linker_file = 'bots/test/linker.R',
                                   balance_start, slips, commissions,
                                   expiration, ticker, return_type = 'ret',
                                   export_varlist = NULL,
@@ -80,8 +80,7 @@ RollerOpt_learning_cl <- function(data_slices,
                                                       balance_start = balance_start, 
                                                       slips = slips, commissions = commissions,
                                                       expiration = expiration, ticker = ticker, 
-                                                      return_type = return_type, ',eval_string,')', 
-                                           sep = '')
+                                                      return_type = return_type, ',eval_string,')')
                                          eval(parse(text = temp.text))
                                          rm(temp.text)
                                          return(df)
@@ -132,7 +131,7 @@ RollerOpt_learning_cl <- function(data_slices,
 RollerOpt_learning_mc <- function(data_slices,
                                   var.df,
                                   FUN, win_size,
-                                  linker_file = 'main/test/linker.R',
+                                  linker_file = 'bots/test/linker.R',
                                   balance_start, slips, commissions,
                                   expiration, ticker, return_type = 'ret',
                                   export_varlist = NULL,
@@ -164,7 +163,7 @@ RollerOpt_learning_mc <- function(data_slices,
                         balance_start = balance_start, slips = slips, commissions = commissions,
                         expiration = expiration, ticker = ticker, return_type = return_type,',
                         eval_string,') 
-        }', sep = '')
+        }')
       eval(parse(text = temp.text)) 
       rm(temp_text)
     } 
@@ -202,7 +201,7 @@ RollerOpt_learning_mc <- function(data_slices,
 #
 BruteForceOpt_parallel_mc <- function(var.df, data.xts,
                                       FUN, 
-                                      linker_file = 'main/test/linker.R',
+                                      linker_file = 'bots/test/linker.R',
                                       balance_start, slips, commissions,
                                       expiration, ticker, return_type = 'ret',
                                       export_varlist = NULL, 
@@ -232,8 +231,7 @@ BruteForceOpt_parallel_mc <- function(var.df, data.xts,
                       balance_start = balance_start, slips = slips, commissions = commissions,
                       expiration = expiration, ticker = ticker, return_type = return_type,',
                       eval_string,') 
-      }',
-      sep = '')
+      }')
     eval(parse(text = temp.text)) 
     rm(temp_text)
   }
@@ -272,7 +270,7 @@ BruteForceOpt_parallel_mc <- function(var.df, data.xts,
 #' @export
 BruteForceOpt_parallel_cl <- function(var.df, data.xts,
                                          FUN, 
-                                         linker_file = 'main/test/linker.R',
+                                         linker_file = 'bots/test/linker.R',
                                          balance_start, slips, commissions,
                                          expiration, ticker, return_type = 'ret',
                                          export_varlist = NULL, 
@@ -320,8 +318,7 @@ BruteForceOpt_parallel_cl <- function(var.df, data.xts,
                              rolling_opt = rolling_opt, 
                              balance_start = balance_start, slips = slips, commissions = commissions,
                              expiration = expiration, ticker = ticker, return_type = return_type, ', 
-                             eval_string,')', 
-                  sep = '')
+                             eval_string,')')
                 eval(parse(text = temp.text))
                 rm(temp.text)
                 return(df)
@@ -382,8 +379,7 @@ BruteForceOpt <- function(var.df, data.xts,
                          rolling_opt = rolling_opt, 
                          balance_start = balance_start, slips = slips, commissions = commissions,
                          expiration = expiration, ticker = ticker, return_type = return_type, ',
-                         eval_string,')',
-              sep = '')
+                         eval_string,')')
             eval(parse(text = temp.text))
             rm(temp.text)
             return(df)
@@ -461,8 +457,7 @@ OneThreadRun <- function(data.xts, FUN,
     for (i in 1:length(var_names)) {
       dots <- list(...)
       temp_text <- paste0(
-        'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')', 
-        sep = '')
+        'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')')
       eval(parse(text = temp_text))
     }
   }

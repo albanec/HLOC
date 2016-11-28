@@ -73,8 +73,7 @@ GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, peri
            }) %>%
     as.vector(.) %>%
     paste(., collapse = ', ') %>%
-    paste('data.list <- list(',.,')',  
-           sep = '')
+    paste0('data.list <- list(',.,')')
   eval(parse(text = temp.text))
   names(data.list) <-  tickers
   # возвращение в исходную директорию
@@ -239,7 +238,7 @@ GetData.OneTicker <- function(ticker, period = '15min',
                      auto.assign = FALSE, warning = FALSE)
   # проверка на правильность загруженных данных
   if (is.xts(data) !=  TRUE) {
-    stop(paste('ERROR(GetData.OneTicker):  ticker ',ticker,' not present!!!', sep = ''))
+    stop(paste0('ERROR(GetData.OneTicker):  ticker ',ticker,' not present!!!'))
   }
   # нужно ли переименовывать данные к обезличенному OHLCV виду
   # если rename == FALSE, данные будут вида 'ticker_name.OHLCV'

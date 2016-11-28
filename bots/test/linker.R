@@ -21,8 +21,8 @@ source('lib/evaluation/evaluation.R')
 source('lib/optimization/optimization.R')
 source('lib/cluster/cluster.R')
 # движок стратегии
-source('main/test/lib/gear/test_gear.R')
+source('bots/test/lib/gear/test_gear.R')
 # движок оптимизации
-source('main/test/lib/optimization/test_optimization.R')
+source('bots/test/lib/optimization/test_optimization.R')
 # движок скользящей оптимизации
-source('main/test/lib/optimization/test_roller.R')
+source('bots/test/lib/optimization/test_roller.R')

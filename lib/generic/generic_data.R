@@ -199,7 +199,7 @@ Save_XTS.toCSV <- function(data, filename, period = FALSE, tframe = FALSE, sep =
   if (tframe !=  FALSE) {
   filename <- paste(filename, tframe, sep = '.')
   }
-  filename <- paste(filename, '.csv', sep = '')
+  filename <- paste0(filename, '.csv')
   write.zoo(data, file = filename, sep = sep)
   cat('Save OK :  ', file.path(getwd(), filename), '\n')
 }
@@ -218,7 +218,7 @@ Convert.XTStoDF <- function(x) {
   # ----------
   #
   if (is.xts(x) != TRUE) {
-    stop(paste('ERROR(Convert.XTStoDF):  Input Data wrong type!!!', sep = ''))
+    stop(paste0('ERROR(Convert.XTStoDF):  Input Data wrong type!!!'))
   } else {
     x <- data.frame(date = index(x), x, row.names = NULL)  
   }
@@ -239,7 +239,7 @@ Convert.DFtoXTS <- function(x) {
   require(quantmod)   
   # ----------
   if (is.data.frame(x) != TRUE) {
-    stop(paste('ERROR(Convert.DFtoXTS):  Input Data wrong type!!!', sep = ''))
+    stop(paste0('ERROR(Convert.DFtoXTS):  Input Data wrong type!!!'))
   } else {
     x <- xts(x[, -1], order.by = as.POSIXct(x$date))
   }

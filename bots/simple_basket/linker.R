@@ -20,6 +20,6 @@ source('lib/evaluation/evaluation.R')
 source('lib/optimization/optimization.R')
 source('lib/cluster/cluster.R')
 # движок стратегии
-source('main/simple_basket/lib/gear/simple_gear.R')
+source('bots/simple_basket/lib/gear/simple_gear.R')
 # движок оптимизации
-source('main/simple_basket/lib/optimization/simple_optimization.R')
+source('bots/simple_basket/lib/optimization/simple_optimization.R')

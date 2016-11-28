@@ -1,5 +1,5 @@
 # Загрузка библиотек
-source('main/test/linker.R')
+source('bots/test/linker.R')
 #
 ### входные параметры
 # temp.dir <- 'data/temp'
@@ -22,7 +22,7 @@ commissions <- c(10, 0, 0)  # в рублях
 data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
-  paste(from.date,'::',to.date, sep = '') %>%
+  paste0(from.date,'::',to.date) %>%
   data_source[.]
 # переход к нужному периоду свечей
 data_source <- ExpandData.toPeriod(x = data_source, per = '15min')
@@ -43,4 +43,36 @@ data_source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data_source.
 # перевод return'ов в валюту
 data_source.list[[1]]$SPFB.SI.cret <- data_source.list[[1]]$SPFB.SI.ret 
 data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret 
+#
+
+### один прогон вычислений 
+## отработка тестового робота
+data_strategy.list <- TestStr.gear(data_source = data_source.list[[1]],
+                                   sma_per, add_per, k_mm, balance_start, 
+                                   basket_weights, slips, commissions)
+## формирование таблицы сделок
+# чистим от лишних записей
+data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
+# лист с данными по сделкам (по тикерам и за всю корзину)
+basket <- TRUE
+trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = basket, convert = FALSE) #TRUE
+# очистка мусора по target = 'temp'
+CleanGarbage(target = 'temp', env = '.GlobalEnv')
+gc()
+## оценка perfomance-параметров
+perfomanceTable <- 
+  PerfomanceTable(data = data_strategy.list[[1]], 
+                  states = data_strategy.list[[2]],
+                  trades_table = trades_table.list,
+                  balance = balance_start, 
+                  ret_type = ret_type) %>%
+  # добавление использованных параметров
+  cbind.data.frame(., sma_per = sma_per, add_per = add_per, k_mm = k_mm)
+## запись в файл 
+if (firstTime == TRUE) {
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ',', col.names = TRUE )  
+  firstTime <- FALSE
+} else {
+  write.table(perfomanceTable, file = perfomanceDB.filename, sep = ',', col.names = FALSE, append = TRUE )  
+}
 #

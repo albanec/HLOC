@@ -33,7 +33,7 @@ NormData_inXTS.na <- function(data, type = 'full', filename = FALSE) {
     if (is.null(data.names))
     #
     for (i in 1:length(data.names)) {
-      temp.text <- paste(
+      temp.text <- paste0(
         'if (any(is.na(data$',data.names[i],'.Close))!= TRUE) {',
         'cat(\"INFO(NormData_NA): No NA in\"',',data.names[i]', ',\"\\n\")',
         '} else {',
@@ -60,8 +60,7 @@ NormData_inXTS.na <- function(data, type = 'full', filename = FALSE) {
         '',
         'data$',data.names[i],'.temp <- NULL ; ',
         'cat(\"INFO(NormData_NA): All NA remove in\"',',data.names[i]', ',\"\\n\")', 
-        '}',
-        sep = '')
+        '}')
       eval(parse(text = temp.text))
     }
   }
@@ -96,12 +95,11 @@ NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, t
   # ----------
   x <- norm.data
   for (i in 1:length(names)) {
-    temp.text <- paste('data$',outnames[i],' <- ',
+    temp.text <- paste0('data$',outnames[i],' <- ',
                        'NormData.price(data = data$',names[i],',',
                                                  'norm.data = x, convert.to = \"',convert.to,'\",',
                                                  'tick.val = ',tick.val[i],',',
-                                                 'tick.price = ', tick.price[i],')',
-                       sep = '')
+                                                 'tick.price = ', tick.price[i],')')
     eval(parse(text = temp.text))  
   }
   return(data)  
@@ -152,11 +150,10 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir, add.USDRUB
   data.names <- sub('.Close', '', data.names)
   temp.data <- xts()
   for (i in 1:length(data.names)) {
-    temp.text <- paste('temp.data <- Read_CSV.toXTS(filename = \"',data.names[i],'.IM\") ; ',
-               'data$',data.names[i],'.IM <- temp.data ; ',
-               'remove(temp.data) ; ',
-               'data$',data.names[i],'.IM <- na.locf(data$',data.names[i],'.IM) ; ',
-               sep='')
+    temp.text <- paste0('temp.data <- Read_CSV.toXTS(filename = \"',data.names[i],'.IM\") ; ',
+                        'data$',data.names[i],'.IM <- temp.data ; ',
+                        'remove(temp.data) ; ',
+                        'data$',data.names[i],'.IM <- na.locf(data$',data.names[i],'.IM) ; ')
     eval(parse(text = temp.text))
   }
   remove(temp.text)

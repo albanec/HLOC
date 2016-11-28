@@ -131,7 +131,7 @@ SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
   annualized_return = Return.annualized(R, scale = scale, geometric = geometric)
   drawdown = abs(maxDrawdown(R, geometric = geometric) + excess)
   result = annualized_return / drawdown
-  rownames(result) = paste('Sterling Ratio (Excess = ', round(excess * 100, 0), '%)', sep = '')
+  rownames(result) = paste0('Sterling Ratio (Excess = ', round(excess * 100, 0), '%)')
   return(result)
 }
 #

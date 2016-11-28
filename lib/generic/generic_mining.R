@@ -57,7 +57,7 @@ MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
     if (col.name != FALSE) {
       temp.text <-
       paste(data.name, col.name, sep = '.') %>%
-      paste('data <- data$', ., sep = '')
+      paste0('data <- data$', .)
       eval(parse(text = temp.text))
     }
     if (FirstTime == TRUE) {
@@ -220,7 +220,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
   # индкесы исходных данных
   data_ind <- index(data)
   # интервал анализа
-  interval <- paste(start_date,'::',end_date, sep = '')
+  interval <- paste0(start_date,'::',end_date)
   #
   if (is.null(by)) {
     by <- width
@@ -288,7 +288,6 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
                                                add_bySlice = FALSE, lookback = FALSE)
       
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
-    
     } 
   } else {
     ## если period != NULL, то окна считаются по указанным периодам
@@ -323,7 +322,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     #       index(.)  - offset(x = width)
     #     } %>%
     #     # проверить!!!
-    #     paste(.,'::',end_date, sep = '') %>%
+    #     paste0(.,'::',end_date) %>%
     #     data[.]
     # } elxe {
     #
@@ -388,20 +387,19 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         } %>%
         {
           text <- index(ends_[.])
-          paste(text,'::', sep = '')
+          paste0(text,'::')
         } %>%
         temp_subset[.] %>%
         .[-1, ]
       
       bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period, 
-                                               width = by, by = NULL, align,
-                                               add_bySlice = FALSE, lookback = FALSE)
+                                    width = by, by = NULL, align,
+                                    add_bySlice = FALSE, lookback = FALSE)
       
       result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
-    
     }
   } 
-   
+  #
   return(result.list)
 }
 #

@@ -25,7 +25,7 @@ SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
     library(magrittr)
     library(tidyr)
     library(PerformanceAnalytics)
-    source('main/simple/linker.R')
+    source('bots/simple/linker.R')
   })
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 

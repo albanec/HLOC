@@ -35,7 +35,7 @@ TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'data_source.list',
     library(magrittr)
     library(tidyr)
     library(PerformanceAnalytics)
-    source('main/test/linker.R')
+    source('bots/test/linker.R')
   })
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 

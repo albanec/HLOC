@@ -314,13 +314,11 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
         data, x = var1, y = var2, z = var3, type = 'scatter3d', mode = 'markers', name = 'Clusters',
         colors = mycolors, opacity = point.opacity, color = point.color,
         hoverinfo = 'text', 
-        text = paste(
-          xaxis.name, data$var1, '<br>',
-          yaxis.name, data$var2, '<br>',
-          zaxis.name, data$var3, '<br>',
-          'ProfitNorm:', round(data$profit.norm, 3), '<br>',
-          'Cluster:', data$cluster
-        ), 
+        text = paste0(xaxis.name, data$var1, '<br>',
+                      yaxis.name, data$var2, '<br>',
+                      zaxis.name, data$var3, '<br>',
+                      'ProfitNorm:', round(data$profit.norm, 3), '<br>',
+                      'Cluster:', data$cluster), 
         marker = list(
           symbol = 'circle',  size = point.size, 
           line = list(color = '#262626', width = point.line.width, opacity = 0.5)
@@ -332,12 +330,10 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
       centers, x = var1, y = var2, z = var3, 
       type = 'scatter3d', mode = 'markers', name = 'Cluster Centers',
       hoverinfo = 'text', 
-      text = paste(
-        xaxis.name, centers$var1, '<br>',
-        yaxis.name, centers$var2, '<br>',
-        zaxis.name, centers$var3, '<br>',
-        'CenterID:', centers$cluster
-      ),
+      text = paste0(xaxis.name, centers$var1, '<br>',
+                    yaxis.name, centers$var2, '<br>',
+                    zaxis.name, centers$var3, '<br>',
+                    'CenterID:', centers$cluster),
       marker = list(color = center.color, symbol = 'cross', size = center.size)
     )
     # надписи на графике
@@ -352,10 +348,10 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
     p <- plot_ly(data, x = var1, y = var2, mode = 'markers', name = 'Clusters',
                  colors = mycolors, opacity = point.opacity, color = point.color,
                  hoverinfo = 'text', 
-                 text = paste(xaxis.name , data$var1, '<br>', 
-                              yaxis.name, data$var2, '<br>',
-                              'ProfitNorm:', round(data$profit.norm, 3), '<br>', 
-                              'Cluster:', data$cluster), 
+                 text = paste0(xaxis.name , data$var1, '<br>', 
+                               yaxis.name, data$var2, '<br>',
+                               'ProfitNorm:', round(data$profit.norm, 3), '<br>', 
+                               'Cluster:', data$cluster), 
                  marker = list(symbol = 'circle', size = point.size, 
                                line = list(color = '#262626', width = point.line.width, 
                                            opacity = point.line.opacity)),
@@ -363,9 +359,9 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
     # добавляем центроиды кластеров
     p <- add_trace(centers, x = var1, y = var2, mode = 'markers', name = 'Cluster Centers',
                    hoverinfo = 'text', 
-                   text = paste(xaxis.name, centers$var1, '<br>',
-                                yaxis.name, centers$var1, '<br>',
-                                'CenterID:', centers$cluster),
+                   text = paste0(xaxis.name, centers$var1, '<br>',
+                                 yaxis.name, centers$var1, '<br>',
+                                 'CenterID:', centers$cluster),
                    marker = list(color = center.color, symbol = 'cross', size = center.size))
     # надписи на графике
     p <- layout(title = plot.title, 
