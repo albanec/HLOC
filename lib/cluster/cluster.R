@@ -232,8 +232,8 @@ CalcKmean <- function(data, n.opt, iter.max = 100, plusplus = FALSE, var.digits 
   )
   colnames(cluster.centers)[ncol(cluster.centers)] <- 'profit.norm'
   #
-  return(list(data, cluster.centers))
-  # return(data)
+  result <- list(data = data, cluster.centers = cluster.centers)
+  return(result)
 }
 #
 ###

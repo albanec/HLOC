@@ -107,16 +107,17 @@ RollerOpt_learning_cl <- function(data_slices,
                                                                           one.scale = FALSE)
                                 data_for_cluster$profit <- NULL
                                 data_for_cluster$draw <- NULL 
-                                ## Вычисление параметров кластеризации 
-                                clustPar.data <- CalcKmean.parameters(data = data_for_cluster, 
-                                                                      iter.max = 100, 
-                                                                      plusplus = FALSE, 
-                                                                      test.range = 30)
-                                ## Вычисление самох кластеров
-                                clustFull.data <- CalcKmean(data = data_for_cluster, 
-                                                            clustPar.data[[2]], 
-                                                            plusplus = FALSE, 
-                                                            var.digits = 0)
+                                ## Вычисление кластеров 
+                                clustFull.data <- 
+                                  CalcKmean.parameters(data = data_for_cluster, 
+                                                       iter.max = 100, 
+                                                       plusplus = FALSE, 
+                                                       test.range = 30) %>%
+                                  .[[2]] %>%
+                                  CalcKmean(data = data_for_cluster, 
+                                            n.opt = ., 
+                                            plusplus = FALSE, 
+                                            var.digits = 0)
                               })  
   
   # проверка остановки кластера
@@ -148,7 +149,7 @@ RollerOpt_learning_mc <- function(data_slices,
   # Вычисление оптимизаций на обучающих периодах
   n_vars <- nrow(var.df)
   bf_data.list <- 
-    foreach(i = length(data_slices$widthSlice)) %do% {
+    foreach(i = 1:length(data_slices$widthSlice)) %do% {
       temp_slice <- data_slices$widthSlice[[i]]
       df <- BruteForceOpt_parallel_mc(var.df = var.df, data.xts = temp_slice,
                                       FUN = FUN, 
@@ -173,16 +174,17 @@ RollerOpt_learning_mc <- function(data_slices,
                                                 one.scale = FALSE)
       data_for_cluster$profit <- NULL
       data_for_cluster$draw <- NULL
-      ## Вычисление параметров кластеризации 
-      clustPar.data <- CalcKmean.parameters(data = data_for_cluster, 
-                                            iter.max = 100, 
-                                            plusplus = FALSE, 
-                                            test.range = 30)
-      ## Вычисление самох кластеров
-      clustFull.data <- CalcKmean(data = data_for_cluster, 
-                                  clustPar.data[[2]], 
-                                  plusplus = FALSE, 
-                                  var.digits = 0)
+      ## Вычисление самих кластеров
+      clustFull.data <- 
+        CalcKmean.parameters(data = data_for_cluster, 
+                             iter.max = 100, 
+                             plusplus = FALSE, 
+                             test.range = 30) %>%
+        .[[2]] %>%
+        CalcKmean(data = data_for_cluster, 
+                  n.opt = ., 
+                  plusplus = FALSE, 
+                  var.digits = 0)
       return(clustFull.data)
     }
   #
