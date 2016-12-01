@@ -119,6 +119,16 @@ RollerOpt_learning_cl <- function(data_slices,
                                             n.opt = ., 
                                             plusplus = FALSE, 
                                             var.digits = 0)
+                                ## округление центров до значений точек пространства  
+                                clustFull.data[[2]] %<>%
+                                  {
+                                    for (i = 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+                                      .[, i] <- .[, i] - .[, i] %% 5
+                                    }
+                                    return(.)    
+                                  }
+                                #
+                                return(clustFull.data)  
                               })  
   
   # проверка остановки кластера

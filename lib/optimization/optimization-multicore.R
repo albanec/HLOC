@@ -62,7 +62,7 @@ RollerOpt_learning_mc <- function(data_slices,
                                                 one.scale = FALSE)
       data_for_cluster$profit <- NULL
       data_for_cluster$draw <- NULL
-      ## Вычисление самих кластеров
+      ## Вычисление кластеров
       clustFull.data <- 
         CalcKmean.parameters(data = data_for_cluster, 
                              iter.max = 100, 
@@ -73,6 +73,15 @@ RollerOpt_learning_mc <- function(data_slices,
                   n.opt = ., 
                   plusplus = FALSE, 
                   var.digits = 0)
+      ## Округление центров до значений точек пространства  
+      clustFull.data[[2]] %<>%
+        {
+          for (i = 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+            .[, i] <- .[, i] - .[, i] %% 5
+          }
+          return(.)    
+        }  
+      #
       return(clustFull.data)
     }
   #
