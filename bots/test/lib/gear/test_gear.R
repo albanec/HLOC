@@ -115,7 +115,7 @@ TestStr.gear <- function(data_source,
     ## 1.2 добавляем позиции
     {
       data <- .
-      data$pos <- lag(data$sig)
+      data$pos <- stats::lag(data$sig)
       data$pos[1] <- 0
       return(data)
     } 
@@ -170,7 +170,7 @@ TestStr.gear <- function(data_source,
         cumsum(.)
       # ряд номеров позиций 
       data$pos.num <- 
-        lag(data$sig.num) %>%
+        stats::lag(data$sig.num) %>%
         # защита от нумераций пачек нулевых позиций
         {
           temp <- diff(data$pos)
@@ -202,7 +202,7 @@ TestStr.gear <- function(data_source,
         } %T>%
         {
           # ветвим и проставляем тики позиций (добаляем напрямую в data)
-          data$pos.bars <<- lag(.)
+          data$pos.bars <<- stats::lag(.)
           data$pos.bars[1] <<- 0
         } %>%
         {
@@ -222,7 +222,7 @@ TestStr.gear <- function(data_source,
           return(result)          
         }
       data$sig.add[1] <- 0  
-      data$sig.add <- lag(data$sig.add)
+      data$sig.add <- stats::lag(data$sig.add)
       data$sig.add[1] <- 0  
       return(data)
     } 
@@ -238,10 +238,10 @@ TestStr.gear <- function(data_source,
       {
         data <- .
         cat('TestStrategy INFO:  Calculate $pos.add and $pos.drop...', '\n')
-        data$pos.add <- ifelse(lag(data$sig.add) == lag(data$sig.drop), 0, lag(data$sig.add))
-        #data$pos.add <- lag(data$pos.add)
+        data$pos.add <- ifelse(stats::lag(data$sig.add) == stats::lag(data$sig.drop), 0, stats::lag(data$sig.add))
+        #data$pos.add <- stats::lag(data$pos.add)
         data$pos.add[is.na(data$pos.add)] <- 0
-        data$pos.drop <- ifelse(lag(data$sig.drop) == lag(data$sig.add), 0, lag(data$sig.drop))
+        data$pos.drop <- ifelse(stats::lag(data$sig.drop) == stats::lag(data$sig.add), 0, stats::lag(data$sig.drop))
         data$pos.drop[1] <- 0
         return(data)    
       } %>%
@@ -303,7 +303,7 @@ TestStr.gear <- function(data_source,
   data %<>%   
     {
       data <- .
-      data$action <- data$pos - lag(data$pos)
+      data$action <- data$pos - stats::lag(data$pos)
       data$action[1] <- 0 
       return(data)
     } %>%
@@ -420,13 +420,13 @@ TestStr.gear <- function(data_source,
           'states$',.,'.pos <- states$pos * temp.vector[i] ; ',
           # расчёт return'ов по сделкам (в пунктах) в states 
           'states$',.,'.ret <- ',
-          '(states$',.,'.Price - lag(states$',.,'.Price)) * lag(states$',.,'.pos) ; ',  
+          '(states$',.,'.Price - stats::lag(states$',.,'.Price)) * stats::lag(states$',.,'.pos) ; ',  
           'states$',.,'.ret[1] <- 0 ;',
           # расчёт позиций по инструментам корзины в data
           'data$',.,'.pos <- data$pos * temp.vector[i] ; ',       
           # расчёт return'ов по позициям (в пунктах) в data 
           'data$',.,'.ret <- ',
-          '(data$',.,'.Price - lag(data$',.,'.Price)) * lag(data$',.,'.pos) ; ',  
+          '(data$',.,'.Price - stats::lag(data$',.,'.Price)) * stats::lag(data$',.,'.pos) ; ',  
           'data$',.,'.ret[1] <- 0 ;')
         return(t)
       } 
@@ -469,7 +469,7 @@ TestStr.gear <- function(data_source,
   #
   states$n <- CalcTrades_inStates.testStr(data = states)
   # Изменение контрактов на такте
-  states$diff.n <- states$n - lag(states$n)
+  states$diff.n <- states$n - stats::lag(states$n)
   states$diff.n[1] <- 0
   # Расчёт баланса, заблокированного на ГО
   states$im.balance <- 
@@ -490,7 +490,7 @@ TestStr.gear <- function(data_source,
   states$commiss <- basket.commiss * abs(states$diff.n)
   states$commiss[1] <- 0
   # Расчёт вариационки
-  states$margin <- states$cret * lag(states$n)
+  states$margin <- states$cret * stats::lag(states$n)
   states$margin[1] <- 0
   # расчёт equity по корзине в states
   states$perfReturn <- states$margin - states$commiss
@@ -530,7 +530,7 @@ TestStr.gear <- function(data_source,
     }
   ## Расчёт показателей в full данных
   # расчёт вариационки в data
-  data$margin <- lag(data$n) * data$cret
+  data$margin <- stats::lag(data$n) * data$cret
   data$margin[1] <- 0      
   # расчёт equity по корзине в data 
   data$perfReturn <- data$margin - data$commiss
@@ -551,7 +551,7 @@ TestStr.gear <- function(data_source,
           'states$',.,'.diff.n[1] <- 0 ; ',
           'states$',.,'.commiss <- commissions[i] * abs(states$',.,'.diff.n) ; ',
           #'states$',.,'.im.balance <- NA',
-          'states$',.,'.margin <- states$',.,'.cret * lag(states$',.,'.n) ; ',
+          'states$',.,'.margin <- states$',.,'.cret * stats::lag(states$',.,'.n) ; ',
           'states$',.,'.margin[1] <- 0 ; ',
           'states$',.,'.perfReturn <- states$',.,'.margin - states$',.,'.commiss ;',
           'states$',.,'.equity <- cumsum(states$',.,'.perfReturn) ;',
@@ -561,7 +561,7 @@ TestStr.gear <- function(data_source,
           'merge(data, states$',.,'.n) %$% ',
           'na.locf(',.,'.n) ; ',
           'data$',.,'.margin <- ',
-          'data$',.,'.cret * lag(data$',.,'.n) ; ',
+          'data$',.,'.cret * stats::lag(data$',.,'.n) ; ',
           'data$',.,'.margin[1] <- 0 ; ',
           'data <- merge(data, states$',.,'.commiss) ; ',
           'data$',.,'.commiss[is.na(data$',.,'.commiss)] <- 0 ; ',

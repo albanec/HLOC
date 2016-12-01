@@ -186,7 +186,7 @@ CalcReturn <- function(data, type = 'sret') {
   require(quantmod)
   # ----------
   if (type == 'ret') {
-  data <- data - lag(data)
+  data <- data - stats::lag(data)
   }
   if (type == 'sret') {
   data <- Delt(data, type = 'arithmetic')

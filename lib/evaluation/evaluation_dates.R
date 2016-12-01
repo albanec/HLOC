@@ -27,7 +27,7 @@ DatesTable <- function(data, states) {
     CalcTradingDays(x = .)
   ### начало торговли
   from.date <- 
-    first(data) %>%
+    xts::first(data) %>%
     index(.)
   ### конец торговли
   to.date <-

@@ -17,7 +17,7 @@ Convert.signal_to_states <- function(x) {
   x$a <- 
     na.locf(x) %>%
     ifelse(is.na(x$a) | is.nan(x$a) | is.infinite(x$a), 0, x$a)
-  ind <- which(x$a != lag(x$a))
+  ind <- which(x$a != stats::lag(x$a))
   x$y <- rep(NA, length(x$a))
   x$y[ind] = x$a[ind]
   x$y[1] <- x$a[1]
@@ -81,7 +81,7 @@ CalcStates.inData <- function(x) {
       ifelse(is.na(.) | is.nan(.) | is.infinite(.), 0, .)
     } %>%
     xts(., order.by = index(x))
-  ind <- which(x != lag(x))
+  ind <- which(x != stats::lag(x))
   state <- rep(NA, length(x))
   state[ind] <- x[ind]
   state[1] <- x[1]
@@ -161,20 +161,20 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
       } 
     } else {
       data$w <- 1 
-      data$margin <- lag(data$state) * ( data$Open-lag(data$Open) )
+      data$margin <- stats::lag(data$state) * ( data$Open-stats::lag(data$Open) )
       data$margin[1] <- 0
       data$equity <- cumsum(data$margin)
     }
   }
   if (SR == TRUE) {
     if (reinvest == TRUE) {
-      data$SR <- lag(data$state) * data$SR
+      data$SR <- stats::lag(data$state) * data$SR
       data$SR[1] <- 0
       data$margin <- cumprod(data$SR + 1) 
       data$margin[1] <- 0
       data$equity <- s0*data$margin
     } else {
-      data$SR <- lag(data$state) * data$SR
+      data$SR <- stats::lag(data$state) * data$SR
       data$SR[1] <- 0
       data$margin <- cumprod(data$SR + 1) - 1
       data$equity <- data$Open[[1]] * as.numeric(data$margin)
@@ -184,7 +184,7 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
     #if (reinvest==TRUE) {
       #
     #} else {
-      data$LR <- lag(data$state) * data$LR
+      data$LR <- stats::lag(data$state) * data$LR
       data$LR[1] <- 0
       data$margin <- cumsum(data$LR)
       data$equity <- data$Open[[1]] * (exp(as.numeric(xts::last(data$margin))) - 1)
@@ -595,14 +595,14 @@ CleanSignal.gap <- function(signals) {
 
 # CleanSignal.gap_close <- function(pos, gap, stc, btc, na = FALSE) {
 #   cache <- gap
-#   temp.ind <- which(gap!=0 | lag(gap!=0))
+#   temp.ind <- which(gap!=0 | stats::lag(gap!=0))
 #   pos <- pos[temp.ind, ]
 #   gap <- gap[temp.ind, ]
 #   stc <- stc[temp.ind, ]
 #   btc <- btc[temp.ind, ]
 
 #   gap <- ifelse(pos != 0,
-#                 ifelse(pos == lag(stc) | pos == lag(btc),
+#                 ifelse(pos == stats::lag(stc) | pos == stats::lag(btc),
 #                        1,
 #                        0),
 #                 0)

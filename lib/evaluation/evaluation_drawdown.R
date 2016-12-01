@@ -30,7 +30,7 @@ DrawdownsTable <- function(data_balance) {
   max_dd_day <- 
     drawdowns[[1]][drawdowns[[1]]$dd == max_drawdown] %>%
     {
-      index(first(.)) 
+      index(xts::first(.)) 
     } %>%
     as.POSIXct(., origin = '1970-01-01')
   ## средняя просадка

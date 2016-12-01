@@ -204,16 +204,16 @@ TradingDays.daySummary <- function(data, n) {
                    Return.percent = as.numeric(1)
                    ) 
       df$Date <- 
-        first(.$date) %>%
+        xts::first(.$date) %>%
         format(., '%Y-%m-%d') %>%
         as.POSIXct(., origin = '1970-01-01') 
       df$Num <- n
         df$Return <- 
         {
-          first(.$balance) - xts::last(.$balance) 
+          xts::first(.$balance) - xts::last(.$balance) 
         }
       df$Return.percent <- 
-        first(.$balance) %>%
+        xts::first(.$balance) %>%
         {
           df$Return * 100 / .
         }

@@ -421,21 +421,22 @@ TradeSummary.summary_df <- function(x, type, ticker_names = NULL,
   summary$TradeReturn <- x$trade.return
   ## return позиции в %
   #if (type == 'byBasket') {
-    summary$TradeReturnPercent <- x$trade.return * 100 / (first(x$balance) + first(x$im.balance))
+    summary$TradeReturnPercent <- x$trade.return * 100 / (xts::first(x$balance) + xts::first(x$im.balance))
   #} else {
   #  summary$tradeReturnPercent <- NA  
   #}
   ## equity внутри сделки
   summary$TradeProfit <- cumsum(x$trade.return)
   #if (type == 'byBasket') {
-    summary$TradeProfitPercent <- summary$TradeProfit * 100 / (first(x$balance) + first(x$im.balance))
+    summary$TradeProfitPercent <- summary$TradeProfit * 100 / (xts::first(x$balance) + xts::first(x$im.balance))
   #} else {
   #  summary$TradeProfitPercent <- NA
   #}
   ## Banchmark соответствия рынку
   if (type == 'byTicker') {
     summary$MarketCompliance <- sign(xts::last(summary$TradeReturn)) * 
-                                (first(summary$EntryPrice) - xts::last(summary$ExitPrice)) * 100 / first(summary$EntryPrice)
+                                (xts::first(summary$EntryPrice) - xts::last(summary$ExitPrice)) * 100 / 
+                                xts::first(summary$EntryPrice)
   } else {
     summary$MarketCompliance <- NA
   }
