@@ -35,7 +35,7 @@ Repeat.col <- function(x,n) {
 }
 #
 ###
-#' Функция объединения данных в один XTS 
+#' Функция объединения данных в один XTS по колонкам
 #'
 #' @param data.list Лист, сожержащий XTS нужных тикеров
 #' @param col.name Если нужно объединить опред. столбцы, то присвоить название
@@ -43,22 +43,21 @@ Repeat.col <- function(x,n) {
 #' @return list(merged.data) Лист с xts рядом объединенных значений (по всем тикерам)
 #'
 #' @export
-MergeData_inList.byCol <- function(data.list, col.name = FALSE) {
+MergeData_inList.byCol <- function(data.list, target_cols = NULL, ticker_name = NULL) {
   # 
-  n.ticker <- length(data.list) 
+  n <- length(data.list) 
   FirstTime <- TRUE
   #  чтение и объединение данных
-  for (i in 1:n.ticker) {
+  for (i in 1:n) {
     data <- data.list[[i]]
-    data.name <- 
-      names(data)[grep('Close', names(data))] %>%
-      sub('.Close', '', .)
-    cat('INFO(MergeData_fromAll_toOne):  Processing StocksData:  ', data.name, '\n')
-    if (col.name != FALSE) {
-      temp.text <-
-      paste(data.name, col.name, sep = '.') %>%
-      paste0('data <- data$', .)
-      eval(parse(text = temp.text))
+    if (!is.null(target_cols)) {
+      if (!is.null(ticker_name)) {
+        data.name <- 
+          names(data)[grep('Close', names(data))] %>%
+          sub('.Close', '', .)  
+        target_cols <- paste(data.name, target_cols, sep = '.')
+      }
+      data <- data[, target_cols]
     }
     if (FirstTime == TRUE) {
       FirstTime <- FALSE
@@ -87,7 +86,7 @@ MergeData_inList.byRow <- function(data.list) {
     idxdata.list <- seq(from = 1, to = length(data.list), by = 2)
     data.list <- lapply(idxdata.list, 
                         function(i) {
-                          if(i == length(data.list)) { 
+                          if (i == length(data.list)) { 
                             return(data.list[[i]]) 
                           }
                           return(rbind(data.list[[i]], data.list[[i + 1]]))

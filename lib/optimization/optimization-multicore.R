@@ -72,11 +72,11 @@ RollerOpt_learning_mc <- function(data_slices,
         CalcKmean(data = data_for_cluster, 
                   n.opt = ., 
                   plusplus = FALSE, 
-                  var.digits = 0)
+                  var.digits = 3)
       ## Округление центров до значений точек пространства  
       clustFull.data[[2]] %<>%
         {
-          for (i = 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+          for (i in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
             .[, i] <- .[, i] - .[, i] %% 5
           }
           return(.)    

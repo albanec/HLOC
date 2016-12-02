@@ -24,6 +24,7 @@ BindToEnv <- function (bindTargetEnv = parent.frame(), objNames, doNotRebind = c
 # Integer Mapping для multicore вычислений
 #'
 #' Выдаёт индексы строк входных данных, предназначенных для обработки конкретному worker'у
+#' Если для worker'а нет задачи - выдаёт NULL
 #' 
 #' @param i ID процесса
 #' @param n Число строк в анализируемых данных
@@ -33,7 +34,10 @@ BindToEnv <- function (bindTargetEnv = parent.frame(), objNames, doNotRebind = c
 Delegate_mcore <- function(i, n, k = 1, p) {
   nOut <- n - k + 1
   nProc <- ceiling(nOut / p)
-  result <- ((i - 1) * nProc + 1) : min(i * nProc + k - 1, n) 
+  result <- ((i - 1) * nProc + 1):min(i * nProc + k - 1, n) 
+  if (any(result > n)) {
+    return(NULL)  
+  }
   #
   return(result)
 }

@@ -122,7 +122,7 @@ RollerOpt_learning_cl <- function(data_slices,
                                 ## округление центров до значений точек пространства  
                                 clustFull.data[[2]] %<>%
                                   {
-                                    for (i = 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+                                    for (i in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
                                       .[, i] <- .[, i] - .[, i] %% 5
                                     }
                                     return(.)    
