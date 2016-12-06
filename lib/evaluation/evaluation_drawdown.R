@@ -12,7 +12,7 @@
 #' @return drawdown_table DF с данными по просадкам
 #'
 #' @export
-DrawdownsTable <- function(data_balance) {
+DrawdownsTable <- function(data_balance, dd_data_output = FALSE) {
   # ----------
   # подготовка данных
   #cat('INFO(DrawdownsTable): Calc Drawdown Data Set', '\n')
@@ -113,7 +113,10 @@ DrawdownsTable <- function(data_balance) {
       return(.)
     }
   #
-  return(drawdown_table)
+  if (dd_data_output == TRUE) {
+    return(list(drawdown_table = drawdown_table, dd.list = drawdowns))  
+  } 
+  return(drawdown_table)  
 }
 #
 ###
@@ -140,7 +143,7 @@ Drawdowns.dd_data <- function(data, fullData = FALSE) {
     MergeData_inList.byRow(.)
   #
   if (fullData == TRUE) {
-    return(list(dd_data, drawdowns))  
+    return(list(dd_data = dd_data, drawdowns = drawdowns))  
   } else {
     return(drawdowns)  
   }

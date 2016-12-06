@@ -24,7 +24,7 @@ source('lib/evaluation/evaluation_ratio.R')
 #' @export
 PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strategy.list[[2]], 
                             trades_table = trades_table.list,
-                            balance_start, ret_type, fast = FALSE) {
+                            balance_start, ret_type, fast = FALSE, dd_data_output = FALSE) {
   #
   ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
   if (fast == TRUE) {
@@ -58,7 +58,11 @@ PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strate
   dates_table <- DatesTable(data = data, states = states)    
   ## расчёт drawdown'ов
   cat('INFO(PerfomanceTable):  Calc DrawdownsTable', '\n')
-  drawdowns_table <- DrawdownsTable(data_balance = data$balance + data$im.balance)
+  drawdowns_table <- DrawdownsTable(data_balance = data$balance + data$im.balance, dd_data_output = dd_data_output)
+  if (dd_data_output == TRUE) {
+    drawdowns_data_output.list <- drawdowns_table$dd.list 
+    drawdowns_table <- drawdowns_table$drawdown_table
+  }
   ## profit метрики
   cat('INFO(PerfomanceTable):  Calc ProfitTable', '\n')
   profit_table <- ProfitTable(data = data, trades_table = trades_table, #DrawdownsTable = drawdowns_table,
@@ -86,6 +90,9 @@ PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strate
  #
   cat('INFO(PerfomanceTable):  Calc PerfomanceMetrics ... OK', '\n')
   #
+  if (dd_data_output == TRUE) {
+    return(list(perfomance_table = perfomance_table, dd.list = drawdowns_data_output.list))
+  }
   return(perfomance_table)
 }
 

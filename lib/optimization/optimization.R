@@ -73,6 +73,7 @@ OneThreadRun <- function(data.xts, FUN,
                          rolling_opt = FALSE, var_names = NULL,
                          balance_start, slips, commissions,
                          expiration, ticker, return_type = 'ret',
+                         dd_data_output = FALSE,
                          ...) {
   #
   FUN <- match.fun(FUN) 
@@ -80,7 +81,9 @@ OneThreadRun <- function(data.xts, FUN,
   ## отработка робота
   data_strategy.list <- FUN(data_source = data.xts, 
                             balance_start = balance_start, slips = slips, commiss = commissions,
-                            exp.vector = expiration, ticker, return_type = return_type, ...)
+                            exp.vector = expiration, ticker, return_type = return_type, 
+                            dd_data_output = FALSE,
+                            ...)
   
   ## Анализ perfomanc'ов
   # для стратегий, у которых нет сделок
@@ -108,7 +111,12 @@ OneThreadRun <- function(data.xts, FUN,
                                           states = data_strategy.list[[2]],
                                           trades_table = trades_table.list,
                                           balance_start = balance_start, 
-                                          ret_type = return_type)
+                                          ret_type = return_type,
+                                          dd_data_output = dd_data_output)
+      if (dd_data_output == TRUE) {
+        dd_data_output.list <- perfomance_table$dd.list
+        perfomance_table <- perfomance_table$perfomance_table
+      }
     }
   }
   # добавление использованных параметров
@@ -121,5 +129,8 @@ OneThreadRun <- function(data.xts, FUN,
     }
   }
   #
+  if (dd_data_output == TRUE) {
+    return(list(perfomance_table = perfomance_table, dd.list = dd_data_output.list))
+  }
   return(perfomance_table)
 }
