@@ -2,13 +2,6 @@
 # Функции для расчёта perfomance-метрик 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-### Загрузка дочерних библиотек
-source('lib/evaluation/evaluation_dates.R')
-source('lib/evaluation/evaluation_trades.R')
-source('lib/evaluation/evaluation_drawdown.R')
-source('lib/evaluation/evaluation_profit.R')
-source('lib/evaluation/evaluation_ratio.R')
-#
 ###
 #' Расчет perfomance-метрик (полный набор)
 #'

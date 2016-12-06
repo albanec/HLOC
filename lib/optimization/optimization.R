@@ -1,8 +1,6 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Функции для оптимизации стратегий:
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-source('lib/optimization/optimization-cluster.R')
-source('lib/optimization/optimization-multicore.R')
 #
 ###
 #' Функция BF оптимизации параметров стратегии 

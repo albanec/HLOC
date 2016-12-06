@@ -2,13 +2,6 @@
 # Общеупотребительные функции
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-### Загрузка дочерних библиотек
-source('lib/generic/generic_mining.R')
-source('lib/generic/generic_getdata.R')
-source('lib/generic/generic_data.R')
-source('lib/generic/generic_quotes.R')
-source('lib/generic/generic_parallel.R')
-#
 ###
 #' Функция загружает, устанавливает и подключает необходимые пакеты 
 #' 
