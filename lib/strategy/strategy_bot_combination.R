@@ -7,7 +7,7 @@
 #' Рачёт "сырых" торговых данных по пачке ботов
 #' 
 #' @param ohlc.xts
-#' @param bots.list Лист с набором ботов (каждый лист - данные по конкретному боту) 
+#' @param bot.list Лист с набором ботов (каждый лист содержит df по конкретному боту) 
 #' каждый элемент листа - один бот с названием == тип бота, 
 #' внутри - data.frame с параметрами и числом строк == числу ботов данного типа в корзине
 #' @param balance_start
@@ -18,7 +18,7 @@
 #' @param ticker
 #'
 #' @export
-BotCombination.raw_data <- function(ohlc.xts, bots.list,
+BotCombination.raw_data <- function(ohlc.xts, bot.list,
                                     balance_start, slips, 
                                     commissions, return_type, expiration, ticker) {
   require(doParallel)
@@ -31,13 +31,13 @@ BotCombination.raw_data <- function(ohlc.xts, bots.list,
   registerDoParallel(cores = workers)
   
   # типы ботов, участвующие в торговле
-  bots_names <- 
-    foreach(i = 1:length(bots.list), .combine = c) %do% {
-          bots.list[[i]]$name
+  bot_names <- 
+    foreach(i = 1:length(bot.list), .combine = c) %do% {
+      bot.list[[i]]$name
     } %>%
     unique(.)
   # всего ботов
-  n_bots <- length(bots.list)
+  n_bots <- length(bot.list)
   # проверка наличия и подгрузка gear-функций для нужных ботов
   env_list <- ls(name = .ParentEnv)
   strGearFUN_names <- 
@@ -46,8 +46,8 @@ BotCombination.raw_data <- function(ohlc.xts, bots.list,
       env_list[.] %>%
       .[-grep(pattern = '.', x = ., fixed = TRUE)]
     }
-  for (i in 1:length(bots_names)) {
-    FUN_name <- paste0('StrGear_', bots_names[i])
+  for (i in 1:length(bot_names)) {
+    FUN_name <- paste0('StrGear_', bot_names[i])
     if (any(strGearFUN_names %in% FUN_name == TRUE)) {
       FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
       assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
@@ -66,7 +66,7 @@ BotCombination.raw_data <- function(ohlc.xts, bots.list,
         return(NA)
       } 
       # вычисления
-      map_data <- bots.list[map_range]  
+      map_data <- bot.list[map_range]  
       # расчёт ботов
       result <- 
         foreach(i = 1:length(map_data)) %do% {

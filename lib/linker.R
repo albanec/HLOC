@@ -14,10 +14,12 @@ source('lib/generic/generic.R')
 source('lib/strategy/strategy_indicators.R')
 source('lib/strategy/strategy_mm.R')
 source('lib/strategy/strategy.R')
+source('lib/strategy/strategy_bot_combination.R')
+
 
 ### OPT
-source('lib/optimization/optimization-cluster.R')
-source('lib/optimization/optimization-multicore.R')
+source('lib/optimization/optimization_cluster.R')
+source('lib/optimization/optimization_multicore.R')
 source('lib/optimization/optimization.R')
 
 ### CLU
