@@ -2,7 +2,7 @@
 # описания стратегий и вспомагательных функций
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-###
+# ------------------------------------------------------------------------------
 #' Переход к состояниям (фильтрация сигналов)
 #' 
 #' @param x Ряд сигналов стратегии
@@ -21,48 +21,7 @@ Convert.signal_to_states <- function(x) {
   #
   return(x$y)
 }
-#
-###
-#' Вычисляет пересечения графиков рядов
-#'
-#' Вычисляются пересечения x1 'снизу-вверх' x2 (точки пробития вверх x2)
-#' 
-#' @param x1 xts1
-#' @param x2 xts2
-#'
-#' @return x Ряд пересечений
-#'
-#' @export
-CrossLine <- function(x1, x2, eq = FALSE) {
-  if (eq == TRUE) {
-    x <- diff(x1 >= x2)
-  } else {
-    x <- diff(x1 > x2)
-  }
-  x[1] <- 0
-  x[x < 0] <- 0
-  x <- sign(x)
-  #
-  return(x)
-}
-#
-#' Надстройка нал CrossLine для удобства
-#' @export
-CrossLine.up <- function(x1, x2, eq = FALSE) {
-  result <- CrossLine(x1, x2, eq)
-  #
-  return(result)
-}
-#
-#' Надстройка нал CrossLine для удобства
-#' @export
-CrossLine.down <- function(x1, x2, eq = FALSE) {
-  result <- CrossLine(x2, x1, eq)
-  #
-  return(result)
-}
-#
-###
+# ------------------------------------------------------------------------------
 #' Функция для перехода к состояниям (фильтрация сигналов)
 #' 
 #' @param data Ряд позиций (data$pos)
@@ -85,7 +44,6 @@ CalcStates.inData <- function(x) {
   #
   return(state)
 }
-#
 ###
 #' Генерирует таблицу сделок
 #' 
@@ -104,7 +62,6 @@ CalcStates.table <- function(x) {
   #
   return(result)
 }
-#
 ###
 #' Функция вычисляет return'ы по всему портфелю внутри XTS
 #' 
@@ -191,7 +148,7 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
   return(data)
 }
 #
-###
+# ------------------------------------------------------------------------------
 #' Функция расчета профита
 #'
 #' Устаревшая функция 
@@ -215,7 +172,9 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
   return(profit)
 }
 #
-###
+# ------------------------------------------------------------------------------
+# Функции нормирования исходных данных
+#
 #' Функция для расчёта стоимости тиков внутри основного листа данных 
 #' 
 #' @param data XTS данные котировок (основной лист данных)
@@ -242,30 +201,6 @@ NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, t
   #
   return(data)  
 }
-#
-###
-#' Расчёт суммарного параметра (согласно весам инструмента в портфеле)
-#' 
-#' @param data xts с данными корзины
-#' @param basket_weights Веса инструментов внутри корзины
-#' @param target Ключ поиска нужных столбцов
-#'
-#' @return data Суммированные данные (столбец)
-#'
-#' @export
-CalcSum_inXTS_byTargetCol.basket <- function(data, basket_weights, target) {
-  #require()
-  # 
-  temp.text <- 
-    names(data)[grep(target, names(data))] %>% 
-    paste0('data$', .) %>%
-    paste(., basket_weights, sep = ' * ', collapse = ' + ') %>%
-    paste0('data <- ', .) 
-  eval(parse(text = temp.text))
-  #
-  return(data)
-}
-#
 ###
 #' Функция для расчёта стоимости тиков
 #' 
@@ -288,8 +223,30 @@ NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
   #
   return(data)
 }
+# ------------------------------------------------------------------------------
+#' Расчёт суммарного параметра (согласно весам инструмента в портфеле)
+#' 
+#' @param data xts с данными корзины
+#' @param basket_weights Веса инструментов внутри корзины
+#' @param target Ключ поиска нужных столбцов
+#'
+#' @return data Суммированные данные (столбец)
+#'
+#' @export
+CalcSum_inXTS_byTargetCol.basket <- function(data, basket_weights, target) {
+  #require()
+  # 
+  temp.text <- 
+    names(data)[grep(target, names(data))] %>% 
+    paste0('data$', .) %>%
+    paste(., basket_weights, sep = ' * ', collapse = ' + ') %>%
+    paste0('data <- ', .) 
+  eval(parse(text = temp.text))
+  #
+  return(data)
+}
 #
-###
+# ------------------------------------------------------------------------------
 #' Функция расщепления переворотных сделок
 #' 
 #' @param data Полные данные отработки робота
@@ -333,7 +290,7 @@ SplitSwitchPosition <- function(data) {
   return(data)
 }
 #
-###
+# ------------------------------------------------------------------------------
 #' Функция подсчёта числа баров в позициях
 #' 
 #' @param x Ряд позиций
@@ -589,30 +546,8 @@ CleanSignal.gap <- function(signals) {
   #
   return(result.list)
 }
-
-# CleanSignal.gap_close <- function(pos, gap, stc, btc, na = FALSE) {
-#   cache <- gap
-#   temp.ind <- which(gap!=0 | stats::lag(gap!=0))
-#   pos <- pos[temp.ind, ]
-#   gap <- gap[temp.ind, ]
-#   stc <- stc[temp.ind, ]
-#   btc <- btc[temp.ind, ]
-
-#   gap <- ifelse(pos != 0,
-#                 ifelse(pos == stats::lag(stc) | pos == stats::lag(btc),
-#                        1,
-#                        0),
-#                 0)
-#   cache$result <- gap
-#   if (na == FALSE) {
-#     cache$result[is.na(cache$result)] <- 0
-#   }
-#   #
-#   return(cache$result)
-# }
-#
-###
-#' Функция фильтрации канальных индикаторах на утренних gap'ах
+# ------------------------------------------------------------------------------
+#' Функция вычисления цены инструмента с учётом проскальзывания (на action-точках)
 #' 
 #' @param price Данные цен на сделках
 #' @param action Данные action
@@ -640,8 +575,7 @@ CalcPrice.slips <- function(price, action, data_source, slips) {
     #
     return(price)
 }
-#
-###
+# ------------------------------------------------------------------------------
 #' Очистка таблицы состояний от пустых сделок
 #'
 #' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
@@ -664,7 +598,7 @@ StatesTable.clean <- function(data) {
   return(data)
 } 
 #
-###
+# ------------------------------------------------------------------------------
 #' Функция для расчёта позиций
 #'
 #' @param data_source XTS с исходными котировками
@@ -736,7 +670,69 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
   #
   return (data)
 }
+# ------------------------------------------------------------------------------
+# Функции для расчета данных по сделкам
 #
+#' Функция расчёта сделок 
+#' 
+#' @param data Данные states
+#' @param FUN Функция обсчёта одной сделки
+#' @param commiss Коммиссия
+#' @param ohlc_data Исходные данные котировок
+#' @param balance_start Стартовый баланс
+#' @param ... Параметры, специфичные для стратегии
+#'
+#' @return result DF с данными по сделкам
+#'
+#' @export
+CalcTrades_inStates <- function(data, FUN, 
+                                commiss, ohlc_data, balance_start,
+                                target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
+                                              'margin', 'perfReturn', 'equity'),
+                                ...) {
+  FUN <- match.fun(FUN)
+  temp.env <- new.env()
+  ind <- 1:nrow(data)
+  temp.cache <- 
+    data[, target_col] %>% 
+    as.data.frame(., row.names=NULL)
+  assign('cache', temp.cache, envir = temp.env)
+  rm(temp.cache)
+  sapply(ind,
+         function(x) {
+           cache <- get('cache', envir = temp.env)
+           #data[x, ] <- FUN(data, x, ...) 
+           temp.ind <- index(data[x, ])
+           cache <- FUN(cache = cache, row_ind = x,
+                        pos = data$pos[x], pos_bars = data$pos.bars[x], 
+                        IM = ohlc_data$IM[temp.ind], cret = data$cret[x],
+                        balance_start = balance_start, commiss = commiss,
+                        ...)
+           #
+           assign('cache', cache, envir = temp.env) 
+         })
+  result <- get('cache', envir = temp.env)
+  rm(temp.env)
+  #
+  return(result)
+}
+#
+#' Функция расчёта данных одной сделки 
+#' 
+#' @param cahce Данные кэша
+#' @param row_ind Номер анализируемой строки
+#' @param pos Позиция
+#' @param pos_bars Число баров в позиции
+#' @param MM.FUN Функция MM
+#' @param IM ГО
+#' @param cret Return (в деньгах)
+#' @param balance_start Стартовый баланс
+#' @param commiss Коммиссия
+#' @param ... Параметры, специфичные MM стратегии
+#'
+#' @return data DF с данными по сделкам
+#'
+#' @export
 CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars, 
                                           MM.FUN,  IM, cret, balance_start, commiss, 
                                           ...) {
@@ -769,3 +765,104 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
   #
   return(cache)
 }
+# ------------------------------------------------------------------------------
+## Функции-handler'ы сделок
+#
+#' Функция-обработчик сделок 
+#' 
+#' @param data Посвечные данные отработки робота 
+#' @param states Данные состояний
+#' @param ohlc_source Котировки
+#' @param commiss Коммиссия
+#' @param balance_start Стартовый баланс
+#' @param FUN.CalcTrades Функция расчета сделок
+#' @param ... Параметры, специфичные MM стратегии
+#'
+#' @return Лист с данными стратегии (data + states)
+#'
+#' @export
+Trades_handler <- function(data, states, ohlc_source,
+                           commiss, balance_start,
+                           FUN.CalcTrades,
+                           ...) {
+  #
+  FUN.CalcTrades <- match.fun(FUN.CalcTrades)
+  # 2.1.4 Начальные параметры для расчёта сделок
+  # начальный баланс
+  states$balance <- NA
+  # начальное число синтетических контрактов корзины
+  states$n <- NA
+  #states$n <- 0 
+  # прочее
+  states$diff.n <- NA
+  states$diff.n[1] <- 0
+  states$margin <- NA
+  states$commiss <- NA
+  states$equity <- NA
+  states$balance <- NA
+  states$im.balance <- NA
+  states$im.balance[1] <- 0
+  states$balance[1] <- balance_start
+
+  ## 2.2 Расчёт самих сделок
+  #
+  temp.df <- FUN.CalcTrades(data = states, commiss = commiss, 
+                            data_source = ohlc_source, 
+                            balance_start = balance_start,
+                            ...)
+  # Изменение контрактов на такте
+  states$n <- temp.df$n
+  states$diff.n <- temp.df$diff.n
+  # Расчёт баланса, заблокированного на ГО
+  states$im.balance <- temp.df$im.balance
+  # Расчёт комиссии на такте
+  states$commiss <- temp.df$commiss
+  # Расчёт вариационки
+  states$margin <- temp.df$margin
+  # расчёт equity по корзине в states
+  states$perfReturn <- temp.df$perfReturn
+  states$equity <- temp.df$equity
+  # Расчёт баланса  
+  states$balance <- temp.df$balance
+  #
+  rm(temp.df)
+  #
+  ## Перенос данных из state в full таблицу
+  # перенос данных по количеству контрактов корзины 
+  data$n <-  
+    merge(data, states$n) %>%
+    {
+      data <- .
+      data$n <- na.locf(data$n)
+      return(data$n)
+    }
+  # перенос данных по комиссии корзины
+  data$commiss <-    
+    merge(data, states$commiss) %>%
+    {
+      data <- .
+      data$commiss[is.na(data$commiss)] <- 0
+      return(data$commiss)
+    }
+  # перенос данных по суммарному ГО
+  data$im.balance <-  
+    merge(data, states$im.balance) %>%
+    {
+      data <- .
+      data$im.balance <- na.locf(data$im.balance)
+      return(data$im.balance)
+    }
+  ## Расчёт показателей в full данных
+  # расчёт вариационки в data
+  data$margin <- stats::lag(data$n) * data$cret
+  data$margin[1] <- 0      
+  # расчёт equity по корзине в data 
+  data$perfReturn <- data$margin - data$commiss
+  data$equity <- cumsum(data$perfReturn)
+  # расчёт баланса
+  data$balance <- balance_start + data$equity - data$im.balance
+  data$balance[1] <- balance_start 
+  #
+  return(list(data = data, states = states))
+}
+# ------------------------------------------------------------------------------
