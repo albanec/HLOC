@@ -676,21 +676,21 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
 #' Функция расчёта сделок 
 #' 
 #' @param data Данные states
-#' @param FUN Функция обсчёта одной сделки
+#' @param Calc_one_trade.FUN Функция обсчёта одной сделки
 #' @param commiss Коммиссия
-#' @param ohlc_data Исходные данные котировок
+#' @param data_source Исходные данные котировок
 #' @param balance_start Стартовый баланс
 #' @param ... Параметры, специфичные для стратегии
 #'
 #' @return result DF с данными по сделкам
 #'
 #' @export
-CalcTrades_inStates <- function(data, FUN, 
-                                commiss, ohlc_data, balance_start,
+CalcTrades_inStates <- function(data, Calc_one_trade.FUN, 
+                                commiss, data_source, balance_start,
                                 target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
                                               'margin', 'perfReturn', 'equity'),
                                 ...) {
-  FUN <- match.fun(FUN)
+  FUN <- match.fun(Calc_one_trade.FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
   temp.cache <- 
@@ -705,7 +705,7 @@ CalcTrades_inStates <- function(data, FUN,
            temp.ind <- index(data[x, ])
            cache <- FUN(cache = cache, row_ind = x,
                         pos = data$pos[x], pos_bars = data$pos.bars[x], 
-                        IM = ohlc_data$IM[temp.ind], cret = data$cret[x],
+                        IM = data_source$IM[temp.ind], cret = data$cret[x],
                         balance_start = balance_start, commiss = commiss,
                         ...)
            #
@@ -786,7 +786,8 @@ Trades_handler <- function(data, states, ohlc_source,
                            FUN.CalcTrades,
                            ...) {
   #
-  FUN.CalcTrades <- match.fun(FUN.CalcTrades)
+  cat(0, '\n')
+  FUN <- match.fun(FUN.CalcTrades)
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
   states$balance <- NA
@@ -805,11 +806,12 @@ Trades_handler <- function(data, states, ohlc_source,
   states$balance[1] <- balance_start
 
   ## 2.2 Расчёт самих сделок
-  #
-  temp.df <- FUN.CalcTrades(data = states, commiss = commiss, 
-                            data_source = ohlc_source, 
-                            balance_start = balance_start,
-                            ...)
+  cat(1, '\n')
+  temp.df <- FUN(data = states, commiss = commiss, 
+                 data_source = ohlc_source, 
+                 balance_start = balance_start,
+                 ...)
+  cat(length(temp.df), '\n')
   # Изменение контрактов на такте
   states$n <- temp.df$n
   states$diff.n <- temp.df$diff.n

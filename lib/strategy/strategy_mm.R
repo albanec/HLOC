@@ -7,7 +7,7 @@
 #' 
 #' @param balance Свободные средства на счёте
 #' @param risk Риск
-#' @param channelWidth Ширина канала / 2
+#' @param widthDCI Ширина канала / 2
 #' @param IM ГО на инструмент
 #' @param tick.price Цена тика 
 #'
@@ -15,11 +15,11 @@
 #'
 #' @export
 CalcMM.byDCIwidth <- function(balance, IM, ...) { 
-  #risk, channelWidth,  tick.price) {
+  #risk, widthDCI,  tick.price) {
   dots <- list(...)
   var1 <-
     {
-      coredata(balance) * dots$risk * dots$tick.price / coredata(dots$channelWidth)
+      coredata(balance) * dots$risk * dots$tick.price / coredata(dots$widthDCI)
     } %>%
     floor(.) %>%
     max(., 1)
