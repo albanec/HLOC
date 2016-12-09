@@ -786,7 +786,6 @@ Trades_handler <- function(data, states, ohlc_source,
                            FUN.CalcTrades,
                            ...) {
   #
-  cat(0, '\n')
   FUN <- match.fun(FUN.CalcTrades)
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
@@ -806,12 +805,10 @@ Trades_handler <- function(data, states, ohlc_source,
   states$balance[1] <- balance_start
 
   ## 2.2 Расчёт самих сделок
-  cat(1, '\n')
   temp.df <- FUN(data = states, commiss = commiss, 
                  data_source = ohlc_source, 
                  balance_start = balance_start,
                  ...)
-  cat(length(temp.df), '\n')
   # Изменение контрактов на такте
   states$n <- temp.df$n
   states$diff.n <- temp.df$diff.n
