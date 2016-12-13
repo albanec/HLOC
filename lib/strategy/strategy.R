@@ -790,6 +790,7 @@ Trades_handler <- function(data, states, ohlc_source,
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
   states$balance <- NA
+  states$balance[1] <- balance_start
   # начальное число синтетических контрактов корзины
   states$n <- NA
   #states$n <- 0 
@@ -799,10 +800,8 @@ Trades_handler <- function(data, states, ohlc_source,
   states$margin <- NA
   states$commiss <- NA
   states$equity <- NA
-  states$balance <- NA
   states$im.balance <- NA
   states$im.balance[1] <- 0
-  states$balance[1] <- balance_start
 
   ## 2.2 Расчёт самих сделок
   temp.df <- FUN(data = states, commiss = commiss, 
