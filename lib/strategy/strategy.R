@@ -743,7 +743,7 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
   cache$n[row_ind] <- ifelse(coredata(pos) == 0,
                              0, 
                              ifelse(coredata(pos_bars) == 0,
-                                    MM.FUN(balance = cache$balance[row_ind - 1],
+                                    MM.FUN(balance = cache$balance[row_ind - 1] * cache$weight,
                                            IM = IM, 
                                            ...),
                                     NA))
@@ -786,7 +786,7 @@ Trades_handler <- function(data, states, ohlc_source,
                            FUN.CalcTrades,
                            ...) {
   #
-  FUN <- match.fun(FUN.CalcTrades)
+  FUN.CalcTrades <- match.fun(FUN.CalcTrades)
   # 2.1.4 Начальные параметры для расчёта сделок
   # начальный баланс
   states$balance <- NA
@@ -802,12 +802,13 @@ Trades_handler <- function(data, states, ohlc_source,
   states$equity <- NA
   states$im.balance <- NA
   states$im.balance[1] <- 0
-
+  # т.к. обработчик не пакетный, вес бота всегда = 1
+  states$weight <- 1
   ## 2.2 Расчёт самих сделок
-  temp.df <- FUN(data = states, commiss = commiss, 
-                 data_source = ohlc_source, 
-                 balance_start = balance_start,
-                 ...)
+  temp.df <- FUN.CalcTrades(data = states, commiss = commiss, 
+                            data_source = ohlc_source, 
+                            balance_start = balance_start,
+                            ...)
   # Изменение контрактов на такте
   states$n <- temp.df$n
   states$diff.n <- temp.df$diff.n

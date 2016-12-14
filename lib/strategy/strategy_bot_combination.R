@@ -76,7 +76,6 @@ BotCombination.raw_data <- function(ohlc.xts, bot.list,
           }
           # имя бота      
           bot_name <- x$name
-          
           # подготовка eval-строки
           x <- x[, grep('_', names(x))]
           var_names <- names(x)
@@ -100,6 +99,7 @@ BotCombination.raw_data <- function(ohlc.xts, bot.list,
           # запуск gear-функции
           FUN_name <- paste0('StrGear_', bot_name) 
           one_bot_tradesTables <- do.call(FUN_name, var.list, envir = .CurrentEnv)  
+          comment(one_bot_tradesTables) <- bot_name
           return(one_bot_tradesTables)
         }
       return(result)
