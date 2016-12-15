@@ -144,7 +144,10 @@ RollerOpt_learning_cl <- function(data_slices,
 #' Функция BF оптимизации движка стратегии (на SOCK-кластерах)
 #' 
 #' @param var.df DF с данными для перебора
-#' @param data.xts XTS с котировками
+#' @param ohlc_source XTS с полными котировками
+#' @param from_date Начало торговли
+#' @param to_date Конец торговли
+#' @param lookback Обучающее окно (перед началом торговли)
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param linker_file Путь к linker файлу
 #' @param balance_start Стартовый баланс
@@ -162,16 +165,17 @@ RollerOpt_learning_cl <- function(data_slices,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_cl <- function(var.df, data.xts,
-                                         FUN, 
-                                         linker_file = 'bots/test/linker.R',
-                                         balance_start, slips, commissions,
-                                         expiration, ticker, return_type = 'ret',
-                                         export_varlist = NULL, 
-                                         export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
-                                                         'PerformanceAnalytics', 'lubridate'),
-                                         rolling_opt = FALSE, 
-                                         eval_string) {
+BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
+                                      from_date, to_date, lookback = FALSE,
+                                      FUN, 
+                                      linker_file = 'bots/test/linker.R',
+                                      balance_start, slips, commissions,
+                                      expiration, ticker, return_type = 'ret',
+                                      export_varlist = NULL, 
+                                      export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                                      'PerformanceAnalytics', 'lubridate'),
+                                      rolling_opt = FALSE, 
+                                      eval_string) {
   #
   .CurrentEnv <- environment()
   #
@@ -184,7 +188,8 @@ BruteForceOpt_parallel_cl <- function(var.df, data.xts,
     makeCluster(.)#, type = 'PSOCK')
   ## Подгрузка данных в кластер
   clusterExport(parallel_cluster, envir = .CurrentEnv, 
-                varlist = c('data.xts', 'FUN', 'linker_file', 
+                varlist = c('ohlc_source', 'from_date', 'to_date', 'lookback',
+                            'FUN', 'linker_file', 
                             'balance_start', 'slips', 'commissions', 'expiration', 
                             'ticker', 'return_type', 'rolling_opt', 
                             'export_varlist', 'export_libs', 'eval_string'))
@@ -208,7 +213,8 @@ BruteForceOpt_parallel_cl <- function(var.df, data.xts,
                 #FUN(x, ...)
                 FUN <- match.fun(FUN)
                 temp_text <- paste0(
-                  'df <- FUN(data.xts = data.xts,
+                  'df <- FUN(data.xts = ohlc_source,
+                             from_date, to_date, lookback,
                              rolling_opt = rolling_opt, 
                              balance_start = balance_start, slips = slips, commissions = commissions,
                              expiration = expiration, ticker = ticker, return_type = return_type, ', 

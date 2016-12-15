@@ -6,7 +6,10 @@
 #' Функция BF оптимизации параметров стратегии 
 #' 
 #' @param x DF с данными для перебора
-#' @param data.xts XTS с котировками
+#' @param ohlc_source XTS с полными котировками
+#' @param from_date Начало торговли
+#' @param to_date Конец торговли
+#' @param lookback Обучающее окно (перед началом торговли)
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param rolling_opt Упрощенный/полный perfomance анализ
 #' @param balance_start Стартовый баланс
@@ -20,7 +23,8 @@
 #' @return df DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt <- function(x, data.xts, 
+BruteForceOpt <- function(x, ohlc_source, 
+                          from_date, to_date, lookback = FALSE,
                           FUN, 
                           rolling_opt = FALSE,
                           balance_start, slips, commissions,
@@ -32,7 +36,8 @@ BruteForceOpt <- function(x, data.xts,
   temp_text <- paste0(
     'df <-  
       foreach(i = 1:nrow(x)) %do% {
-        FUN(data.xts = data.xts,
+        FUN(ohlc_source = ohlc_source,
+            from_date, to_date, lookback,
             rolling_opt = rolling_opt, 
             balance_start = balance_start, slips = slips, commissions = commissions,
             expiration = expiration, ticker = ticker, return_type = return_type, ',
@@ -51,7 +56,7 @@ BruteForceOpt <- function(x, data.xts,
 }
 #
 ###
-#' Функция одного прогона вычислений движка стратегии
+#' Функция одного прогона вычислений движка стратегии (на готовых данных)
 #' 
 #' @param data.xts XTS с котировками
 #' @param FUN Функция движка стратегии

@@ -92,7 +92,10 @@ RollerOpt_learning_mc <- function(data_slices,
 #' Функция BF оптимизации движка стратегии (multicore)
 #' 
 #' @param var.df DF с данными для перебора
-#' @param data.xts XTS с котировками
+#' @param ohlc_source XTS с полными котировками
+#' @param from_date Начало торговли
+#' @param to_date Конец торговли
+#' @param lookback Обучающее окно (перед началом торговли)
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param linker_file Путь к linker файлу
 #' @param balance_start Стартовый баланс
@@ -108,7 +111,8 @@ RollerOpt_learning_mc <- function(data_slices,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_mc <- function(var.df, data.xts,
+BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
+                                      from_date, to_date, lookback = FALSE,
                                       FUN, 
                                       linker_file = 'bots/test/linker.R',
                                       balance_start, slips, commissions,
@@ -131,7 +135,8 @@ BruteForceOpt_parallel_mc <- function(var.df, data.xts,
       FUN <- match.fun(FUN)
       map_range <- Delegate_mcore(i, n_vars, p = workers)
       x <- var.df[map_range, ]
-      df <- BruteForceOpt(x = x, data.xts = data.xts, 
+      df <- BruteForceOpt(x = x, ohlc_source = ohlc_source, 
+                          from_date, to_date, lookback,
                           FUN = FUN, 
                           rolling_opt = rolling_opt,
                           balance_start = balance_start, slips = slips, commissions = commissions,
