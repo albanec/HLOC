@@ -194,45 +194,39 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @param start_date Стартавая дата (гг-мм-дд) анализа
 #' @param end_date Конечная дата анализа
 #' @param period Период окна скольжения ('seconds', 'mins', 'hours', 'days', 'weeks', 'months', 'quarters', 'years')
-#' если == NULL - посвечный период
+#'               (если == NULL - посвечный период)
 #' @param width Глубина окна скольжения  
 #' @param by Шаг окна скольжения 
 #' @param align 'Выравнивание' индекса результата, ставить = right (на данный момент не используется)
 #' @param add_bySlice Нужно ли добавить в выходные данные нарезку с by-периодами 
-#' @param lookback 'Заглядывание' за дату начала анализа (на данный момент не используется)
+#' @param justIndex Если нужны только индексы интервалов (а не сами данные)
 #'
-#' @return result.list Лист с данными, разложенными по индексам окон
+#' @return result.list Лист с данными, разложенными по индексам окон (либо с индексами)
 #'
 #' @export 
 RollingSlicer <- function(data, start_date, end_date, period = NULL, 
                           width, by = NULL, align = c('left', 'right'),
-                          add_bySlice = FALSE, lookback = FALSE) {
-  ## подготовка
+                          add_bySlice = FALSE, justIndex = FALSE) {
+  ### подготовка
   n_rows <- nrow(data)
   n_cols <- ncol(data)
   freq <- periodicity(data) 
   # проверка на правильность условий
   stopifnot(width > 0, width <= n_rows)
-  #
-  #FUN <- match.fun(FUN)
-  #
   # индкесы исходных данных
   data_ind <- index(data)
-  # интервал анализа
+  # интервал анализа 
   interval <- paste0(start_date,'::',end_date)
-  #
   if (is.null(by)) {
     by <- width
   }
-  ## определения сдвига (зависит от направления окна)
+  ### определения сдвига (зависит от направления окна)
   offset <- 
     match.arg(align) %>%
     switch(.,    
            'left' = { width - 1 },
-           'right' = { 0 }
-          )
-  # 
-  ## если период == NULL, то окна считаются по периодам свечей 
+           'right' = { 0 })
+  # если период == NULL, то окна считаются по периодам свечей 
   if (is.null(period) == TRUE || (period == freq$units)  == TRUE) {
     # выделение старт/стоп номеров строк
     row_nums <- 
@@ -247,49 +241,46 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
       {
         which(data_ind %in% .)
       }
-    remove(data_ind)
-    ## подготовка данных для анализа
-    # ряд расширяется, если lookback == TRUE  
-    if (lookback == TRUE) {
-      temp_subset <- 
-        (xts::first(row_nums) - width + 1):xts::last(row_nums) %>%
-        data[., ]   
-    } else {
-      temp_subset <- data[row_nums, ]
-    }
-    # индекс для выходных данных (пока не используется)
-    result_ind <- 
-      nrow(temp_subset) %>%
-      {
-        seq((width - offset), (. - offset), by = by) 
-      } %>%
-      {
-        index(temp_subset)[.]
-      }
-    # индексы окон
-    ind <- 
+    rm(data_ind)
+    # подготовка данных для анализа
+    temp_subset <- data[row_nums, ]
+    # 
+    # полный набор индексов для выходных данных (пока не используется)
+    # result_ind <- 
+    #   nrow(temp_subset) %>%
+    #   {
+    #     seq((width - offset), (. - offset), by = by) 
+    #   } %>%
+    #   {
+    #     index(temp_subset)[.]
+    #   }
+    #
+    # индексы строк начала окон
+    start_row_num <- 
       nrow(temp_subset) %>%
       seq.int(width, ., by)
-    
-    result.list <- lapply(ind, 
-                     function(x) {
-                       .subset_xts(temp_subset, (x - width + 1):x)
-                     })
-    
+    result.list <- lapply(start_row_num, 
+                          function(x) {
+                            if (justIndex == TRUE) {
+                              rbind.data.frame(data.frame(Index = index(temp_subset[(x - width + 1), ])), 
+                                               data.frame(Index = index(temp_subset[x, ])))                          
+                            } else {
+                              .subset_xts(temp_subset, (x - width + 1):x)
+                            }
+                          })
     if (add_bySlice == TRUE) {
       temp_subset <- 
         nrow(temp_subset) %>%
         (width + 1):. %>%
         temp_subset[., ]
-      
-      bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period = NULL, 
-                                               width = by, by = NULL, align,
-                                               add_bySlice = FALSE, lookback = FALSE)
-      
-      result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+      result.list <- 
+        RollingSlicer(data = temp_subset, start_date, end_date, period = NULL, 
+                      width = by, by = NULL, align,
+                      add_bySlice = FALSE, justIndex = justIndex) %>%
+        list(widthSlice = result.list, bySlice = .)
     } 
   } else {
-    ## если period != NULL, то окна считаются по указанным периодам
+    ## если period != NULL, то окна считаются по указанным в параметрах периодам
     #
     # offset <- 
     #   match.arg(period) %>%
@@ -307,78 +298,68 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
     row_nums <- 
       data[interval] %>%
       index(.) %>%
-      {
-        which(data_ind %in% .)
+      { 
+        which(data_ind %in% .) 
       }
-    remove(data_ind)
+    rm(data_ind)
     ## выделение нужного для анализа интервала
     #
-    # if (lookback == TRUE) {
-    #   temp_subset <- 
-    #     xts::first(row_nums) %>%
-    #     data[., ] %>%
-    #     {
-    #       index(.)  - offset(x = width)
-    #     } %>%
-    #     # проверить!!!
-    #     paste0(.,'::',end_date) %>%
-    #     data[.]
-    # } elxe {
+    temp_subset <- data[interval] 
+    # простановка enpoint'ов 
+    ends_ <- 
+      endpoints(x = temp_subset, on = period, k = 1) %>%
+      # модификация (перенос endpoint'ов на начало периода)
+      {
+        x <- .
+        x <- 
+          x[-length(x)] %>%
+          {
+            . + 1 
+          }
+        return(x)
+      } %>% 
+      {
+        temp_subset$endpoint <- NA
+        temp_subset$endpoint[.] <- 1
+        temp_subset$endpoint[.] <- cumsum(temp_subset$endpoint[.])
+        return(temp_subset$endpoint)
+      } %>%
+    na.locf(.) 
+    # 
+    # result_ind <- 
+    #   unique(coredata(ends_)) %>%
+    #   max(.) %>%
+    #   {
+    #     seq((width - offset), (. - offset), by = by) 
+    #   } %>%
+    #   {
+    #     index(temp_subset)[.]
+    #   }
     #
-      temp_subset <- data[interval] 
-      # простановка enpoint'ов 
-      ends_ <- 
-        endpoints(x = temp_subset, on = period, k = 1) %>%
-        # модификация (перенос endpoint'ов на начало периода)
-        {
-          x <- .
-          x <- 
-            x[-length(x)] %>%
-            {
-              . + 1 
-            }
-          return(x)
-        } %>% 
-        {
-          temp_subset$endpoint <- NA
-          temp_subset$endpoint[.] <- 1
-          temp_subset$endpoint[.] <- cumsum(temp_subset$endpoint[.])
-          return(temp_subset$endpoint)
-        } %>%
-        na.locf(.) 
-      # 
-      result_ind <- 
-        unique(coredata(ends_)) %>%
-        max(.) %>%
-        {
-          seq((width - offset), (. - offset), by = by) 
-        } %>%
-        {
-          index(temp_subset)[.]
-        }
-      # индексы окон
-      ind <- 
-        unique(coredata(ends_)) %>%
-        max(.) %>%
-        {
-          seq.int(width, ., by)
-        }
-      
-      result.list <- lapply(ind, 
-                       function(x) {
-                         win_start <- 
-                           {
-                             x - width + 1
-                           } %>%
-                           {
-                             xts::first(which(ends_ == .))
-                           } 
-                         win_end <- xts::last(which(ends_ == x))
-                         #
-                         result <- .subset_xts(temp_subset, win_start:win_end)
-                         return(result)
-                       })
-    #}  
+    #  индексы строк начала окон
+    start_row_num <- 
+      unique(coredata(ends_)) %>%
+      max(.) %>%
+      {
+        seq.int(width, ., by)
+      }
+    result.list <- lapply(start_row_num, 
+                          function(x) {
+                            win_start <- 
+                              { 
+                                x - width + 1
+                              } %>%
+                              {
+                                xts::first(which(ends_ == .))
+                              } 
+                            win_end <- xts::last(which(ends_ == x))
+                            if (justIndex == TRUE) {
+                              rbind.data.frame(data.frame(Index = index(temp_subset[win_start, ])), 
+                                               data.frame(Index = index(temp_subset[win_end, ])))  
+                            } else {
+                              .subset_xts(temp_subset, win_start:win_end)
+                            }
+                          })  
     if (add_bySlice == TRUE) {
       temp_subset <- 
         {
@@ -390,18 +371,28 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         } %>%
         temp_subset[.] %>%
         .[-1, ]
-      
-      bySlice.list <- RollingSlicer(data = temp_subset, start_date, end_date, period, 
-                                    width = by, by = NULL, align,
-                                    add_bySlice = FALSE, lookback = FALSE)
-      
-      result.list <- list(widthSlice = result.list, bySlice = bySlice.list)
+      result.list <- 
+        RollingSlicer(data = temp_subset, start_date, end_date, period, 
+                      width = by, by = NULL, align,
+                      add_bySlice = FALSE, justIndex = justIndex) %>%
+        list(widthSlice = result.list, bySlice = .)
+      rm(temp_subset)
     }
   } 
   #
   return(result.list)
 }
 #
+#' Функция простановки endpoint'ов
+#'
+#' @param x 
+#' @param on 
+#' @param k 
+#' @param finfFirst 
+#'
+#' @return end XTS с данными endpoint'ов
+#'
+#' @export
 CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
    ends <- endpoints(x, on, k) 
    if (findFirst == TRUE) {
