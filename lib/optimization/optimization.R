@@ -42,7 +42,8 @@ BruteForceOpt <- function(x, ohlc_source,
             balance_start = balance_start, slips = slips, commissions = commissions,
             expiration = expiration, ticker = ticker, return_type = return_type, ',
             eval_string,')
-      }')
+      }'
+  )
   eval(parse(text = temp_text))
   rm(temp_text)
   df %<>%
@@ -126,7 +127,8 @@ OneThreadRun <- function(data.xts, FUN,
     for (i in 1:length(var_names)) {
       dots <- list(...)
       temp_text <- paste0(
-        'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')')
+        'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')'
+      )
       eval(parse(text = temp_text))
     }
   }

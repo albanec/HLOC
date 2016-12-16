@@ -6,7 +6,10 @@
 ###
 #' Рачёт "сырых" торговых данных по пачке ботов
 #' 
-#' @param ohlc.xts
+#' @param ohlc_source XTS с полными котировками
+#' @param from_date Начало торговли
+#' @param to_date Конец торговли
+#' @param lookback Обучающее окно (перед началом торговли)
 #' @param bot.list Лист с набором ботов (каждый лист содержит df по конкретному боту) 
 #' каждый элемент листа - один бот с названием == тип бота, 
 #' внутри - data.frame с параметрами и числом строк == числу ботов данного типа в корзине
@@ -18,7 +21,9 @@
 #' @param ticker
 #'
 #' @export
-BotCombination.raw_data <- function(ohlc.xts, bot.list,
+BotCombination.raw_data <- function(ohlc_source,
+                                    from_date, to_date, lookback = FALSE,
+                                    bot.list,
                                     balance_start, slips, 
                                     commissions, return_type, expiration, ticker) {
   require(doParallel)
@@ -84,16 +89,28 @@ BotCombination.raw_data <- function(ohlc.xts, bot.list,
               paste0(var_names[i],'=',x[1, i])
             } %>%
             paste(., collapse = ",")
+          # выделение нужных котировок
+          if (lookback == TRUE) {
+            temp_text <- paste0('lookback <- max(',eval_str,')')
+            eval(parse(text = temp_text))
+            rm(temp_text)
+            ohlc_source <- Subset_TradeOHLC(ohlc_source = ohlc_source, 
+                                            from_date, to_date, 
+                                            lookback = lookback)
+          } else {
+            ohlc_source <- Subset_TradeOHLC(ohlc_source = ohlc_source, from_date, to_date, lookback = NULL)
+          }
           # лист с параметрами бота (типичные параметры gear-функиций + специфичные переменные)
           temp_text <- paste0(
-            'var.list <- list(data_source = ohlc.xts,
+            'var.list <- list(data_source = ohlc_source,
                               balance_start = balance_start, 
                               slips = slips, commiss = commissions, 
                               return_type = return_type,
                               exp.vector = expiration, 
                               ticker = ticker,
                               basket_handler = TRUE,',
-                              eval_str,')')
+                              eval_str,')'
+          )
           eval(parse(text = temp_text))
           rm(temp_text)
           # запуск gear-функции
