@@ -5,7 +5,8 @@
 ###
 #' Roller функция обучающей оптимизации движка стратегии (multicore)
 #' 
-#' @param data_slices Временные интервалы оптимизационных окон
+#' @param slice_index Временные интервалы оптимизационных окон (индексы start/end)
+#' @param ohlc_source XTS с исходными котировками
 #' @param var.df DF с данными для перебора
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param win_size Период обучения (нужно для более точной кластеризации)
@@ -23,7 +24,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export               
-RollerOpt_learning_mc <- function(data_slices,
+RollerOpt_learning_mc <- function(slice_index, ohlc_source,
                                   var.df,
                                   FUN, win_size,
                                   linker_file = 'bots/test/linker.R',
@@ -40,16 +41,17 @@ RollerOpt_learning_mc <- function(data_slices,
   # Вычисление оптимизаций на обучающих периодах
   n_vars <- nrow(var.df)
   bf_data.list <- 
-    foreach(i = 1:length(data_slices$widthSlice)) %do% {
-      temp_slice <- data_slices$widthSlice[[i]]
-      df <- BruteForceOpt_parallel_mc(var.df = var.df, data.xts = temp_slice,
-                                      FUN = FUN, 
-                                      linker_file = 'bots/test/linker.R',
-                                      balance_start = balance_start, slips = slips, commissions = commissions,
-                                      expiration = expiration, ticker = ticker, return_type = return_type,
-                                      rolling_opt = rolling_opt, 
-                                      eval_string = eval_string)
-      return(df)
+    foreach(i = 1:length(slice_index$widthSlice)) %do% {
+      BruteForceOpt_parallel_mc(var.df = var.df, ohlc_source = ohlc_source,
+                                from_date = slice_index$widthSlice[[i]][1, ], 
+                                to_date = slice_index$widthSlice[[i]][2, ], 
+                                lookback = TRUE,
+                                FUN = FUN, 
+                                linker_file = 'bots/test/linker.R',
+                                balance_start = balance_start, slips = slips, commissions = commissions,
+                                expiration = expiration, ticker = ticker, return_type = return_type,
+                                rolling_opt = rolling_opt, 
+                                eval_string = eval_string)
     }
   # КА
   cluster_data.list <- 

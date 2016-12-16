@@ -5,7 +5,8 @@
 ###
 #' Roller функция обучающей оптимизации движка стратегии (на SOCK кластерах)
 #' 
-#' @param data_slices Временные интервалы оптимизационных окон
+#' @param slice_index Временные интервалы оптимизационных окон (индексы start/end)
+#' @param ohlc_source XTS с исходными котировками
 #' @param var.df DF с данными для перебора
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param win_size Период обучения (нужно для более точной кластеризации)
@@ -25,7 +26,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export               
-RollerOpt_learning_cl <- function(data_slices,
+RollerOpt_learning_cl <- function(slice_index, ohlc_source,
                                   var.df,
                                   FUN, win_size,
                                   linker_file = 'bots/test/linker.R',
@@ -63,80 +64,85 @@ RollerOpt_learning_cl <- function(data_slices,
     clusterExport(parallel_cluster, envir = .GlobalEnv, 
                   varlist = export_varlist) 
   }
-
   # Вычисление оптимизаций на обучающих периодах
-  bf_data.list <- lapply(data_slices$widthSlice, 
-                         function(x) {
-                           data_slice <- x 
-                           result <- 
-                             var.df %>%
-                             parRapply(parallel_cluster,
-                                       ., 
-                                       function(x) {
-                                         #FUN(x, ...)
-                                         FUN <- match.fun(FUN)
-                                         temp_text <- paste0(
-                                           'df <- FUN(data.xts = data_slice,
-                                                      rolling_opt = rolling_opt, 
-                                                      balance_start = balance_start, 
-                                                      slips = slips, commissions = commissions,
-                                                      expiration = expiration, ticker = ticker, 
-                                                      return_type = return_type, ',eval_string,')')
-                                         eval(parse(text = temp_text))
-                                         rm(temp_text)
-                                         return(df)
-                                       }) 
-                           result %<>%
-                             {
-                               .[!is.na(.)]
-                             } %>%
-                             MergeData_inList.byRow(.)
-                           return(result)
-                         })
-  
+  bf_data.list <- 
+    lapply(
+      slice_index$widthSlice, 
+      function(x) {
+        temp_slice_index <- x 
+        temp_text <- paste0(
+         'result <- 
+            var.df %>%
+            parRapply(
+              parallel_cluster,
+              ., 
+              function(x) {
+                FUN <- match.fun(FUN)
+                df <- FUN(ohlc_source = ohlc_source,
+                          from_date = temp_slice_index[1, ], 
+                          to_date = temp_slice_index[2, ], 
+                          lookback = TRUE,
+                          rolling_opt = rolling_opt, 
+                          balance_start = balance_start, 
+                          slips = slips, commissions = commissions,
+                          expiration = expiration, ticker = ticker, 
+                          return_type = return_type, ',eval_string,')
+                return(df)
+              }
+            )'
+        )
+        eval(parse(text = temp_text))
+        rm(temp_text)
+        result %<>%
+          {
+            .[!is.na(.)]
+          } %>%
+          MergeData_inList.byRow(.)
+        return(result)
+      }
+    )
   # остановка кластера
   stopCluster(parallel_cluster)
   parallel_cluster <- c()  
-  
   # КА
-  cluster_data.list <- lapply(bf_data.list,
-                              function(x) {
-                                ## Подготовка к КА
-                                data_for_cluster <- CalcKmean.preparation(data = x, 
-                                                                          n.mouth = win_size, 
-                                                                          hi = TRUE, q.hi = 0.5, 
-                                                                          one.scale = FALSE)
-                                data_for_cluster$profit <- NULL
-                                data_for_cluster$draw <- NULL 
-                                ## Вычисление кластеров 
-                                clustFull.data <- 
-                                  CalcKmean.parameters(data = data_for_cluster, 
-                                                       iter.max = 100, 
-                                                       plusplus = FALSE, 
-                                                       test.range = 30) %>%
-                                  .[[2]] %>%
-                                  CalcKmean(data = data_for_cluster, 
-                                            n.opt = ., 
-                                            plusplus = FALSE, 
-                                            var.digits = 0)
-                                ## округление центров до значений точек пространства  
-                                clustFull.data[[2]] %<>%
-                                  {
-                                    for (i in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
-                                      .[, i] <- .[, i] - .[, i] %% 5
-                                    }
-                                    return(.)    
-                                  }
-                                #
-                                return(clustFull.data)  
-                              })  
-  
+  cluster_data.list <- 
+    lapply(
+      bf_data.list,
+      function(x) {
+        ## Подготовка к КА
+        data_for_cluster <- CalcKmean.preparation(data = x, 
+                                                  n.mouth = win_size, 
+                                                  hi = TRUE, q.hi = 0.5, 
+                                                  one.scale = FALSE)
+        data_for_cluster$profit <- NULL
+        data_for_cluster$draw <- NULL 
+        ## Вычисление кластеров 
+        clustFull.data <- 
+          CalcKmean.parameters(data = data_for_cluster, 
+                               iter.max = 100, 
+                               plusplus = FALSE, 
+                               test.range = 30) %>%
+          .[[2]] %>%
+          CalcKmean(data = data_for_cluster, 
+                    n.opt = ., 
+                    plusplus = FALSE, 
+                    var.digits = 0)
+        ## округление центров до значений точек пространства  
+        clustFull.data[[2]] %<>%
+          {
+            for (i in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+              .[, i] <- .[, i] - .[, i] %% 5
+            }
+            return(.)    
+          }
+        return(clustFull.data)  
+      }
+    )  
   # проверка остановки кластера
   if (!is.null(parallel_cluster)) {
     stopCluster(parallel_cluster)
     parallel_cluster <- c()
   }
-  
   return(cluster_data.list)
 }
 #
@@ -205,24 +211,26 @@ BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
                   varlist = export_varlist) 
   }
   #
-  result <- 
-    var.df %>%
-    parRapply(parallel_cluster,
-              ., #1, 
-              function(x) {
-                #FUN(x, ...)
-                FUN <- match.fun(FUN)
-                temp_text <- paste0(
-                  'df <- FUN(data.xts = ohlc_source,
-                             from_date, to_date, lookback,
-                             rolling_opt = rolling_opt, 
-                             balance_start = balance_start, slips = slips, commissions = commissions,
-                             expiration = expiration, ticker = ticker, return_type = return_type, ', 
-                             eval_string,')')
-                eval(parse(text = temp_text))
-                rm(temp_text)
-                return(df)
-             })
+  temp_text <- paste0(
+    'result <- 
+      var.df %>%
+      parRapply(
+        parallel_cluster, 
+        .,  
+        function(x) {
+          FUN <- match.fun(FUN)
+          df <- FUN(data.xts = ohlc_source,
+                     from_date, to_date, lookback,
+                     rolling_opt = rolling_opt, 
+                     balance_start = balance_start, slips = slips, commissions = commissions,
+                     expiration = expiration, ticker = ticker, return_type = return_type, ', 
+                     eval_string,')
+          return(df)
+        }
+      )'
+  )
+  eval(parse(text = temp_text))
+  rm(temp_text)
   # остановка кластера
   stopCluster(parallel_cluster)
   parallel_cluster <- c()  

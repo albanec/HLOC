@@ -45,7 +45,6 @@ BruteForceOpt <- function(x, ohlc_source,
       }')
   eval(parse(text = temp_text))
   rm(temp_text)
-  
   df %<>%
     {
       .[!is.na(.)]
