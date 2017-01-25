@@ -808,7 +808,7 @@ Trades_handler <- function(data, states, ohlc_source,
   ## 2.2 Расчёт самих сделок
   temp.df <- FUN.CalcTrades(data = states, commiss = commiss,
                             data_source = ohlc_source,
-                            balance_start = balance_start,
+                            balance_start = balance_start * states$weight[1],
                             ...)
   # Изменение контрактов на такте
   states$n <- temp.df$n
