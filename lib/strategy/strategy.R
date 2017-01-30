@@ -735,19 +735,20 @@ CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
 #' @export
 CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
                                           MM.FUN,  IM, cret, balance_start, commiss,
+                                          external_balance = NULL,
                                           ...) {
-
-  #
   MM.FUN <- match.fun(MM.FUN)
-
+  #
   cache$n[row_ind] <- ifelse(coredata(pos) == 0,
-                             0,
-                             ifelse(coredata(pos_bars) == 0,
-                                    MM.FUN(
-                                      balance = cache$balance[row_ind - 1] * cache$weight[row_ind - 1],
-                                      IM = IM,
-                                      ...),
-                                    NA))
+    0,
+    ifelse(coredata(pos_bars) == 0,
+      MM.FUN(
+        balance = ifelse(!is.null(external_balance),
+          external_balance,
+          cache$balance[row_ind - 1]), #* cache$weight[row_ind - 1]),
+        IM = IM,
+        ...),
+      NA))
   cache$diff.n[row_ind] <- ifelse(row_ind != 1,
                                   cache$n[row_ind] - cache$n[row_ind - 1],
                                   0)
@@ -760,9 +761,13 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
                                   sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
                                   0)
   cache$im.balance[row_ind] <- IM * cache$n[row_ind]
-  cache$balance[row_ind] <- ifelse(row_ind != 1,
-                                   balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
-                                   cache$balance[row_ind])
+  if (is.null(external_balance) == TRUE) {
+    cache$balance[row_ind] <- NA
+  } else {
+    cache$balance[row_ind] <- ifelse(row_ind != 1,
+                                     balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
+                                     cache$balance[row_ind])
+  }
   #
   return(cache)
 }
@@ -804,11 +809,11 @@ Trades_handler <- function(data, states, ohlc_source,
   states$im.balance <- NA
   states$im.balance[1] <- 0
   # т.к. обработчик не пакетный, вес бота всегда = 1
-  states$weight <- 1
+  #states$weight <- 1
   ## 2.2 Расчёт самих сделок
   temp.df <- FUN.CalcTrades(data = states, commiss = commiss,
                             data_source = ohlc_source,
-                            balance_start = balance_start * states$weight[1],
+                            balance_start = balance_start, #* states$weight[1],
                             ...)
   # Изменение контрактов на такте
   states$n <- temp.df$n
