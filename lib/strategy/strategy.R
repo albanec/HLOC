@@ -772,7 +772,7 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
   return(cache)
 }
 # ------------------------------------------------------------------------------
-## Функции-handler'ы сделок
+### Функции-handler'ы сделок
 #
 #' Функция-обработчик сделок
 #'
@@ -870,4 +870,267 @@ Trades_handler <- function(data, states, ohlc_source,
   #
   return(list(data = data, states = states))
 }
-# ------------------------------------------------------------------------------
+#
+#' Пакетный обработчик сделок
+#'
+#' @param ohlc.xts Котировки инструмента
+#' @param DATA Данные торговли по ботам
+#' @param bot.list Лист с параметрами ботов на данном временном интервале
+#' @param balance_start Стартовый баланс
+#' @param commiss Коммиссия по инструменту
+#' @param ... 
+BotCombination.handler <- function(ohlc.xts,
+                                   DATA,
+                                   bot.list = bot.list[[i]],
+                                   balance_start,
+                                   commiss,
+                                   ...) {
+  # определение нужных окружений
+  .CurrentEnv <- environment()
+  .ParentEnv <- parent.frame(2)
+  # всего ботов
+  n_bots <- length(bot.list)
+
+  ### нормирование временных шкал
+  # формирование нормирующей последовательности и дополнительных столблцов
+  index_norm <-
+    foreach(bot_num = 1:n_bots) %do% {
+      DATA[[bot_num]][[2]]$pos
+    } %>%
+    do.call(merge, .) %>%
+    .$pos %>%
+    index(.)
+  
+  ### доп. столбцы по каждому боту
+  DATA <-
+    foreach(bot_num = 1:n_bots) %do% {
+      #cat(bot_num, '\n')
+      # нормирование временных индексов
+      DATA[[bot_num]][[2]] <-
+        merge(DATA[[bot_num]][[2]], temp = xts(NULL, order.by = index_norm)) %>%
+        {
+          .$temp <- NULL
+          return(.)
+        }
+      # начальный баланс
+      DATA[[bot_num]][[2]]$balance <- NA
+      #DATA[[bot_num]][[2]]$balance[1] <- balance_start #* bot.list[[bot_num]]$weight[1]
+      # начальное число синтетических контрактов корзины
+      DATA[[bot_num]][[2]]$n <- NA
+      #states$n <- 0
+      # прочее
+      DATA[[bot_num]][[2]]$diff.n <- NA
+      DATA[[bot_num]][[2]]$diff.n[1] <- 0
+      DATA[[bot_num]][[2]]$margin <- NA
+      DATA[[bot_num]][[2]]$commiss <- NA
+      DATA[[bot_num]][[2]]$equity <- NA
+      DATA[[bot_num]][[2]]$im.balance <- NA
+      DATA[[bot_num]][[2]]$im.balance[1] <- 0
+      # вес бота в корзине
+      #DATA[[bot_num]][[2]]$weight <- 1
+      ### корректировка данных
+      # заполнение price (для тех строк, где данный бот без action, но возможны action других ботов)
+      temp_ind <-
+        which(is.na(DATA[[bot_num]][[2]]$Price)) %>%
+        DATA[[bot_num]][[2]]$Price[.] %>%
+        index(.)
+      if (length(temp_ind) > 0) {
+        DATA[[bot_num]][[2]]$Price[temp_ind] <- ohlc.xts[temp_ind, paste0(bot.list[[bot_num]]$ticker,'.Open')]
+      }
+      rm(temp_ind)
+
+      # заполнение pos.bars
+      temp_ind <-
+        which(is.na(DATA[[bot_num]][[2]]$pos.bars)) %>%
+        DATA[[bot_num]][[2]]$pos.bars[.] %>%
+        index(.)
+      if (length(temp_ind) != 0) {
+        # удаление индексов, которых нет в full-данных по боту
+        temp_ind <- temp_ind[temp_ind %in% index(DATA[[bot_num]][[1]]$pos.bars)]
+        # перенос pos.bars и занудение отсутствующих данных
+        DATA[[bot_num]][[2]]$pos.bars[temp_ind] <- DATA[[bot_num]][[1]]$pos.bars[temp_ind]
+        DATA[[bot_num]][[2]]$pos.bars[is.na(DATA[[bot_num]][[2]]$pos.bars)] <- 0
+      }
+      rm(temp_ind)
+      # заполнение action
+      DATA[[bot_num]][[2]]$action[is.na(DATA[[bot_num]][[2]]$action)] <- 0
+      # заполение pos.open
+      DATA[[bot_num]][[2]]$pos.open[is.na(DATA[[bot_num]][[2]]$pos.open)] <- 0
+      # заполение pos.close
+      DATA[[bot_num]][[2]]$pos.close[is.na(DATA[[bot_num]][[2]]$pos.close)] <- 0
+      # перерасчёт return'ов
+      #
+      return(DATA[[bot_num]])
+    }
+
+  ### выгрузка функций для расчета данных по боту
+  # типы ботов, участвующие в торговле
+  bot_names <-
+    foreach(bot_num = 1:n_bots, .combine = c) %do% {
+      bot.list[[bot_num]]$name
+    } %>%
+    unique(.)
+  # проверка наличия и подгрузка CalcTrades_inStates_one_trade-функций (посделочные обработчики) для нужных ботов 
+  env_list <- ls(name = .ParentEnv)
+  # вектор имен one_trade функций в .ParentEnv
+  FUN_names <- 
+    grep(pattern = 'CalcTrades_inStates_one_trade.', env_list) %>%
+    env_list[.]
+  for (i integrate 1:length(bot_names)) {
+    FUN_name <- paste0('CalcTrades_inStates_one_trade.', bot_names[i])
+    if (any(FUN_names %in% FUN_name == TRUE)) {
+      FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
+      assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
+    } else {
+      stop(paste0('ERROR(BotCombination): Сan\'t find ',FUN_name,' function !!!'))
+    }
+  }
+  # перезадаем вектор функций для нужных ботов
+  FUN_names <- paste0('CalcTrades_inStates_one_trade.', bot_names)
+
+  ### создание cache для ботов и для портфеля
+  # окружение для кэша
+  .CacheEnv <- new.env()
+  # кэш для ботов
+  target_col <- c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss',
+                  'margin', 'perfReturn', 'equity')
+  temp.cache <- 
+    foreach(bot_num = 1:n_bots) %do% {
+      DATA[[bot_num]][[2]][, target_col] %>%
+      as.data.frame(., row.names=NULL)
+    }
+  assign('bot.cache', temp.cache, envir = .CacheEnv)  
+  # кэш для портфеля
+  temp.cache <- 
+    foreach(i = 1:length(target_col[!target_col %in% 'im'])) %do% {
+      xts(rep(NA, length(index_norm)), order.by = index_norm)
+    } %>%
+    do.call(merge, .)
+  names(temp.cache) <- target_col[!target_col %in% 'im']
+  temp.cache$balance[1] <- balance_start
+  assign('portfolio.cache', temp.cache, envir = .CacheEnv)
+  rm(temp.cache, target_col)
+# ///current
+  ### перебор расчёта сделок по единой шкале индексов
+    # (данные по каждому боту корректируются единым обработчиком + формируются данные в целом по портфелю)
+  foreach(row_num = 1:length(index_norm)) %do% {
+    # индекс строки
+    temp.index <- index_norm[row_num]
+    # определение развесовки портфеля на индексе
+    open_pos <- 
+      foreach(bot_num = 1:n_bots) %do% {
+        temp.pos <- DATA[[bot_num]][[2]]$pos[row_num] 
+        temp.pos_bars <- DATA[[bot_num]][[2]]$pos.bars[row_num]
+        out <- ifelse(temp.pos != 0 & temp.pos_bars == 0,
+                      1,
+                      0) 
+      } %>%
+      do.call(sum, .)
+    rm(temp.pos, temp.pos_bars, out)
+    # определение баланса на индексе
+    temp.portfolio.cache <- get('portfolio.cache', envir = .CacheEnv)
+    available_balance <- temp.portfolio.cache$balance[row_num - 1] / open_pos
+    rm(open_pos)
+    # перебор по каждому боту
+    for (bot_num = 1:n_bots) {
+      # подгрузка кэша по боту
+      temp.cache <- get('bot.cache[[bot_num]]', envir = .CacheEnv)
+      ### вызов функции-посделочного обработчика
+      # лист с переменными для расчёта строки
+      var.list <- list(cache = temp.cache, row_ind = row_num,
+                       pos = DATA[[bot_num]][[2]]$pos[row_num],
+                       pos_bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
+                       # !!! в дальнейшем применить ГО по инструменту, а не корзине
+                       IM = ohlc_source$IM[temp.index],
+                       cret = DATA[[bot_num]][[2]]$cret[row_num],
+                       balance_start = 0,
+                       commiss = commiss,
+                       external_balance = available_balance,
+                       ...)
+      temp.cache <- do.call(FUN_names[bot_num], var.list, envir = .CurrentEnv)
+      assign('bot.cache[[bot_num]]', temp.cache, envir = .CacheEnv)
+      rm(temp.cache, var.list)
+    }
+
+    ### расчёт общих данных по корзине 
+    # на первом индексе большинство параметров по нулям, так что
+    if (row_num != 1) {
+      # количество контрактов по портфолио
+      temp.portfolio.cahce$n[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$n[row_num]
+        } %>%
+        do.call(sum, .)
+      # изменение контрактов на индексе
+      temp.portfolio.cahce$diff.n[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$diff.n[row_num]
+        } %>%
+        do.call(sum, .)
+      # суммарное equity по портфолио  
+      temp.portfolio.cahce$equity[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$equity[row_num]
+        } %>%
+        do.call(sum, .)
+      # суммарный perfReturn на индексе
+      temp.portfolio.cahce$perfReturn[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$perfReturn[row_num]
+        } %>%
+        do.call(sum, .)
+      # суммарная вариационка на такте
+      temp.portfolio.cahce$margin[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$margin[row_num]
+        } %>%
+        do.call(sum, .)
+      # суммарная комиссия на такте
+      temp.portfolio.cahce$commiss[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$commiss[row_num]
+        } %>%
+        do.call(sum, .)
+      # суммарное ГО на такте
+      temp.portfolio.cahce$im.balance[row_num] <-
+        foreach(bot_num = 1:length(n_bots)) %do% {
+          get('bot.cache[[bot_num]]', envir = .CacheEnv) %>%
+          .$im.balance[row_num]
+        } %>%
+        do.call(sum, .)
+      # баланс портфолио на индексе
+      temp.portfolio.cahce$balance[row_num] <- 
+        balance_start + temp.portfolio.cahce$equity[row_num] - temp.portfolio.cahce$im.balance[row_num]
+    } else {
+      temp.portfolio.cahce$n[row_num] <- 0
+      temp.portfolio.cahce$diff.n[row_num] <- 0
+      temp.portfolio.cahce$equity[row_num] <- 0
+      temp.portfolio.cahce$perfReturn[row_num] <- 0
+      temp.portfolio.cahce$margin[row_num] <- 0
+      temp.portfolio.cahce$commiss[row_num] <- 0 
+      temp.portfolio.cahce$im.balance[row_num] <- 0
+      temp.portfolio.cahce$balance[row_num] <- balance_start
+    }
+    # запись данных по портфолио в кэш
+    assign('portfolio.cache', temp.portfolio.cache, envir = .CacheEnv)
+    rm(temp.portfolio.cache)
+  }
+
+  ### рузультаты
+  bot.result <- 
+    get('bot.cache', envir = .CacheEnv) %>% 
+    foreach(bot_num = 1:n_bots) %do% {
+      DATA[[bot_num]][[2]][, target_col] <- .[[bot_num]][, target_col]
+    }
+  portfolio.result <- get('portfolio.cache', envir = .CacheEnv)
+  #
+  rm(.CacheEnv)
+  #
+  return(list(bot.result, portfolio.result))
+}
