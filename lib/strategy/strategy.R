@@ -1009,7 +1009,7 @@ BotCombination.handler <- function(ohlc.xts,
   names(temp.cache) <- target_col[!target_col %in% 'im']
   temp.cache$balance[1] <- balance_start
   assign('portfolio.cache', temp.cache, envir = .CacheEnv)
-  rm(temp.cache, target_col)
+  rm(temp.cache)
 # ///current
   ### перебор расчёта сделок по единой шкале индексов
     # (данные по каждому боту корректируются единым обработчиком + формируются данные в целом по портфелю)
@@ -1019,25 +1019,29 @@ BotCombination.handler <- function(ohlc.xts,
     # определение развесовки портфеля на индексе
     open_pos <- 
       foreach(bot_num = 1:n_bots) %do% {
-        temp.pos <- DATA[[bot_num]][[2]]$pos[row_num] 
-        temp.pos_bars <- DATA[[bot_num]][[2]]$pos.bars[row_num]
+        temp.pos <- ifelse(!is.na(DATA[[bot_num]][[2]]$pos[[row_num]]),
+                           DATA[[bot_num]][[2]]$pos[[row_num]],
+                           0) 
+        temp.pos_bars <- ifelse(!is.na(DATA[[bot_num]][[2]]$pos.bars[[row_num]]),
+                                DATA[[bot_num]][[2]]$pos.bars[[row_num]],
+                                0)
         out <- ifelse(temp.pos != 0 & temp.pos_bars == 0,
                       1,
-                      0) 
+                      0)
       } %>%
       do.call(sum, .)
-    rm(temp.pos, temp.pos_bars, out)
+    rm(temp.pos, temp.pos_bars, out, bot_num)
     # определение баланса на индексе
     temp.portfolio.cache <- get('portfolio.cache', envir = .CacheEnv)
     available_balance <- temp.portfolio.cache$balance[row_num - 1] / open_pos
     rm(open_pos)
-    # перебор по каждому боту
-    for (bot_num = 1:n_bots) {
-      # подгрузка кэша по боту
-      temp.cache <- get('bot.cache[[bot_num]]', envir = .CacheEnv)
-      ### вызов функции-посделочного обработчика
+    ### перебор по каждому боту
+    # подгрузка кэша по ботам
+    temp.cache <- get('bot.cache', envir = .CacheEnv)
+    for (bot_num in 1:n_bots) {
+      ## вызов функции-посделочного обработчика
       # лист с переменными для расчёта строки
-      var.list <- list(cache = temp.cache, row_ind = row_num,
+      var.list <- list(cache = temp.cache[[bot_num]], row_ind = row_num,
                        pos = DATA[[bot_num]][[2]]$pos[row_num],
                        pos_bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
                        # !!! в дальнейшем применить ГО по инструменту, а не корзине
@@ -1047,10 +1051,11 @@ BotCombination.handler <- function(ohlc.xts,
                        commiss = commiss,
                        external_balance = available_balance,
                        ...)
-      temp.cache <- do.call(FUN_names[bot_num], var.list, envir = .CurrentEnv)
-      assign('bot.cache[[bot_num]]', temp.cache, envir = .CacheEnv)
-      rm(temp.cache, var.list)
+      temp.cache[[bot_num]] <- do.call(FUN_names[bot_num], var.list, envir = .CurrentEnv)
+      rm(var.list)
     }
+    assign('bot.cache', temp.cache, envir = .CacheEnv)
+    rm(temp.cache)
 
     ### расчёт общих данных по корзине 
     # на первом индексе большинство параметров по нулям, так что
