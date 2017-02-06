@@ -312,14 +312,12 @@ CalcPosition.bars <- function(x) {
             if (length(.) == 1) {
               .
             } else {
-                sapply(
-                    .,
+                sapply(.,
                     function(var) {
                         temp <- abs(sign(which(x == var)))
                         temp[1] <- 0
                         xts(x = cumsum(temp), order.by = index(x[x == var]))
-                    }
-                ) %>%
+                    }) %>%
                 MergeData_inList.byRow(.)
             }
         }
@@ -417,18 +415,14 @@ CalcPosition_byOrders <- function(bto, stc, sto, btc) {
                     0,
                     ifelse(btc[x] == cache.state,
                         0,
-                        cache.state)
-                )
-            )
+                        cache.state)))
             result$close[x] <- ifelse(cache.state != 0 | !is.na(cache.state),
                 ifelse(btc[x] == cache.state,
                     btc[x],
                     ifelse(stc[x] == cache.state,
                         stc[x],
-                        0)
-                ),
-                0
-            )
+                        0)),
+                0)
             cache.state <- result$open[x]
             #
             assign('cache.state', cache.state, envir = temp.env)
@@ -905,10 +899,11 @@ BotCombination.handler <- function(ohlc.xts,
 
     ### нормирование временных шкал
     # формирование нормирующей последовательности и дополнительных столблцов
-    index_norm <- lapply(1:n_bots,
-        function(x) {
-            DATA[[x]][[2]]$pos
-        }) %>%
+    index_norm <- 
+        lapply(1:n_bots,
+            function(x) {
+                DATA[[x]][[2]]$pos
+            }) %>%
         do.call(merge, .) %>%
         .$pos %>%
         index(.)
@@ -977,7 +972,7 @@ BotCombination.handler <- function(ohlc.xts,
     ### выгрузка функций для расчета данных по боту
     # типы ботов, участвующие в торговле
     bot_names <-
-        lapply(1:n_bots,
+        sapply(1:n_bots,
             function(x) {
                 bot.list[[x]]$name
             }) %>%
@@ -988,15 +983,16 @@ BotCombination.handler <- function(ohlc.xts,
     FUN_names <- 
         grep(pattern = 'CalcTrades_inStates_one_trade.', env_list) %>%
         env_list[.]
-    for (i integrate 1:length(bot_names)) {
-        FUN_name <- paste0('CalcTrades_inStates_one_trade.', bot_names[i])
-        if (any(FUN_names %in% FUN_name == TRUE)) {
-            FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
-            assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
+    for (i in 1:length(bot_names)) {
+        temp.name <- paste0('CalcTrades_inStates_one_trade.', bot_names[i])
+        if (any(FUN_names %in% temp.name == TRUE)) {
+            FUN <- get(as.character(temp.name), mode = "function", envir = .ParentEnv)
+            assign(paste0(temp.name), FUN, envir = .CurrentEnv)
         } else {
-            stop(paste0('ERROR(BotCombination): Сan\'t find ',FUN_name,' function !!!'))
+            stop(paste0('ERROR(BotCombination): Сan\'t find ',temp.name,' function !!!'))
         }
     }
+    rm(temp.name)
     # перезадаем вектор функций для нужных ботов
     FUN_names <- paste0('CalcTrades_inStates_one_trade.', bot_names)
 
@@ -1080,7 +1076,7 @@ BotCombination.handler <- function(ohlc.xts,
             if (row_num != 1) {
                 # количество контрактов по портфолио
                 temp.portfolio.cahce$n[row_num] <-
-                    lapply(1:n_bots
+                    lapply(1:n_bots,
                         function(x) {
                             temp.cache[[x]]$n[row_num]
                         }) %>%
@@ -1094,7 +1090,7 @@ BotCombination.handler <- function(ohlc.xts,
                     do.call(sum, .)
                 # суммарное equity по портфолио  
                 temp.portfolio.cahce$equity[row_num] <-
-                    lapply(1:n_bots
+                    lapply(1:n_bots,
                         function(x) {
                             bot.cache[[x]]$equity[row_num]
                         }) %>%
@@ -1122,7 +1118,7 @@ BotCombination.handler <- function(ohlc.xts,
                     do.call(sum, .)
                 # суммарное ГО на такте
                 temp.portfolio.cahce$im.balance[row_num] <-
-                    lapply(1:n_bots
+                    lapply(1:n_bots,
                         function(x) {
                             bot.cache[[x]]$im.balance[row_num]  
                         }) %>%
@@ -1150,7 +1146,7 @@ BotCombination.handler <- function(ohlc.xts,
     get('bot.cache', envir = .CacheEnv) %>% 
     foreach(i = 1:n_bots) %do% {
         DATA[[i]][[2]][, target_col] <- .[[i]][, target_col]
-    }) 
+    }
     portfolio.result <- get('portfolio.cache', envir = .CacheEnv)
     #
     rm(.CacheEnv)

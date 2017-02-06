@@ -15,14 +15,12 @@ library(lubridate)
 # library(data.table)
 #
 ## Загрузка библиотек
-source('lib/generic/generic.R')
-source('lib/strategy/strategy.R')
-source('lib/evaluation/evaluation.R')
-source('lib/optimization/optimization.R')
-source('lib/cluster/cluster.R')
-# движок стратегии
-source('bots/test/lib/gear/test_gear.R')
-# движок оптимизации
-source('bots/test/lib/optimization/test_optimization.R')
-# движок скользящей оптимизации
-source('bots/test/lib/optimization/test_roller.R')
+source('lib/generic.R')
+source('lib/strategy.R')
+source('lib/evaluation.R')
+source('lib/optimization.R')
+source('lib/cluster.R')
+# GEAR
+source('bots/test/gear.R')
+# test roller
+source('bots/test/test_roller.R')
