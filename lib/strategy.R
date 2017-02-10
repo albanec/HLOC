@@ -766,7 +766,7 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
         sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
         0)
     cache$im.balance[row_ind] <- IM * cache$n[row_ind]
-    if (is.null(external_balance) == TRUE) {
+    if (!is.null(external_balance)) {
         cache$balance[row_ind] <- NA
     } else {
         cache$balance[row_ind] <- ifelse(row_ind != 1,
