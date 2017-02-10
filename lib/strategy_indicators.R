@@ -1,6 +1,6 @@
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Функции расчёта индикаторов
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 # ------------------------------------------------------------------------------
 #' Вычисляет пересечения графиков рядов
@@ -14,32 +14,32 @@
 #'
 #' @export
 CrossLine <- function(x1, x2, eq = FALSE) {
-  if (eq == TRUE) {
-    x <- diff(x1 >= x2)
-  } else {
-    x <- diff(x1 > x2)
-  }
-  x[1] <- 0
-  x[x < 0] <- 0
-  x <- sign(x)
-  #
-  return(x)
+    if (eq == TRUE) {
+        x <- diff(x1 >= x2)
+    } else {
+        x <- diff(x1 > x2)
+    }
+    x[1] <- 0
+    x[x < 0] <- 0
+    x <- sign(x)
+    #
+    return(x)
 }
 ###
 #' Надстройка нал CrossLine для удобства
 #' @export
 CrossLine.up <- function(x1, x2, eq = FALSE) {
-  result <- CrossLine(x1, x2, eq)
-  #
-  return(result)
+    result <- CrossLine(x1, x2, eq)
+    #
+    return(result)
 }
 #
 #' Надстройка нал CrossLine для удобства
 #' @export
 CrossLine.down <- function(x1, x2, eq = FALSE) {
-  result <- CrossLine(x2, x1, eq)
-  #
-  return(result)
+    result <- CrossLine(x2, x1, eq)
+    #
+    return(result)
 }
 #
 # ------------------------------------------------------------------------------
@@ -55,12 +55,12 @@ CrossLine.down <- function(x1, x2, eq = FALSE) {
 #'
 #' @export
 CalcIndicator.SMA <- function(x, per, digits = 0, ...) {
-  #
-  x <- 
-    SMA(x = x, n = per) %>%
-    round(., digits = digits)
-  #
-  return(x)
+    #
+    x <- 
+        SMA(x = x, n = per) %>%
+        round(., digits = digits)
+    #
+    return(x)
 }
 #
 ###
@@ -74,11 +74,11 @@ CalcIndicator.SMA <- function(x, per, digits = 0, ...) {
 #'
 #' @export
 CalcIndicator.DCI <- function(x, per, digits = 0, lag = TRUE) {
-  #
-  x <- 
-    DonchianChannel(HL = x, n = per, include.lag = lag) %>%
-    round(., digits = digits)
-  #
-  return(x)
+    #
+    x <- 
+        DonchianChannel(HL = x, n = per, include.lag = lag) %>%
+        round(., digits = digits)
+    #
+    return(x)
 }
 #

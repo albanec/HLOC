@@ -1,6 +1,6 @@
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # Функции MM
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
 #' Функция MM относительно ширины канала:
@@ -15,22 +15,22 @@
 #'
 #' @export
 CalcMM.byDCIwidth <- function(balance, IM, ...) { 
-  #risk, widthDCI,  tick.price) {
-  dots <- list(...)
-  var1 <-
-    {
-      coredata(balance) * dots$risk * dots$tick.price / coredata(dots$widthDCI)
-    } %>%
-    floor(.) %>%
-    max(., 1)
-  var2 <- 
-    {
-      coredata(balance) / coredata(IM)
-    } %>%
-    floor(.) %>%
-    max(., 1)
-  result <- min(var1, var2)
-  #
-  return(result)
+    #risk, widthDCI,    tick.price) {
+    dots <- list(...)
+    var1 <-
+        {
+            coredata(balance) * dots$risk * dots$tick.price / coredata(dots$widthDCI)
+        } %>%
+        floor(.) %>%
+        max(., 1)
+    var2 <- 
+        {
+            coredata(balance) / coredata(IM)
+        } %>%
+        floor(.) %>%
+        max(., 1)
+    result <- min(var1, var2)
+    #
+    return(result)
 }
 #

@@ -1,6 +1,6 @@
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # описания стратегий и вспомагательных функций
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 # ------------------------------------------------------------------------------
 #' Переход к состояниям (фильтрация сигналов)
@@ -1029,25 +1029,29 @@ BotCombination.handler <- function(ohlc.xts,
             temp.index <- index_norm[row_num]
       
             ### определение развесовки портфеля на индексе
-            open_pos <- 
-                lapply(1:n_bots,
-                    function(x) {
-                        temp.pos <- ifelse(!is.na(DATA[[x]][[2]]$pos[[row_num]]),
-                            DATA[[x]][[2]]$pos[[row_num]],
-                            0) 
-                        temp.pos_bars <- ifelse(!is.na(DATA[[x]][[2]]$pos.bars[[row_num]]),
-                            DATA[[x]][[2]]$pos.bars[[row_num]],
-                            0)
-                        out <- ifelse(temp.pos != 0 & temp.pos_bars == 0,
-                            1,
-                            0)
-                        return(out)
-                    }) %>%
-                do.call(sum, .)
+                #! на данный момент развесовка зависит только от количества ботов
+            # open_pos <- 
+            #     lapply(1:n_bots,
+            #         function(x) {
+            #             temp.pos <- ifelse(!is.na(DATA[[x]][[2]]$pos[[row_num]]),
+            #                 DATA[[x]][[2]]$pos[[row_num]],
+            #                 0) 
+            #             temp.pos_bars <- ifelse(!is.na(DATA[[x]][[2]]$pos.bars[[row_num]]),
+            #                 DATA[[x]][[2]]$pos.bars[[row_num]],
+            #                 0)
+            #             out <- ifelse(temp.pos != 0 & temp.pos_bars == 0,
+            #                 1,
+            #                 0)
+            #             return(out)
+            #         }) %>%
+            #     do.call(sum, .)
             # определение баланса на индексе
             temp.portfolio.cache <- get('portfolio.cache', envir = .CacheEnv)
-            available_balance <- temp.portfolio.cache$balance[row_num - 1] / open_pos
-            rm(open_pos)
+            # баланс может делится относительно ботов, входящих в позы (тогда надо раскомментить код для open_pos)
+            #available_balance <- temp.portfolio.cache$balance[row_num - 1] / open_pos
+            #! баланс делится в зависимости от количества ботов (т.е не зависит от количества ботов на входе)
+            available_balance <- temp.portfolio.cache$balance[row_num - 1] / n_bots
+            #rm(open_pos)
     
             ### перебор по каждому боту
             # подгрузка кэша по ботам
