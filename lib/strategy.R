@@ -82,7 +82,8 @@ CalcReturn_inXTS <- function(data, price = 'Close', type = 'sret') {
     for (i in 1:length(data.names)) {
         temp.text <- paste0(
             'data$',data.names[i],'.',type,' <- CalcReturn(',
-                'data$',data.names[i],'.',price,', type = \"',type,'\")'
+                'data$',data.names[i],'.',price,', type = \"',type,'\"',
+            ')'
         )
         eval(parse(text = temp.text))
     }
@@ -754,7 +755,7 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
                 IM = IM,
                 ...
             ),
-            NA)
+            cache$n[row_ind - 1])
     )
     cache$diff.n[row_ind] <- ifelse(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
@@ -822,7 +823,8 @@ Trades_handler <- function(data, states, ohlc_source,
         data = states, commiss = commiss,
         data_source = ohlc_source,
         balance_start = balance_start, #* states$weight[1],
-        ...)
+        ...
+    )
     # Изменение контрактов на такте
     states$n <- temp.df$n
     states$diff.n <- temp.df$diff.n
