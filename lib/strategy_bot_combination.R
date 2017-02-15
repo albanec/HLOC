@@ -25,7 +25,8 @@ BotCombination.raw_data <- function(ohlc_source,
                                     from_date, to_date, lookback = FALSE,
                                     bot.list,
                                     balance_start, slips, 
-                                    commissions, return_type, expiration, ticker) {
+                                    commissions, return_type, expiration, ticker,
+                                    add_benchmark = FALSE) {
     require(doParallel)
     
     # определение нужных окружений
@@ -45,7 +46,7 @@ BotCombination.raw_data <- function(ohlc_source,
     n_bots <- length(bot.list)
     # проверка наличия и подгрузка gear-функций для нужных ботов
     env_list <- ls(name = .ParentEnv)
-    strGearFUN_names <- 
+    FUN_name_vector <- 
         grep(pattern = 'StrGear_', x = env_list) %>%
         {
             env_list[.] %>%
@@ -53,7 +54,7 @@ BotCombination.raw_data <- function(ohlc_source,
         }
     for (i in 1:length(bot_names)) {
         FUN_name <- paste0('StrGear_', bot_names[i])
-        if (any(strGearFUN_names %in% FUN_name == TRUE)) {
+        if (any(FUN_name_vector %in% FUN_name == TRUE)) {
             FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
             assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
         } else {
@@ -62,7 +63,7 @@ BotCombination.raw_data <- function(ohlc_source,
     }
 
     # расчёт сырых данных по пакету ботов (на выходе - листы по каждому боту)
-    raw_tradesTables.list <- 
+    TRADE_TABLE <- 
         foreach(i = 1:workers) %dopar% {
             # распределение ботов по потоку
             map_range <- Delegate_mcore(i, n_bots, p = workers)
@@ -70,23 +71,22 @@ BotCombination.raw_data <- function(ohlc_source,
             if (is.null(map_range)) {
                 return(NA)
             } 
-            # вычисления
+            ### вычисления
             map_data <- bot.list[map_range]    
             # расчёт ботов
             result <- lapply(1:length(map_data),
-                function(i) {
-                    x <- map_data[[i]]
-                    if (!is.data.frame(x)) {
+                function(x) {
+                    if (!is.data.frame(map_data[[x]])) {
                         warning('WARNING(testBotCombination): strategies data wrong type', '\n')
                     }
                     # имя бота            
-                    bot_name <- x$name
+                    bot_name <- map_data[[x]]$name
                     # подготовка eval-строки
-                    x <- x[, grep('_', names(x))]
+                    var <- map_data[[x]][, grep('_', names(map_data[[x]]))]
                     var_names <- names(x)
                     eval_str <- 
                         foreach(i = 1:length(var_names), .combine = c) %do% {
-                            paste0(var_names[i],'=',x[1, i])
+                            paste0(var_names[i],'=',var[1, i])
                         } %>%
                         paste(., collapse = ",")
                     # выделение нужных котировок
@@ -103,7 +103,7 @@ BotCombination.raw_data <- function(ohlc_source,
                     # лист с параметрами бота (типичные параметры gear-функиций + специфичные переменные)
                     temp_text <- paste0(
                         'var.list <- list(data_source = ohlc_source,
-                            balance_start = balance_start, 
+                            balance_start = 0, 
                             slips = slips, commiss = commissions, 
                             return_type = return_type,
                             exp.vector = expiration, 
@@ -115,9 +115,9 @@ BotCombination.raw_data <- function(ohlc_source,
                     rm(temp_text)
                     # запуск gear-функции
                     FUN_name <- paste0('StrGear_', bot_name) 
-                    one_bot_tradesTables <- do.call(FUN_name, var.list, envir = .CurrentEnv)    
-                    comment(one_bot_tradesTables) <- bot_name
-                    return(one_bot_tradesTables)
+                    tradeTable <- do.call(FUN_name, var.list, envir = .CurrentEnv)    
+                    comment(tradeTable) <- bot_name
+                    return(tradeTable)
                 })
             return(result)
         } %>%
@@ -126,7 +126,113 @@ BotCombination.raw_data <- function(ohlc_source,
         } %>%
         unlist(., recursive = FALSE)
     #
-    return(raw_tradesTables.list)
+    if (add_benchmark == TRUE) {
+        # проверка наличия и подгрузка handler-функций для нужных ботов
+        FUN_name_vector <- 
+            grep(pattern = '.trades_handler', x = env_list) %>%
+            {
+                env_list[.] %>%
+                .[-grep(pattern = '.', x = ., fixed = TRUE)]
+            }
+        for (i in 1:length(bot_names)) {
+            FUN_name <- paste0('StrGear_',bot_names[i],'.trades_handler')
+            if (any(FUN_name_vector %in% FUN_name == TRUE)) {
+                FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
+                assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
+            } else {
+                stop(paste0('ERROR(testBotCombination): Сan\'t find ',FUN_name,' function !!!'))
+            }
+        }
+        # расчёт benchmark-данных по каждому боту (на выходе - листы по каждому боту)
+        BENCHMARK_TABLE <- 
+            foreach(i = 1:workers) %dopar% {
+                # распределение ботов по потоку
+                map_range <- Delegate_mcore(i, n_bots, p = workers)
+                # проверка на наличие задания для worker'а
+                if (is.null(map_range)) {
+                    return(NA)
+                } 
+                ### вычисления
+                map_data <- bot.list[map_range]    
+                tradeTable <- TRADE_TABLE[map_range] 
+                # расчёт ботов
+                tradeTable <- lapply(1:length(map_data),
+                    function(x) {
+                        if (!is.data.frame(map_data[[x]])) {
+                            warning('WARNING(testBotCombination): strategies data wrong type', '\n')
+                        }
+                        # имя бота            
+                        bot_name <- map_data[[x]]$name
+                        
+                        # подготовка eval-строки
+                        k_mm <- coredata(
+                            map_data[[x]][, grep('k_mm', names(map_data[[x]]))]
+                        )
+                        eval_str <- 
+                            paste0(
+                                'k_mm =',k_mm#,'tick_price = 1'
+                            )#%>%
+                            #paste(., collapse = ",")
+                        # лист с параметрами бота (типичные параметры gear-функиций + специфичные переменные)
+                        temp_text <- paste0(
+                            'var.list <- list(data = tradeTable[[x]][[1]],
+                                states = tradeTable[[x]][[2]], 
+                                ohlc_source = ohlc_source,
+                                commiss = commissions,
+                                balance_start = balance_start / n_bots,',
+                                eval_str,')'
+                        )
+                        eval(parse(text = temp_text))
+                        rm(temp_text)
+                        
+                        ## запуск handler-функции
+                        FUN_name <- paste0('StrGear_',bot_name,'.trades_handler') 
+                        tradeTable[[x]] <- do.call(FUN_name, var.list, envir = .CurrentEnv)    
+                        comment(tradeTable[[x]]) <- bot_name
+                        
+                        ## добавление нужных на следующих этапах столбцов
+                        temp.text <- paste0(
+                            'tradeTable[[x]][[1]]$',ticker,'.n <- tradeTable[[x]][[1]]$n;',
+                            'tradeTable[[x]][[1]]$',ticker,'.diff.n <- tradeTable[[x]][[1]]$diff.n;',
+                            'tradeTable[[x]][[1]]$',ticker,'.commiss <- tradeTable[[x]][[1]]$commiss;',
+                            'tradeTable[[x]][[1]]$',ticker,'.equity <- tradeTable[[x]][[1]]$equity;',
+                            'tradeTable[[x]][[1]]$',ticker,'.perfReturn <- tradeTable[[x]][[1]]$perfReturn;',
+                            #
+                            'tradeTable[[x]][[2]]$',ticker,'.n <- tradeTable[[x]][[2]]$n;',
+                            'tradeTable[[x]][[2]]$',ticker,'.diff.n <- tradeTable[[x]][[2]]$diff.n;',
+                            'tradeTable[[x]][[2]]$',ticker,'.commiss <- tradeTable[[x]][[2]]$commiss;',
+                            'tradeTable[[x]][[2]]$',ticker,'.equity <- tradeTable[[x]][[2]]$equity;',
+                            'tradeTable[[x]][[2]]$',ticker,'.perfReturn <- tradeTable[[x]][[2]]$perfReturn;'
+                        )
+                        eval(parse(text = temp.text))
+                        # names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'n'] <- paste0(ticker,'.n')
+                        # names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'diff.n'] <- paste0(ticker,'.diff.n')
+                        names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'Price'] <- paste0(ticker,'.Price')
+                        # names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'commiss'] <- paste0(ticker,'.commiss')
+                        # names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'equity'] <- paste0(ticker,'.equity')
+                        # names(tradeTable[[x]][[1]])[names(tradeTable[[x]][[1]]) == 'perfReturn'] <- paste0(ticker,'.equity')
+                        #
+                        # names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'n'] <- paste0(ticker,'.n')
+                        # names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'diff.n'] <- paste0(ticker,'.diff.n')
+                        names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'Price'] <- paste0(ticker,'.Price')
+                        # names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'commiss'] <- paste0(ticker,'.commiss')
+                        # names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'equity'] <- paste0(ticker,'.equity')
+                        # names(tradeTable[[x]][[2]])[names(tradeTable[[x]][[2]]) == 'perfReturn'] <- paste0(ticker,'.equity')
+                        names(tradeTable[[x]]) <- c('full', 'states')
+                        #
+                        return(tradeTable[[x]])
+                    })
+                return(tradeTable)
+            } %>%
+            {
+                .[!is.na(.)]
+            } %>%
+            unlist(., recursive = FALSE)
+        #
+        return(TRADE_TABLE, BENCHMARK_TABLE)
+    }
+    #
+    return(TRADE_TABLE)
 }
 #
 #' Пакетный обработчик сделок
@@ -138,7 +244,8 @@ BotCombination.raw_data <- function(ohlc_source,
 #' @param commiss Коммиссия по инструменту
 #' @param ... 
 BotCombination.handler <- function(ohlc.xts,
-                                   DATA,
+                                   DATA, 
+                                   benchmark = FALSE,
                                    bot.list = bot.list[[i]],
                                    balance_start,
                                    commiss,
@@ -233,6 +340,7 @@ BotCombination.handler <- function(ohlc.xts,
             #
             return(DATA[[x]])    
         }) 
+    
     ### выгрузка функций для расчета данных по боту
     # типы ботов, участвующие в торговле
     bot_names <-
@@ -416,7 +524,7 @@ BotCombination.handler <- function(ohlc.xts,
         }
     )
 
-    ### рузультаты
+    ### результаты
     ### данные по ботам
     DATA <- 
         get('bot.cache', envir = .CacheEnv) %>% 
