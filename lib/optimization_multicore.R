@@ -61,7 +61,7 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
     # объединение результатов
     result %<>%    
         {
-            .[!is.na(.)]
+            .[!is.null(.)]
         } %>%
         MergeData_inList.byRow(.)
  

@@ -49,7 +49,7 @@ BruteForceOpt <- function(DATA, ohlc_source,
     rm(temp_text)
     df %<>%
         {
-            .[!is.na(.)]
+            .[!is.null(.)]
         } %>%
         MergeData_inList.byRow(.)    
     #
@@ -91,8 +91,8 @@ OneThreadRun <- function(data.xts, FUN,
     
     ## Анализ perfomanc'ов
     # для стратегий, у которых нет сделок
-    if (length(data_strategy.list[[1]]) == 1 && length(data_strategy.list[[2]]) == 1) {
-        return()
+    if (is.null(data_strategy.list$states)) {
+        return(NULL)
     } else {
         ### Формирование таблицы сделок
         ## чистим от лишних записей

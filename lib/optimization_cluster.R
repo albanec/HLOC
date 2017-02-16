@@ -92,7 +92,7 @@ BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
     # объединение результатов
     result %<>%    
         {
-            .[!is.na(.)]
+            .[!is.null(.)]
         } %>%
         MergeData_inList.byRow(.)
     
@@ -193,7 +193,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_source,
             rm(temp_text)
             result %<>%
                 {
-                    .[!is.na(.)]
+                    .[!is.null(.)]
                 } %>%
                 MergeData_inList.byRow(.)
             return(result)
