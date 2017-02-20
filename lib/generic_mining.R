@@ -194,51 +194,53 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 ###
 #' Функция скользящей нарезки периодов
 #' 
-#' @param data Данные XTS
-#' @param start_date Стартавая дата (гг-мм-дд) анализа
-#' @param end_date Конечная дата анализа
+#' @param ohlc_data Данные XTS
+#' @param from_date Стартавая дата (гг-мм-дд) анализа
+#' @param to_date Конечная дата анализа
 #' @param period Период окна скольжения ('seconds', 'mins', 'hours', 'days', 'weeks', 'months', 'quarters', 'years')
 #'                             (если == NULL - посвечный период)
 #' @param width Глубина окна скольжения    
 #' @param by Шаг окна скольжения 
-#' @param align 'Выравнивание' индекса результата, ставить = right (на данный момент не используется)
+#' @param align Направление движения окна 'width'
 #' @param add_bySlice Нужно ли добавить в выходные данные нарезку с by-периодами 
 #' @param justIndex Если нужны только индексы интервалов (а не сами данные)
 #'
 #' @return result.list Лист с данными, разложенными по индексам окон (либо с индексами)
 #'
 #' @export 
-RollingSlicer <- function(data, start_date, end_date, period = NULL, 
-                          width, by = NULL, align = c('left', 'right'),
-                          add_bySlice = FALSE, justIndex = FALSE) {
+RollingSlicer <- function(ohlc_data, 
+                          from_date, to_date, period = NULL, 
+                          width, by = NULL, align = 'left',
+                          add_bySlice = FALSE, 
+                          justIndex = FALSE) {
     ### подготовка
-    n_rows <- nrow(data)
-    n_cols <- ncol(data)
-    freq <- periodicity(data) 
+    n_rows <- nrow(ohlc_data)
+    n_cols <- ncol(ohlc_data)
+    freq <- periodicity(ohlc_data) 
     # проверка на правильность условий
     stopifnot(width > 0, width <= n_rows)
     # индкесы исходных данных
-    data_ind <- index(data)
+    data_ind <- index(ohlc_data)
     # интервал анализа 
-    interval <- paste0(start_date,'::',end_date)
+    interval <- paste0(from_date,'::',to_date)
     if (is.null(by)) {
         by <- width
     }
-    ### определения сдвига (зависит от направления окна)
-    offset <- 
-        match.arg(align) %>%
-        switch(.,        
-            'left' = { width - 1 },
-            'right' = { 0 })
     # если период == NULL, то окна считаются по периодам свечей 
-    if (is.null(period) == TRUE || (period == freq$units)    == TRUE) {
+    if (is.null(period) == TRUE || (period == freq$units) == TRUE) {
+        ### определение сдвига (зависит от направления окна)
+        offset <- 
+            match.arg(align) %>%
+            switch(.,        
+                'left' = { width - 1 },
+                'right' = { 0 })
         # выделение старт/стоп номеров строк
         row_nums <- 
             {
                 if (add_bySlice == FALSE) {
-                    data[interval]
+                    ohlc_data[interval]
                 } else {
-                    data
+                    ohlc_data
                 }
             } %>%
             index(.) %>%
@@ -247,8 +249,7 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
             }
         rm(data_ind)
         # подготовка данных для анализа
-        temp_subset <- data[row_nums, ]
-        # 
+        temp_subset <- ohlc_data[row_nums, ]
         # полный набор индексов для выходных данных (пока не используется)
         # result_ind <- 
         #     nrow(temp_subset) %>%
@@ -263,7 +264,8 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         start_row_num <- 
             nrow(temp_subset) %>%
             seq.int(width, ., by)
-        result.list <- lapply(start_row_num, 
+        
+        RESULT.list <- lapply(start_row_num, 
             function(x) {
                 if (justIndex == TRUE) {
                     rbind.data.frame(
@@ -279,15 +281,19 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
                 nrow(temp_subset) %>%
                 (width + 1):. %>%
                 temp_subset[., ]
-            result.list <- 
-                RollingSlicer(data = temp_subset, start_date, end_date, period = NULL, 
+            RESULT.list <- 
+                RollingSlicer(
+                    ohlc_data = temp_subset, 
+                    from_date, to_date, period = NULL, 
                     width = by, by = NULL, align,
-                    add_bySlice = FALSE, justIndex = justIndex) %>%
-                list(widthSlice = result.list, bySlice = .)
+                    add_bySlice = FALSE, justIndex = justIndex
+                ) %>%
+                list(widthSlice = RESULT.list, bySlice = .)
         } 
     } else {
         ## если period != NULL, то окна считаются по указанным в параметрах периодам
-        #
+        
+        ### определение сдвига (зависит от направления окна)
         # offset <- 
         #     match.arg(period) %>%
         #     switch(.,        
@@ -299,21 +305,15 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         #         'months' = days(x),                         
         #         'years' = years(x)
         #     )
-        #
-        # выделение старт/стоп номеров строк 
-        row_nums <- 
-            data[interval] %>%
-            index(.) %>%
-            { 
-                which(data_ind %in% .) 
-            }
-        rm(data_ind)
-        ## выделение нужного для анализа интервала
-        #
-        temp_subset <- data[interval] 
-        # простановка enpoint'ов 
-        ends_ <- 
-            endpoints(x = temp_subset, on = period, k = 1) %>%
+        offset <- 
+            match.arg(align) %>%
+            switch(.,        
+                'left' = { width },
+                'right' = { 0 })
+
+        ### простановка enpoint'ов в исходные данные 
+        ohlc_data$ends <- 
+            endpoints(x = ohlc_data, on = period, k = 1) %>%
             # модификация (перенос endpoint'ов на начало периода)
             {
                 x <- .
@@ -325,15 +325,26 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
                 return(x)
             } %>% 
             {
-                temp_subset$endpoint <- NA
-                temp_subset$endpoint[.] <- 1
-                temp_subset$endpoint[.] <- cumsum(temp_subset$endpoint[.])
-                return(temp_subset$endpoint)
+                ohlc_data$ends <- NA
+                ohlc_data$ends[.] <- 1
+                ohlc_data$ends[.] <- cumsum(ohlc_data$ends[.])
+                return(ohlc_data$ends)
             } %>%
-        na.locf(.) 
-        # 
+            na.locf(.) 
+        # выделение старт/стоп номеров строк 
+        interval_rows <- 
+            ohlc_data[interval] %>%
+            index(.) %>%
+            { 
+                which(data_ind %in% .) 
+            }
+        rm(data_ind)
+        
+        ## выделение нужного для анализа интервала
+        ohlc_data <- ohlc_data[1:last(interval_rows), ]
+        # полный набор индексов для выходных данных (пока не используется)
         # result_ind <- 
-        #     unique(coredata(ends_)) %>%
+        #     unique(coredata(ohlc_data$ends)) %>%
         #     max(.) %>%
         #     {
         #         seq((width - offset), (. - offset), by = by) 
@@ -342,53 +353,48 @@ RollingSlicer <- function(data, start_date, end_date, period = NULL,
         #         index(temp_subset)[.]
         #     }
         #
-        #    индексы строк начала окон
-        start_row_num <- 
-            unique(coredata(ends_)) %>%
-            max(.) %>%
+        # endpoint'ы строк начала окон
+        start_ends <- 
+            unique(coredata(ohlc_data$ends[interval_rows])) %>%
             {
-                seq.int(width, ., by)
+                seq.int(
+                    min(.), max(.), 
+                    by
+                )
             }
-        result.list <- lapply(start_row_num, 
+
+        RESULT.list <- lapply(1:length(start_ends), 
             function(x) {
                 win_start <- 
                     { 
-                        x - width + 1
+                        start_ends[x] - offset 
                     } %>%
                     {
-                        xts::first(which(ends_ == .))
+                        xts::first(which(ohlc_data$ends == .))
                     } 
-                win_end <- xts::last(which(ends_ == x))
+                win_end <- xts::last(which(coredata(ohlc_data$ends) == start_ends[x] - sign(offset)))
                 if (justIndex == TRUE) {
                     rbind.data.frame(
-                        data.frame(Index = index(temp_subset[win_start, ])), 
-                        data.frame(Index = index(temp_subset[win_end, ]))
+                        data.frame(Index = index(ohlc_data[win_start, ])), 
+                        data.frame(Index = index(ohlc_data[win_end, ]))
                     )    
                 } else {
-                    .subset_xts(temp_subset, win_start:win_end)
+                    .subset_xts(ohlc_data, win_start:win_end)
                 }
             })    
         if (add_bySlice == TRUE) {
-            temp_subset <- 
-                {
-                    xts::last(which(ends_ == width))
-                } %>%
-                {
-                    text <- index(ends_[.])
-                    paste0(text,'::')
-                } %>%
-                temp_subset[.] %>%
-                .[-1, ]
-            result.list <- 
-                RollingSlicer(data = temp_subset, start_date, end_date, period, 
-                    width = by, by = NULL, align,
-                    add_bySlice = FALSE, justIndex = justIndex) %>%
-                list(widthSlice = result.list, bySlice = .)
-            rm(temp_subset)
+            RESULT.list <- 
+                RollingSlicer(
+                    ohlc_data = ohlc_data, 
+                    from_date, to_date, period, 
+                    width = by, by = NULL, align = 'right',
+                    add_bySlice = FALSE, justIndex = justIndex
+                ) %>%
+                list(widthSlice = RESULT.list, bySlice = .)
         }
     } 
     #
-    return(result.list)
+    return(RESULT.list)
 }
 #
 #' Функция простановки endpoint'ов
