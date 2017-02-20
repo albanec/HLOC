@@ -210,7 +210,7 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @export 
 RollingSlicer <- function(ohlc_data, 
                           from_date, to_date, period = NULL, 
-                          width, by = NULL, align = 'left',
+                          width, by = NULL, align = c('left', 'right'),
                           add_bySlice = FALSE, 
                           justIndex = FALSE) {
     ### подготовка

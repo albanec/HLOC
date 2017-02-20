@@ -48,10 +48,11 @@ data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret
 ## нарезка временных интервалов для обучения/торговли
 system.time(
   {
-    data_slices <- RollingSlicer(data = data_source.list[[1]], start_date = from.date, 
-                                 end_date = to.date, period = 'months', 
-                                 width = 6, by = 3, align = 'right',
-                                 add_bySlice = TRUE)
+    data_slices <- RollingSlicer(data = data_source.list[[1]], 
+        start_date = from.date, 
+        end_date = to.date, period = 'months', 
+        width = 6, by = 3, align = 'left',
+        add_bySlice = TRUE)
  }
 )
 # ## bf-оптимизация на обучающих данных 
@@ -90,8 +91,9 @@ system.time(
 # )
 system.time(
   {
-    learning_data <- TestStr_RollerOpt_cl(data_slices, sma_begin = 10, sma_end = 100, sma_step = 1,
-                                                    rolling_opt = TRUE)
+    learning_data <- TestStr_RollerOpt_cl(data_slices, 
+        sma_begin = 10, sma_end = 100, sma_step = 1,
+        rolling_opt = TRUE)
   }
 )
 CleanGarbage(target = 'temp', env = '.GlobalEnv')
