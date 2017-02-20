@@ -38,10 +38,12 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
     #
     require(doParallel)
     FUN <- match.fun(FUN)
-
-    workers <- detectCores() - 1    
-    registerDoParallel(cores = workers) 
     
+    workers <- detectCores() - 1    
+    if (rolling_opt == FALSE) {    
+        registerDoParallel(cores = workers)    
+    }
+     
     n_vars <- nrow(var.df)
 
     result <- foreach(i = 1:workers) %dopar% {
@@ -103,6 +105,9 @@ RollerOpt_learning_mc <- function(slice_index, ohlc_source,
     #
     #require(doParallel)
     FUN <- match.fun(FUN)
+    
+    workers <- detectCores() - 1
+    registerDoParallel(cores = workers)  
     
     ## Вычисление оптимизаций на обучающих периодах
     n_vars <- nrow(var.df)
