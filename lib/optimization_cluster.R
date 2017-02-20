@@ -208,7 +208,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_source,
             data_for_cluster <- CalcKmean.preparation(data = x, 
                 n.mouth = win_size, 
                 hi = TRUE, q.hi = 0.5, 
-                one.scale = FALSE)
+                only_profitable = TRUE)
             data_for_cluster$profit <- NULL
             data_for_cluster$draw <- NULL 
             ## Вычисление кластеров 

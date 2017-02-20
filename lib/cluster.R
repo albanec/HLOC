@@ -21,7 +21,8 @@
 CalcKmean.preparation <- function(data, n.mouth ,
                                   hi = TRUE, q.hi = 0.5, 
                                   low = FALSE, q.low = 0,
-                                  one.scale = FALSE) {
+                                  one.scale = FALSE,
+                                  only_profitable = FALSE) {
     #
     # выделение столбцов с переменными
     df <- Subset_byTarget.col(data = data, target = '_')
@@ -35,17 +36,19 @@ CalcKmean.preparation <- function(data, n.mouth ,
         {
             which(colnames(data) %in% 'DrawdownMaxPercent')
         } %>%
-        data[, .] 
+        data[, .]
+    # если нужны только профитные (profit > 0) результаты, то
+    if (only_profitable == TRUE) {
+        df <- df[df$profit > 0]
+    }
     # создание нормированной метрики
     df$profit.norm <- (df$profit * 12) / (abs(df$draw) * n.mouth)
     #
     if (hi | low != FALSE) {
-        df <-
-            colnames(df) %>%
-            length(.) %>% 
-            {
-                CalcQuantile(data = df, var = ., hi = hi, q.hi = q.hi)
-            }
+        df <- CalcQuantile(data = df, 
+            var = which(colnames(df) %in% 'profit.norm'), 
+            hi = hi, 
+            q.hi = q.hi)
     }
     if (one.scale == TRUE) {
         var.cols <- grep(colnames(data), '_')

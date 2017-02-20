@@ -154,7 +154,7 @@ CleanGarbage.inCols <- function(x, target = 'temp') {
 #'
 #' @export 
 CalcQuantile <- function(data, var, q.hi = 0, q.low = 0, 
-                                                 two = FALSE, low = FALSE, hi = FALSE, abs = FALSE) {
+                         two = FALSE, low = FALSE, hi = FALSE, abs = FALSE) {
     #
     if (two == TRUE) {
         # подготовка данных
