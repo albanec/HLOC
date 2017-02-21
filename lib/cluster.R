@@ -39,7 +39,7 @@ CalcKmean.preparation <- function(data, n.mouth ,
         data[, .]
     # если нужны только профитные (profit > 0) результаты, то
     if (only_profitable == TRUE) {
-        df <- df[df$profit > 0]
+        df <- df[which(df$profit > 0), ]
     }
     # создание нормированной метрики
     df$profit.norm <- (df$profit * 12) / (abs(df$draw) * n.mouth)
