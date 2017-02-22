@@ -50,7 +50,9 @@ BotCombination.raw_data <- function(ohlc_source,
         grep(pattern = 'StrGear_', x = env_list) %>%
         {
             env_list[.] %>%
-            .[-grep(pattern = '.', x = ., fixed = TRUE)]
+            {
+                .[-grep(pattern = '.', x = ., fixed = TRUE)]
+            }
         }
     for (i in 1:length(bot_names)) {
         FUN_name <- paste0('StrGear_', bot_names[i])
@@ -83,7 +85,7 @@ BotCombination.raw_data <- function(ohlc_source,
                     bot_name <- map_data[[x]]$name
                     # подготовка eval-строки
                     var <- map_data[[x]][, grep('_', names(map_data[[x]]))]
-                    var_names <- names(x)
+                    var_names <- names(var)
                     eval_str <- 
                         foreach(i = 1:length(var_names), .combine = c) %do% {
                             paste0(var_names[i],'=',var[1, i])
@@ -128,12 +130,9 @@ BotCombination.raw_data <- function(ohlc_source,
     #
     if (add_benchmark == TRUE) {
         # проверка наличия и подгрузка handler-функций для нужных ботов
-        FUN_name_vector <- 
-            grep(pattern = '.trades_handler', x = env_list) %>%
-            {
-                env_list[.] %>%
-                .[-grep(pattern = '.', x = ., fixed = TRUE)]
-            }
+            FUN_name_vector <- 
+                grep(pattern = '.trades_handler', x = env_list) %>%
+                env_list[.]
         for (i in 1:length(bot_names)) {
             FUN_name <- paste0('StrGear_',bot_names[i],'.trades_handler')
             if (any(FUN_name_vector %in% FUN_name == TRUE)) {
@@ -229,7 +228,7 @@ BotCombination.raw_data <- function(ohlc_source,
             } %>%
             unlist(., recursive = FALSE)
         #
-        return(TRADE_TABLE, BENCHMARK_TABLE)
+        return(list(TRADE_TABLE, BENCHMARK_TABLE))
     }
     #
     return(TRADE_TABLE)

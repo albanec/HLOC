@@ -45,15 +45,19 @@ DatesTable <- function(data, states) {
         unique(.) %>%
         length(.)
     ### бары в рынке
-    nbar.trade <-
-        states[states$pos.bars != 0] %>%
-        {
-            which(!duplicated(.$pos.num, fromLast = TRUE))        
-        } %>%
-        {
-            states[.]$pos.bars
-        } %>%
-        sum(.)
+    if ('pos.bars' %in% colnames(PORTFOLIO[[1]])) {
+        nbar.trade <-
+            states[states$pos.bars != 0] %>%
+            {
+                which(!duplicated(.$pos.num, fromLast = TRUE))        
+            } %>%
+            {
+                states[.]$pos.bars
+            } %>%
+            sum(.)    
+    } else {
+        nbar.trade <- nbar
+    }
     ### бары вне рынка
     nbar.out <- nbar - nbar.trade
     ### таблица временных метрик

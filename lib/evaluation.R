@@ -10,14 +10,15 @@
 #' по данным отработки стратегии (data_strategy.list[[1]]) 
 #' 
 #' @param data Входной xts данных отработки стратегии (data_strategy.list[[1]])
-#' @param    balance Стартовый баланс
+#' @param balance Стартовый баланс
 #'    
 #' @return perfomanceTable.list Итоговая perfomance-таблица (list)
 #'
 #' @export
 PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strategy.list[[2]], 
                             trades_table = trades_table.list,
-                            balance_start, ret_type, fast = FALSE, dd_data_output = FALSE) {
+                            balance_start, ret_type, fast = FALSE, dd_data_output = FALSE,
+                            trades_stats = TRUE) {
     #
     ## Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
     if (fast == TRUE) {
@@ -58,9 +59,13 @@ PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strate
     }
     ## profit метрики
     cat('INFO(PerfomanceTable):    Calc ProfitTable', '\n')
-    profit_table <- ProfitTable(data = data, trades_table = trades_table, #DrawdownsTable = drawdowns_table,
+    profit_table <- ProfitTable(data = data, 
+        trades_table = trades_table, 
+        #DrawdownsTable = drawdowns_table,
         balance_start = balance_start, 
-        nbar = dates_table$BarsNum, nbar.trade = dates_table$BarsNumIn)
+        by = ifelse(trades_stats == TRUE, 'both', 'days'),
+        nbar = dates_table$BarsNum,
+        nbar.trade = dates_table$BarsNumIn)
     ## расчёт коэффициентов
     cat('INFO(PerfomanceTable):    Calc RatioTable', '\n')
     ratio_table <- RatioTable(returns = data$perfReturn, ret_type = ret_type)
@@ -70,22 +75,30 @@ PerfomanceTable <- function(data = data_strategy.list[[1]], states = data_strate
         abs(.) %>%
         data.frame(RatioRecoveryFactor = .)
     # коэф. выигрыша
-    payoff_ratio <- 
-        profit_table$TradesWinAverageProfit / profit_table$TradesLossAverageLoss %>%
-        abs(.) %>%
-        data.frame(RatioPayoff = .)
-    #
+    if (trades_stats == TRUE) {
+        payoff_ratio <- 
+            profit_table$TradesWinAverageProfit / profit_table$TradesLossAverageLoss %>%
+            abs(.) %>%
+            data.frame(RatioPayoff = .)
+    } else {
+        payoff_ratio <- data.frame(RatioPayoff = NA)
+    }
+    
     ### итоговая таблица
     cat('INFO(PerfomanceTable):    Build PerfomanceTable', '\n')
-    perfomance_table <- cbind(dates_table, ratio_table, 
-        rf, payoff_ratio, 
-        drawdowns_table, profit_table)
+    perfomance_table <- cbind(dates_table, 
+        ratio_table, 
+        rf, 
+        payoff_ratio, 
+        drawdowns_table, 
+        profit_table)
     #
     cat('INFO(PerfomanceTable):    Calc PerfomanceMetrics ... OK', '\n')
     #
     if (dd_data_output == TRUE) {
         return(list(perfomance_table = perfomance_table, dd.list = drawdowns_data_output.list))
     }
+    #
     return(perfomance_table)
 }
 

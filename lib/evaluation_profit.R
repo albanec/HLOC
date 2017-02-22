@@ -7,13 +7,16 @@
 #'
 #' Функция вычисляет параметры по доходностям (дней и сделок) и формирует итоговый DF 
 #' 
-#' @param data Полные данные (после    отработки стратегии)
-#' @param balance Стартовый баланс
+#' @param data Полные данные (после отработки стратегии)
+#' @param trades_table Данные таблицы сделок
+#' @param balance_start Стартовый баланс
+#' @param by Расчет по дням, трейдам или всё ('days', 'trades', 'both') 
 #'
 #' @return profitTable DF с данными по profit'у
 #'
 #' @export
-ProfitTable <- function(data, trades_table, balance_start, ...) {
+ProfitTable <- function(data, trades_table, balance_start, by = 'both',
+                        ...) {
     ### расчёт итоговой доходности 
     # здесь для анализа используется equty, чтобы лишний раз не считать разницу
     full_return <- 
@@ -36,13 +39,17 @@ ProfitTable <- function(data, trades_table, balance_start, ...) {
         }
  
     ### расчёт метрик по дням
-    profit_table_byDays <- ProfitTable.byDays(data)
+    if (by %in% c('days', 'both')) {
+        profit_table_byDays <- ProfitTable.byDays(data)    
+    }
     ### расчёт метрик по сделкам для корзины
-    profit_table_byTrades <-    
-        ProfitList_byTrades(data = trades_table[[1]]) %>%
-        {
-            .[[1]]
-        }
+    if (by %in% c('trades', 'both')) {
+        profit_table_byTrades <-    
+            ProfitList_byTrades(data = trades_table[[1]]) %>%
+            {
+                .[[1]]
+            }
+    }
     ### формирование итогового DF
     profit_table <- 
         data.frame(
@@ -62,8 +69,16 @@ ProfitTable <- function(data, trades_table, balance_start, ...) {
                 x <- cbind(x, ProfitBars = full_return_bar, ProfitBarsIn = full_return_nbar_trade)
             }
             return(x)
-        } %>%
-        cbind(., profit_table_byDays, profit_table_byTrades)
+        }
+    if (by %in% 'days') {
+        profit_table %<>% cbind(., profit_table_byDays)    
+    }
+    if (by %in% 'trades') {
+        profit_table <- cbind(., profit_table_byTrades)    
+    }
+    if (by %in% 'both') {
+        profit_table <- cbind(., profit_table_byDays, profit_table_byTrades)    
+    }
     #
     return(profit_table)
 }
