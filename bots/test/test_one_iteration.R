@@ -52,18 +52,18 @@ data_strategy.list <- TestStr.gear(data_source = data_source.list[[1]],
                                    basket_weights, slips, commissions)
 ## формирование таблицы сделок
 # чистим от лишних записей
-data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
+data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
 # лист с данными по сделкам (по тикерам и за всю корзину)
 basket <- TRUE
-trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = basket, convert = FALSE) #TRUE
+trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = basket, convert = FALSE) #TRUE
 # очистка мусора по target = 'temp'
 CleanGarbage(target = 'temp', env = '.GlobalEnv')
 gc()
 ## оценка perfomance-параметров
 perfomanceTable <- 
-  PerfomanceTable(data = data_strategy.list[[1]], 
-                  states = data_strategy.list[[2]],
-                  trades_table = trades_table.list,
+  PerfomanceTable(DATA = data_strategy.list[[1]], 
+        STATES = data_strategy.list[[2]],
+                  TRADES = trades_table.list,
                   balance = balance_start, 
                   ret_type = ret_type) %>%
   # добавление использованных параметров

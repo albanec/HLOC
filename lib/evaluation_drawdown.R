@@ -145,9 +145,9 @@ Drawdowns.dd_data <- function(data, fullData = FALSE) {
     #
     if (fullData == TRUE) {
         return(list(dd_data = dd_data, drawdowns = drawdowns))    
-    } else {
-        return(drawdowns)    
     }
+    #
+    return(drawdowns)    
 }
 #
 ###
@@ -185,12 +185,12 @@ Drawdowns.calcSummary <- function(data, n) {
             ## заполняем поля данными
             # начало dd
             df$From <- 
-                .$date[1] %>%
+                .$INDEX[1] %>%
                 as.POSIXct(., origin = '1970-01-01') 
             # конец dd
             df$To <- 
                 {
-                    .$date[nrow(.)]
+                    .$INDEX[nrow(.)]
                 } %>%
                 as.POSIXct(., origin = '1970-01-01') 
             # максимальная глубина
@@ -200,8 +200,8 @@ Drawdowns.calcSummary <- function(data, n) {
             df$Length <- nrow(.)
             # дни в просадке
             df$Days <-
-             # as.POSIXct(.$date, origin = '1970-01-01') %>%
-                CalcTradingDays(x = .$date, fullDays = TRUE) 
+                # as.POSIXct(.$INDEX, origin = '1970-01-01') %>%
+                CalcTradingDays(x = .$INDEX, fullDays = TRUE) 
             return(df)
         } #%>%
         # {

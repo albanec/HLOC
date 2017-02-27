@@ -8,20 +8,19 @@
 #' Функция вычисляет параметры по доходностям сделок и 
 #' формирует итоговый лист с DF-данными (по данным всех тикеров корзины или в целом по корзине)
 #' 
-#' @param data Таблица сделок (с данными по тикерам)
-#' @param balance Стартовый баланс
+#' @param trades_table Таблица сделок (с данными по тикерам)
 #'
 #' @return result.list List с DF-данными по profit'у сделок (по тикерам корзины)
 #'
 #' @export
 #
-ProfitList_byTrades <- function(data, ...) {
+ProfitTable.byTrades <- function(trades_table) {
     # подготовка данных для обработки (фильтрация субсделок)
-    names.set <- unique(data$Ticker)
+    names.set <- unique(trades_table$Ticker)
     ### Расчёт
     result.list <- lapply(names.set, 
         function(x){
-            ProfitTable.byTrades.oneTicker(data = data, ticker_name = x)
+            TradesStats.one_ticker(trades_table, ticker_name = x)
         })
     names(result.list) <- names.set
     #
@@ -32,34 +31,34 @@ ProfitList_byTrades <- function(data, ...) {
 #'
 #' Функция вычисляет параметры по доходностям сделок и формирует итоговый DF (по данным одного тикера)
 #' 
-#' @param data Таблица сделок с данными по нужному тикеру 
+#' @param trades_table Таблица сделок с данными по нужному тикеру 
 #' @ticker_name Имя тикера
 #' @param balance Стартовый баланс
 #'
 #' @return result DF с данными по profit'у сделок тикера
 #'
 #' @export
-ProfitTable.byTrades.oneTicker <- function(data, ticker_name, ...) {
+TradesStats.one_ticker <- function(trades_table, ticker_name, ...) {
     # подготовка данных для обработки (фильтрация субсделок)
-    data %<>%
+    trades_table %<>%
         # выделение нужных строк
         {
             temp.ind <- which(.$Ticker == ticker_name) 
-            result <- data[temp.ind, ]
+            result <- trades_table[temp.ind, ]
             return(result)
         } %>%
         # фильтрация субсделок
         {
             temp.ind <- which(.$PositionNum%%1 == 0)
-            result <- data[temp.ind, ]
+            result <- trades_table[temp.ind, ]
             return(result)
         }     
     ### Всего сделок
-    trades.num <- xts::last(data$PositionNum)
+    trades.num <- xts::last(trades_table$PositionNum)
     ### разбор статистики
     # индексы прибыльных/убыточных сделок
-    goodTrade.index <- which(data$TradeReturn >= 0)
-    badTrade.index <- which(data$TradeReturn < 0)
+    goodTrade.index <- which(trades_table$TradeReturn >= 0)
+    badTrade.index <- which(trades_table$TradeReturn < 0)
     ### Всего сделок в плюс
     numGoogTrades <- 
         goodTrade.index %>%
@@ -76,7 +75,7 @@ ProfitTable.byTrades.oneTicker <- function(data, ticker_name, ...) {
     # подготовка данных для анализа
     tradesSeries <- 
     {
-        ifelse(data$TradeReturn >= 0, 1, -1)
+        ifelse(trades_table$TradeReturn >= 0, 1, -1)
     } %>%
     rle(.) %>%
     {
@@ -96,46 +95,46 @@ ProfitTable.byTrades.oneTicker <- function(data, ticker_name, ...) {
         }    
     ### Профит-фактор
     ## всего заработано (по сделкам)
-    goodTrade.sum <- sum(data$TradeReturn[goodTrade.index])
+    goodTrade.sum <- sum(trades_table$TradeReturn[goodTrade.index])
     ## всего слито (по сделкам)
-    badTrade.sum <- sum(data$TradeReturn[badTrade.index])
+    badTrade.sum <- sum(trades_table$TradeReturn[badTrade.index])
     ## PF
     pf.trades <- goodTrade.sum / abs(badTrade.sum)
     ### Средний доход по сделкам
     averageGoodTradeReturn <- 
-        data$TradeReturn[goodTrade.index] %>%
+        trades_table$TradeReturn[goodTrade.index] %>%
         mean(.)
     ### Средний доход по сделкам в %
     averageGoodTradeReturnPercent <- 
-        data$TradeReturnPercent[goodTrade.index] %>%
+        trades_table$TradeReturnPercent[goodTrade.index] %>%
         mean(.)
     ### Средний минус
     averageBadTradeReturn <- 
-        data$TradeReturn[badTrade.index] %>%
+        trades_table$TradeReturn[badTrade.index] %>%
         mean(.)
     ### Средний минус в %
     averageBadTradeReturnPercent <- 
-        data$TradeReturnPercent[badTrade.index] %>%
+        trades_table$TradeReturnPercent[badTrade.index] %>%
         mean(.)
     ### Среднее баров на сделку
     averageTradeBars <- 
-        mean(data$BarsHeld) %>%
+        mean(trades_table$BarsHeld) %>%
         trunc(.)
     ### Среднее баров на прибыльную сделку
     averageGoodTradeBars <- 
-        mean(data$BarsHeld[goodTrade.index]) %>%
+        mean(trades_table$BarsHeld[goodTrade.index]) %>%
         trunc(.)
     ### Среднее баров на убыточную сделку
     averageBadTradeBars <- 
-        mean(data$BarsHeld[badTrade.index]) %>%
+        mean(trades_table$BarsHeld[badTrade.index]) %>%
         trunc(.) %>%
         {
             ifelse(. == 0, 1, .)
         }
     ### Средний П/У на сделку
-    averageTradeReturn <- mean(data$TradeReturn)
+    averageTradeReturn <- mean(trades_table$TradeReturn)
     ### Средний П/У на сделку в %
-    averageTradeReturnPercent <- mean(data$TradeReturnPercent)
+    averageTradeReturnPercent <- mean(trades_table$TradeReturnPercent)
     # 
     ### Формирование итоговой таблицы
     result <- data.frame(TradesNum = trades.num,                        

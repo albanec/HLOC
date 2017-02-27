@@ -5,7 +5,7 @@
 ###
 #' Создание итоговой таблицы сделок
 #' 
-#' @param data Входной xts ряд сделок ( == states)
+#' @param STATES Входной xts ряд сделок ( == states)
 #' @param basket Расчитывать по корзине, или нет (T/F)
 #' @param ticker_names Вектор тикеров (необязательно)
 #' @param convert Переносить открытия/закрытия в одну строку или нет (по умолчанию нет)
@@ -13,20 +13,23 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-TradesTable.calc <- function(data = data_strategy.list[[2]], basket = FALSE, convert = FALSE, ticker_names = NULL,
+TradesTable.calc <- function(STATES = data_strategy.list[[2]], 
+                             basket = FALSE, convert = FALSE, ticker_names = NULL,
                              bto.name = 'BTO', bto_add.name = 'BTO_add',
                              sto.name = 'STO', sto_add.name = 'STO_add',
                              stc.name = 'STC', stc_drop.name = 'STC_drop',
                              btc.name = 'BTC', btc_drop.name = 'BTC_drop') {
     #
+    STATES <- STATES[!is.na(STATES$pos.num)]
+    
     if (is.null(ticker_names)) {
         ticker_names <- 
-            grep('.equity', names(data)) %>%
-            names(data)[.] %>%
+            grep('.equity', names(STATES)) %>%
+            names(STATES)[.] %>%
             sub('.equity', '', .)     
     }
     pos.num.list <- 
-        max(data$pos.num) %>%
+        max(STATES$pos.num) %>%
             1:. %>%
         {
             names(.) <- .
@@ -39,7 +42,7 @@ TradesTable.calc <- function(data = data_strategy.list[[2]], basket = FALSE, con
         # посделочный расчёт, на выходе лист с df по каждой сделке
         lapply(pos.num.list,
             function (x) {
-                TradeSummary(data, type = 'byTicker', n = x, ticker_names = ticker_names, 
+                TradeSummary(STATES, type = 'byTicker', n = x, ticker_names = ticker_names, 
                     bto.name, bto_add.name,
                     sto.name, sto_add.name,
                     stc.name, stc_drop.name,
@@ -55,7 +58,7 @@ TradesTable.calc <- function(data = data_strategy.list[[2]], basket = FALSE, con
         tradesTable_byBasket <- 
             lapply(pos.num.list,
                 function (x) {
-                    TradeSummary(data, type = 'byBasket', n = x, ticker_names = ticker_names, 
+                    TradeSummary(STATES, type = 'byBasket', n = x, ticker_names = ticker_names, 
                         bto.name = , bto_add.name,
                         sto.name, sto_add.name,
                         stc.name, stc_drop.name,
@@ -225,7 +228,8 @@ TradeSummary <- function(data, type, n, ticker_names = NULL,
     data %<>% Convert.XTStoDF(.) 
     
     ### расчёт итогового DF
-    trade_summary <- TradeSummary.summary_df(data, type, ticker_names,
+    trade_summary <- TradeSummary.summary_df(data, 
+        type, ticker_names,
         bto.name, bto_add.name,
         sto.name, sto_add.name,
         stc.name, stc_drop.name,
@@ -276,7 +280,7 @@ TradeSummary.pos_num <- function(x) {
 ###
 #' Вычисление итогового df по сделке (вспомогательная функция)
 #' 
-#' @param data Входной xts ряд одной сделки
+#' @param x Входной xts ряд одной сделки
 #' @param type Тип анализа (byTicker/byBasket)
 #' @param ticker_names Вектор тикеров
 #' @param bto.name Написание открытия long
@@ -373,7 +377,7 @@ TradeSummary.summary_df <- function(x, type, ticker_names = NULL,
     # дата открытия позиции
     summary$EntryDate <- 
         ifelse(x$pos != 0 & x$pos.drop == 0, 
-            x$date, 
+            x$INDEX, 
             NA) %>%
         as.POSIXct(., origin = '1970-01-01') 
     ## цена тикера на открытии (не используется в "basket" режиме)
@@ -401,7 +405,7 @@ TradeSummary.summary_df <- function(x, type, ticker_names = NULL,
     ## дата закрытия
     summary$ExitDate <- 
         ifelse(x$pos == 0 | x$pos.drop != 0, 
-            x$date, 
+            x$INDEX, 
             NA) %>%
         as.POSIXct(., origin = '1970-01-01') 
     ## цена тикера на закрытии (не используется в 'byBasket' режиме)

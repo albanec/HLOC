@@ -748,22 +748,22 @@ OneThreadRun.test_str <- function(data.xts,
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
+    data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
     if (rolling_opt == TRUE) {
       ### оценка perfomance-параметров
-      perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
-                                          states = 0,
-                                          trades_table = 0,
+      perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+                                          STATES = 0,
+                                          TRADES = 0,
                                           balance = balance_start, ret_type = 0, 
                                           fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       basket <- TRUE
-      trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = basket, convert = TRUE)
+      trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = basket, convert = TRUE)
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(data = data_strategy.list[[1]], 
-                                         states = data_strategy.list[[2]],
-                                         trades_table = trades_table.list,
+      perfomanceTable <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+                                         STATES = data_strategy.list[[2]],
+                                         TRADES = trades_table.list,
                                          balance = balance_start, 
                                          ret_type)  
     }

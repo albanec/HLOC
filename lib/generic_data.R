@@ -215,7 +215,7 @@ Convert.XTStoDF <- function(x) {
     if (is.xts(x) != TRUE) {
         stop(paste0('ERROR(Convert.XTStoDF):    Input Data wrong type!!!'))
     } else {
-        x <- data.frame(date = index(x), x, row.names = NULL)    
+        x <- data.frame(INDEX = index(x), x, row.names = NULL)    
     }
     #
     return(x)
@@ -236,7 +236,7 @@ Convert.DFtoXTS <- function(x) {
     if (is.data.frame(x) != TRUE) {
         stop(paste0('ERROR(Convert.DFtoXTS):    Input Data wrong type!!!'))
     } else {
-        x <- xts(x[, -1], order.by = as.POSIXct(x$date))
+        x <- xts(x[, -1], order.by = as.POSIXct(x$INDEX))
     }
     #
     return(x)

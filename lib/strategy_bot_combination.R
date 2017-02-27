@@ -391,8 +391,7 @@ BotCombination.handler <- function(ohlc.xts,
     temp.cache$balance[1] <- balance_start
     assign('portfolio.cache', temp.cache, envir = .CacheEnv)
     rm(temp.cache)
-
-# ///current
+    
     ### перебор расчёта сделок по единой шкале индексов
         # (данные по каждому боту корректируются единым обработчиком + формируются данные в целом по портфелю)
     lapply(1:length(index_norm),
@@ -618,6 +617,12 @@ BotCombination.handler <- function(ohlc.xts,
                 # names(DATA[[i]][[2]])[names(DATA[[i]][[2]]) == 'equity'] <- paste0(ticker,'.equity')
                 # names(DATA[[i]][[2]])[names(DATA[[i]][[2]]) == 'perfReturn'] <- paste0(ticker,'.equity')
                 names(DATA[[i]]) <- c('full', 'states')
+                
+                # добавление столбцов для пост-обработки в EVA
+                DATA[[i]][[1]]$pos.add <- 0
+                DATA[[i]][[1]]$pos.drop <- 0
+                DATA[[i]][[2]]$pos.add <- 0
+                DATA[[i]][[2]]$pos.drop <- 0
                 #
                 return(DATA[[i]])
             }
@@ -721,6 +726,12 @@ BotCombination.handler <- function(ohlc.xts,
     # names(PORTFOLIO[[2]])[names(PORTFOLIO[[2]]) == 'equity'] <- paste0(ticker,'.equity')
     # names(PORTFOLIO[[2]])[names(PORTFOLIO[[2]]) == 'perfReturn'] <- paste0(ticker,'.equity')
     names(PORTFOLIO) <- c('full', 'states')
+
+    # добавление столбцов для пост-обработки в EVA
+    # PORTFOLIO[[1]]$pos.add <- 0
+    # PORTFOLIO[[1]]$pos.drop <- 0
+    # PORTFOLIO[[2]]$pos.add <- 0
+    # PORTFOLIO[[2]]$pos.drop <- 0
     #
     return(list(DATA, PORTFOLIO))
 }

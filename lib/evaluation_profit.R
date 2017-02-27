@@ -7,32 +7,33 @@
 #'
 #' Функция вычисляет параметры по доходностям (дней и сделок) и формирует итоговый DF 
 #' 
-#' @param data Полные данные (после отработки стратегии)
+#' @param asset Анализируемые данные баланса (balance + im.balance или eqiuty)
 #' @param trades_table Данные таблицы сделок
 #' @param balance_start Стартовый баланс
-#' @param by Расчет по дням, трейдам или всё ('days', 'trades', 'both') 
+#' @param by Расчет по дням, трейдам или всё ('days', 'trades', 'both')
+#' @param ...
 #'
 #' @return profitTable DF с данными по profit'у
 #'
 #' @export
-ProfitTable <- function(data, trades_table, balance_start, by = 'both',
+ProfitTable <- function(asset, trades_table, balance_start, by = 'both',
                         ...) {
     ### расчёт итоговой доходности 
     # здесь для анализа используется equty, чтобы лишний раз не считать разницу
     full_return <- 
-        xts::last(data$equity) %>%
+        xts::last(asset) %>%
         as.numeric(.)
-    full_return_percent <- full_return * 100 / balance_start        
+    full_return_percent <- full_return * 100 / balance_start
     ## доходность в год
     full_return_annual <- 
-        index(data) %>%
+        index(asset) %>%
         ndays(.) %>%
         {
             full_return * 250 / .
         }        
     ## доходность в месяц
     full_return_monthly <-
-        index(data) %>%
+        index(asset) %>%
         ndays(.) %>%
         {
             full_return * 20 / .
@@ -40,12 +41,12 @@ ProfitTable <- function(data, trades_table, balance_start, by = 'both',
  
     ### расчёт метрик по дням
     if (by %in% c('days', 'both')) {
-        profit_table_byDays <- ProfitTable.byDays(data)    
+        profit_table_byDays <- ProfitTable.byDays(asset)
     }
     ### расчёт метрик по сделкам для корзины
     if (by %in% c('trades', 'both')) {
         profit_table_byTrades <-    
-            ProfitList_byTrades(data = trades_table[[1]]) %>%
+            ProfitTable.byTrades(trades_table[[1]]) %>%
             {
                 .[[1]]
             }
@@ -74,10 +75,10 @@ ProfitTable <- function(data, trades_table, balance_start, by = 'both',
         profit_table %<>% cbind(., profit_table_byDays)    
     }
     if (by %in% 'trades') {
-        profit_table <- cbind(., profit_table_byTrades)    
+        profit_table %<>% cbind(., profit_table_byTrades)    
     }
     if (by %in% 'both') {
-        profit_table <- cbind(., profit_table_byDays, profit_table_byTrades)    
+        profit_table %<>% cbind(., profit_table_byDays, profit_table_byTrades)
     }
     #
     return(profit_table)

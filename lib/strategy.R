@@ -583,22 +583,16 @@ CalcPrice.slips <- function(price, action, data_source, slips) {
 #'
 #' Чистит таблицу сделок от строк, у которых df$pos != 0 & df$n == 0 & df$diff.n ==0
 #'
-#' @param data Входной xts ряд состояний
+#' @param x Входной xts ряд состояний
 #'
 #' @return data Очищенный xts ряд состояний
 #'
 #' @export
-StatesTable.clean <- function(data) {
-    data %<>%
-        # условие для фильтрации "пустых сделок" (т.е. фактически ранее уже закрытых позиций)
-        {
-            df <- .
-            if ((df$n == 0 && df$diff.n ==0) != FALSE) {
-                df <- df[-which(df$n == 0 & df$diff.n ==0)]
-            }
-            return(df)
-        }
-    return(data)
+StatesTable.clean <- function(x) {
+    if ((x$n == 0 && x$diff.n ==0) != FALSE) {
+        x <- x[-which(x$n == 0 & x$diff.n ==0)]
+    }
+    return(x)
 }
 #
 # ------------------------------------------------------------------------------

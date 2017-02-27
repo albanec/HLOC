@@ -24,7 +24,7 @@ DatesTable <- function(data, states) {
     # cat('INFO(DateTable):    Calc Date Metrics', '\n', sep = '    ')
     trading.days <- 
         index(data) %>%
-        CalcTradingDays(x = .)
+        CalcTradingDays()
     ### начало торговли
     from.date <- 
         xts::first(data) %>%
@@ -45,7 +45,7 @@ DatesTable <- function(data, states) {
         unique(.) %>%
         length(.)
     ### бары в рынке
-    if ('pos.bars' %in% colnames(PORTFOLIO[[1]])) {
+    if ('pos.bars' %in% colnames(data)) {
         nbar.trade <-
             states[states$pos.bars != 0] %>%
             {
@@ -73,7 +73,7 @@ DatesTable <- function(data, states) {
 #'
 #' Возвращает количество торговых дней за период    
 #' 
-#' @param x Временной ряд жля анализа
+#' @param x Временной ряд для анализа
 #' @param fullDays Полный/неполный день
 #'    
 #' @return tradingDays Число торговых дней

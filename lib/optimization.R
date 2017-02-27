@@ -96,24 +96,24 @@ OneThreadRun <- function(data.xts, FUN,
     } else {
         ### Формирование таблицы сделок
         ## чистим от лишних записей
-        data_strategy.list[[2]] <- StatesTable.clean(data = data_strategy.list[[2]])
+        data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
         if (rolling_opt == TRUE) {
             ### оценка perfomance-параметров
-            perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
-                states = 0,
-                trades_table = 0,
+            perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+                STATES = 0,
+                TRADES = 0,
                 balance = balance_start, ret_type = 0, 
                 fast = TRUE)    
         } else {
             ## лист с данными по сделкам (по тикерам и за всю корзину)
-            trades_table.list <- TradesTable.calc(data = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
+            trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
             if (length(ticker) == 1) {
                 trades_table.list[[1]]$TradeReturnPercent <- trades_table.list[[1]]$TradeReturn * 100 / balance_start
             }
             ### оценка perfomance-параметров
-            perfomance_table <- PerfomanceTable(data = data_strategy.list[[1]], 
-                states = data_strategy.list[[2]],
-                trades_table = trades_table.list,
+            perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+                STATES = data_strategy.list[[2]],
+                TRADES = trades_table.list,
                 balance_start = balance_start, 
                 ret_type = return_type,
                 dd_data_output = dd_data_output)
