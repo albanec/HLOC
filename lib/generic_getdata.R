@@ -3,19 +3,20 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 ###
-#' Функция загрузки списка котировок за период from/to.date + сохранения в файлы
+#' Функция загрузки списка котировок за период from/to_date + сохранения в файлы
 #' 
 #' @param tickers CSV или вектор с тикерами
-#' @param from.date Дата начала (даты в формате '2015-01-01')
-#' @param to.date Дата конца (даты в формате '2015-01-01')
+#' @param from_date Дата начала (даты в формате '2015-01-01')
+#' @param to_date Дата конца (даты в формате '2015-01-01')
 #' @param period Вектор периодов (или единичное значение; из вектора будет выбрано min значение)
 #' @param maxattempts Количество попыток загрузки (для каждого тикера)
 #'
 #' @return data.list Лист с XTS по котировкам (+ все котировки сохраняются в csv файлы)
 #'
 #' @export
-GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, period, 
-                            maxattempts = 5, rename = FALSE, dir, local = TRUE) {
+GetOHLC <- function(tickers = 'TickerList.csv', 
+                    from_date, to_date, period, 
+                    maxattempts = 5, rename = FALSE, dir, local = TRUE) {
     # Зависимости:
     require(rusquant)
     # ----------
@@ -23,15 +24,15 @@ GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, peri
     # установка пути в temp папку
     old.dir <- getwd()
     setwd(dir)
-    cat('INFO(GetData.Tickers):    Current work.dir:', getwd(), '\n')    
+    cat('INFO(GetOHLC):    Current work.dir:', getwd(), '\n')    
     # проверка, tickers путь к .csv или нет
     if (all(grepl('.csv', tickers)) == TRUE) {
         # если путь, то выгружаем из .csv данные тикеров
-        cat('INFO(GetData.Tickers):    Loading Tickers: ', tickers, '\n')
+        cat('INFO(GetOHLC):    Loading Tickers: ', tickers, '\n')
         tickers <- 
             read.csv(tickers, header = F, stringsAsFactors = F) %>%
             .[, 1]     
-        cat('INFO(GetData.Tickers):    Loading Tickers: OK', '\n') 
+        cat('INFO(GetOHLC):    Loading Tickers: OK', '\n') 
     } 
     #
     n.ticker <- length(tickers)
@@ -44,14 +45,14 @@ GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, peri
         # количество попыток загрузки ограничено пер. maxattempts
         for (t in 1:maxattempts) {
             cat(
-                'INFO(GetData.Tickers):    (',i,'/',n.ticker,')', 
+                'INFO(GetOHLC):    (',i,'/',n.ticker,')', 
                 'Downloading: ',tickers[i],'    Attempt: ',t,'/',maxattempts,'\n'
             )
             # загрузка данных
-            data <- GetData.OneTicker(ticker = tickers[i], from.date = from.date, to.date = to.date, 
+            data <- GetOHLC.one_ticker(ticker = tickers[i], from_date = from_date, to_date = to_date, 
                 period = period.min, rename)
             if (exists('data')) {
-                cat('INFO(GetData.Tickers):    (',i,'/',n.ticker,')','Downloading ',tickers[i],'    complete','\n')
+                cat('INFO(GetOHLC):    (',i,'/',n.ticker,')','Downloading ',tickers[i],'    complete','\n')
                 break
             }
         }
@@ -85,6 +86,41 @@ GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, peri
 }
 #
 ###
+#' Функция загрузки тикера с Финам + (если нужно) переименовывает столбцы
+#' 
+#' @param ticker Нужный тикер
+#' @param from_date Дата-старт (даты в формате '2015-01-01')
+#' @param to_date Дата-стоп (даты в формате '2015-01-01')
+#' @param period Период свечей
+#' @param rename Нужно ли переименовывать (T/F)
+#'    
+#' @return data XTS массив
+#'
+#' @export
+GetOHLC.one_ticker <- function(ticker, period = '15min', 
+                              from_date, to_date = Sys.Date(), 
+                              rename = FALSE) {
+    # Зависимости:
+    require(rusquant)     
+    # ----------
+    #
+    cat('INFO(GetOHLC.one_ticker):    ', 'Download Source Data...', '\n')
+    # загрузка данных
+    data <- getSymbols(ticker, from = from_date, to = to_date, period = period, src = 'Finam', 
+        auto.assign = FALSE, warning = FALSE)
+    # проверка на правильность загруженных данных
+    if (is.xts(data) !=    TRUE) {
+        stop(paste0('ERROR(GetOHLC.one_ticker):    ticker ',ticker,' not present!!!'))
+    }
+    # нужно ли переименовывать данные к обезличенному OHLCV виду
+    # если rename == FALSE, данные будут вида 'ticker_name.OHLCV'
+    if (rename == TRUE) {
+        names(data) <- c('Open' , 'High' , 'Low' , 'Close' , 'Volume')    
+    }
+    return(data)
+}
+#
+###
 #' Функция выделения данных по tf и временному интервалу
 #'
 #' @param data.list Лист с котировками в XTS
@@ -94,14 +130,14 @@ GetData.Tickers <- function(tickers = 'TickerList.csv', from.date, to.date, peri
 #' @return 
 #'
 #' @export
-ExpandData <- function(data.list, frames, period) {
+ExpandOHLC <- function(data.list, frames, period) {
     # 
     ## проверка, в файле данные по периоду или нет
     if (any(grepl('.csv', frames)) == TRUE) {
-        cat('INFO(ExpandData):    Loading FrameList: ', frames, '\n')
+        cat('INFO(ExpandOHLC):    Loading FrameList: ', frames, '\n')
         frames <- read.csv(frames, header = F, stringsAsFactors = F)
         frames <- frames[, 1]        
-        cat('(ExpandData):    Loading FrameList: OK', '\n')
+        cat('(ExpandOHLC):    Loading FrameList: OK', '\n')
     } 
     # количество нужных временных интервалов
     n.frame <- length(frames)
@@ -117,20 +153,20 @@ ExpandData <- function(data.list, frames, period) {
         # имя тикера
         data.name <- names(data)[grep('Close', names(data))]
         data.name <- sub('.Close', '', data.name)
-        cat( 'INFO(ExpandData):    Processing Data:    ', data.name, '\n')
+        cat( 'INFO(ExpandOHLC):    Processing Data:    ', data.name, '\n')
         ## выделение данных по нужным временным периодам
         for (n in 1:n.frame) {
-            cat ('INFO(ExpandData):    Expand...    ', data.name, 'for TimeFrame ', frames[n], '\n')
+            cat ('INFO(ExpandOHLC):    Expand...    ', data.name, 'for TimeFrame ', frames[n], '\n')
             window <- frames[n] 
             ## для каждого временного периода выделяются по нужным периодам свечей
             for (t in 1:n.period) {
                 p <- period[t]
-                cat ('INFO(ExpandData):    Expand...    ', data.name, 'for Period ', p, '\n')
+                cat ('INFO(ExpandOHLC):    Expand...    ', data.name, 'for Period ', p, '\n')
                 data.temp <- 
                     # выделение данных по временному периоду
                     data[window] %>%
                     # выделение данных по периоду свечи
-                    ExpandData.toPeriod(., per = p)
+                    ExpandOHLC.to_period(., per = p)
                 # сохранение данных
                 Save_XTS.toCSV(data = data.temp, filename = data.name, period = p, tframe = n)
             }
@@ -140,8 +176,6 @@ ExpandData <- function(data.list, frames, period) {
         }
     }
 }
-    
-
 #
 ###
 #' Функция выделения данных по периодам свечей
@@ -152,7 +186,7 @@ ExpandData <- function(data.list, frames, period) {
 #' @return x XTS с данными (с новым периодом)
 #'
 #' @export
-ExpandData.toPeriod <- function(x, per) {
+ExpandOHLC.to_period <- function(x, per) {
     # подготовка данных по периоду
     if (per == '5min') { 
         p1 <- 'mins'
@@ -206,47 +240,12 @@ ExpandData.toPeriod <- function(x, per) {
             if (nrow(.) == length(ind)) {
                 index(.) <- ind 
             } else {
-                stop('ERROR(ExpandData.toPeriod): ')
+                stop('ERROR(ExpandOHLC.to_period): ')
             }
             return(.)
         }
     colnames(x) <- colNames
     #
     return(x)
-}
-#
-###
-#' Функция загрузки тикера с Финам + (если нужно) переименовывает столбцы
-#' 
-#' @param ticker Нужный тикер
-#' @param from.date Дата-старт (даты в формате '2015-01-01')
-#' @param to.date Дата-стоп (даты в формате '2015-01-01')
-#' @param period Период свечей
-#' @param rename Нужно ли переименовывать (T/F)
-#'    
-#' @return data XTS массив
-#'
-#' @export
-GetData.OneTicker <- function(ticker, period = '15min', 
-                              from.date, to.date = Sys.Date(), 
-                              rename = FALSE) {
-    # Зависимости:
-    require(rusquant)     
-    # ----------
-    #
-    cat('INFO(GetData.OneTicker):    ', 'Download Source Data...', '\n')
-    # загрузка данных
-    data <- getSymbols(ticker, from = from.date, to = to.date, period = period, src = 'Finam', 
-        auto.assign = FALSE, warning = FALSE)
-    # проверка на правильность загруженных данных
-    if (is.xts(data) !=    TRUE) {
-        stop(paste0('ERROR(GetData.OneTicker):    ticker ',ticker,' not present!!!'))
-    }
-    # нужно ли переименовывать данные к обезличенному OHLCV виду
-    # если rename == FALSE, данные будут вида 'ticker_name.OHLCV'
-    if (rename == TRUE) {
-        names(data) <- c('Open' , 'High' , 'Low' , 'Close' , 'Volume')    
-    }
-    return(data)
 }
 #

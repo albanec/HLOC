@@ -68,7 +68,7 @@ BotCombination.raw_data <- function(ohlc_source,
     TRADE_TABLE <- 
         foreach(i = 1:workers) %dopar% {
             # распределение ботов по потоку
-            map_range <- Delegate_mcore(i, n_bots, p = workers)
+            map_range <- Delegate(i, n_bots, p = workers)
             # проверка на наличие задания для worker'а
             if (is.null(map_range)) {
                 return(NA)
@@ -146,7 +146,7 @@ BotCombination.raw_data <- function(ohlc_source,
         BENCHMARK_TABLE <- 
             foreach(i = 1:workers) %dopar% {
                 # распределение ботов по потоку
-                map_range <- Delegate_mcore(i, n_bots, p = workers)
+                map_range <- Delegate(i, n_bots, p = workers)
                 # проверка на наличие задания для worker'а
                 if (is.null(map_range)) {
                     return(NA)

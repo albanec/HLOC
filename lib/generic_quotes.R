@@ -161,7 +161,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir, add.USDRUB
     remove(data.names)
     if (add.USDRUB == TRUE) {
         # загрузка котировок USDRUB_TOM
-        data.USDRUB <- GetData.OneTicker(ticker = 'USD000UTSTOM', from.date, to.date, period = 'day', rename = TRUE)
+        data.USDRUB <- GetOHLC.one_ticker(ticker = 'USD000UTSTOM', from.date, to.date, period = 'day', rename = TRUE)
         data$USDRUB <- data.USDRUB$Close
         remove(data.USDRUB)
         data$USDRUB <- na.locf(data$USDRUB)    

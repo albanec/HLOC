@@ -48,7 +48,7 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
 
     result <- foreach(i = 1:workers) %dopar% {
         FUN <- match.fun(FUN)
-        map_range <- Delegate_mcore(i, n_vars, p = workers)
+        map_range <- Delegate(i, n_vars, p = workers)
         x <- var.df[map_range, ]
         df <- BruteForceOpt(DATA = x, 
             ohlc_source = ohlc_source, 
