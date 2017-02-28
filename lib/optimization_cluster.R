@@ -20,24 +20,24 @@
 #' @param return_type Тип доходности
 #' @param export_varlist Вектор имён переменных, экспортируемых из .GlobalEnv в кластер (необязательно)
 #' @param export_libs Вектор имён библиотек, экспортируемых в кластер
-#' @param rolling_opt Упрощенный/полный perfomance анализ
+#' @param fast Упрощенный/полный perfomance анализ
 #' @param eval_string Сторока с описанием переменных внутри lapply-цикла
 #' @param 
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
-                                      from_date, to_date, lookback = FALSE,
-                                      FUN, 
-                                      linker_file = 'bots/test/linker.R',
-                                      balance_start, slips, commissions,
-                                      expiration, ticker, return_type = 'ret',
-                                      export_varlist = NULL, 
-                                      export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
-                                          'PerformanceAnalytics', 'lubridate'),
-                                      rolling_opt = FALSE, 
-                                      eval_string) {
+BruteForceOpt_cl <- function(var.df, ohlc_source,
+                             from_date, to_date, lookback = FALSE,
+                             FUN, 
+                             linker_file = 'bots/test/linker.R',
+                             balance_start, slips, commissions,
+                             expiration, ticker, return_type = 'ret',
+                             export_varlist = NULL, 
+                             export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
+                                 'PerformanceAnalytics', 'lubridate'),
+                             fast = FALSE, 
+                             eval_string) {
     #
     .CurrentEnv <- environment()
     #
@@ -53,7 +53,7 @@ BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
         varlist = c('ohlc_source', 'from_date', 'to_date', 'lookback',
             'FUN', 'linker_file', 
             'balance_start', 'slips', 'commissions', 'expiration', 
-            'ticker', 'return_type', 'rolling_opt', 
+            'ticker', 'return_type', 'fast', 
             'export_varlist', 'export_libs', 'eval_string'))
     # подгрузка библиотек
     clusterEvalQ(parallel_cluster, 
@@ -76,7 +76,7 @@ BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
                     FUN <- match.fun(FUN)
                     df <- FUN(data.xts = ohlc_source,
                         from_date, to_date, lookback,
-                        rolling_opt = rolling_opt, 
+                        fast = fast, 
                         balance_start = balance_start, slips = slips, commissions = commissions,
                         expiration = expiration, ticker = ticker, return_type = return_type, ', 
                         eval_string,')
@@ -122,7 +122,7 @@ BruteForceOpt_parallel_cl <- function(var.df, ohlc_source,
 #' @param return_type Тип доходности
 #' @param export_varlist Вектор имён переменных, экспортируемых из .GlobalEnv в кластер (необязательно)
 #' @param export_libs Вектор имён библиотек, экспортируемых в кластер
-#' @param rolling_opt Упрощенный/полный perfomance анализ
+#' @param fast Упрощенный/полный perfomance анализ
 #' @param eval_string Сторока с описанием переменных внутри lapply-цикла
 #' @param 
 #'
@@ -138,7 +138,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_source,
                                   export_varlist = NULL,
                                   export_libs = c('quantmod', 'xts', 'magrittr', 'tidyr', 
                                       'PerformanceAnalytics', 'lubridate'),
-                                  rolling_opt = FALSE, 
+                                  fast = FALSE, 
                                   eval_string) {
     #
     .CurrentEnv <- environment()                                                    
@@ -154,7 +154,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_source,
     clusterExport(parallel_cluster, envir = .CurrentEnv, 
         varlist = c('FUN', 'linker_file', 
             'balance_start', 'slips', 'commissions', 'expiration', 
-            'ticker', 'return_type', 'rolling_opt', 
+            'ticker', 'return_type', 'fast', 
             'export_varlist', 'export_libs', 'eval_string'))
     # подгрузка библиотек
     clusterEvalQ(parallel_cluster,
@@ -182,7 +182,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_source,
                                 from_date = temp_slice_index[1, ], 
                                 to_date = temp_slice_index[2, ], 
                                 lookback = TRUE,
-                                rolling_opt = rolling_opt, 
+                                fast = fast, 
                                 balance_start = balance_start, 
                                 slips = slips, commissions = commissions,
                                 expiration = expiration, ticker = ticker, 

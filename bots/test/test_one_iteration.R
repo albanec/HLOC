@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
+data_source <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
   paste0(from.date,'::',to.date) %>%

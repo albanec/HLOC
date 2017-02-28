@@ -16,7 +16,7 @@ DrawdownsTable <- function(data_balance, dd_data_output = FALSE) {
     # ----------
     # подготовка данных
     #cat('INFO(DrawdownsTable): Calc Drawdown Data Set', '\n')
-    drawdowns <- Drawdowns.dd_data(data = data_balance, fullData = TRUE)
+    drawdowns <- Drawdowns(data = data_balance, fullData = TRUE)
     ### вычисление summary по data set'у
     ## max просадка
     #cat('INFO(DrawdownsTable): Calc MaxDrawdown', '\n')
@@ -130,7 +130,7 @@ DrawdownsTable <- function(data_balance, dd_data_output = FALSE) {
 #' @return drawdowns Таблица просадок (или list(dd_data, drawdowns))
 #'
 #' @export
-Drawdowns.dd_data <- function(data, fullData = FALSE) {
+Drawdowns <- function(data, fullData = FALSE) {
     # ----------
     # расчёт dd
     dd_data <- Drawdowns.calc(data = data)
@@ -139,7 +139,7 @@ Drawdowns.dd_data <- function(data, fullData = FALSE) {
     drawdowns <- 
         lapply(n.vec,
             function(x) {
-                Drawdowns.calcSummary(data = dd_data, n = x)
+                Drawdowns.summary(data = dd_data[dd_data$num == x])
             }) %>%
         MergeData_inList.byRow(.)
     #
@@ -155,62 +155,51 @@ Drawdowns.dd_data <- function(data, fullData = FALSE) {
 #'
 #' Функция возращает таблицу данных одному dd
 #' 
-#' @param data Данные dd
-#' @param n Номер dd
+#' @param data Данные по нужному dd
 #' 
 #' @return dd_summary df, содержащий данные по dd c номером n
 #'
 #' @export
-Drawdowns.calcSummary <- function(data, n) {
+Drawdowns.summary <- function(data) {
     #
-    dd_summary <- 
-        # выгружаем данные по dd с номером n
-        data[data$num == n] %>%
-        Convert.XTStoDF(.) %>%
-        {
-            # создаём скелет df с нужными полями
-            df <- data.frame(
-                From = character(1) %>% 
-                    as.numeric(1) %>% 
-                    as.Date(1),
-                To = character(1) %>% 
-                    as.numeric(1) %>% 
-                    as.Date(1),
-                Depth = numeric(1),
-                DepthPercent = numeric(1),
-                Length = numeric(1),
-                Days = numeric(1),
-                row.names = NULL
-            )
-            ## заполняем поля данными
-            # начало dd
-            df$From <- 
-                .$INDEX[1] %>%
-                as.POSIXct(., origin = '1970-01-01') 
-            # конец dd
-            df$To <- 
-                {
-                    .$INDEX[nrow(.)]
-                } %>%
-                as.POSIXct(., origin = '1970-01-01') 
-            # максимальная глубина
-            df$Depth <- min(.$dd)
-            df$DepthPercent <- min(.$dd.percent)
-            # длина (количество периодов)
-            df$Length <- nrow(.)
-            # дни в просадке
-            df$Days <-
-                # as.POSIXct(.$INDEX, origin = '1970-01-01') %>%
-                CalcTradingDays(x = .$INDEX, fullDays = TRUE) 
-            return(df)
-        } #%>%
-        # {
-        #     df <- .
-        #     df <- df[, -1]
-        #     return(df)
-        # }
+    # конвертация  данных в df
+    data <- Convert.XTStoDF(data)
+    # создаём скелет df с нужными полями
+    df <- data.frame(
+        From = character(1) %>% 
+            as.numeric(1) %>% 
+            as.Date(1),
+        To = character(1) %>% 
+            as.numeric(1) %>% 
+            as.Date(1),
+        Depth = numeric(1),
+        DepthPercent = numeric(1),
+        Length = numeric(1),
+        Days = numeric(1),
+        row.names = NULL
+    )
+    ## заполняем поля данными
+    # начало dd
+    df$From <- 
+        data$INDEX[1] %>%
+        as.POSIXct(., origin = '1970-01-01') 
+    # конец dd
+    df$To <- 
+        data$INDEX[nrow(data)] %>%
+        as.POSIXct(., origin = '1970-01-01') 
+    # максимальная глубина
+    df$Depth <- min(data$dd)
+    df$DepthPercent <- min(data$dd.percent)
+    # длина (количество периодов)
+    df$Length <- nrow(data)
+    # дни в просадке
+    df$Days <-
+        # as.POSIXct(data$INDEX, origin = '1970-01-01') %>%
+        CalcTradingDays(x = data$INDEX, fullDays = TRUE) 
+    
+    # df <- df[, -1]
     #
-    return(dd_summary)
+    return(df)
 }
 #
 ###

@@ -597,13 +597,13 @@ TestStr.gear <- function(data_source,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_cl.test_str <- function(#input_data = 'data_source.list', 
+BruteForceOpt_cl.test_str <- function(#input_data = 'data_source.list', 
                                                sma_begin, sma_end, sma_step,
                                                # add_perbegin, add_perend, add_perstep,
-                                               rolling_opt = FALSE, ...) {
+                                               fast = FALSE, ...) {
                                                #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
                                                #         add_perbegin, add_perend, add_perstep,
-                                               #         rolling_opt = FALSE, ...) {                          
+                                               #         fast = FALSE, ...) {                          
   #
   require(parallel)
   # запуск кластера
@@ -655,7 +655,7 @@ BruteForceOpt_parallel_cl.test_str <- function(#input_data = 'data_source.list',
                               sma_per = x, add_per = 10, k_mm, basket_weights,
                               slips, commissions, 
                               balance_start, ret_type,
-                              rolling_opt) 
+                              fast) 
       }
     )
   stopCluster(parallel_cluster)
@@ -695,7 +695,7 @@ BruteForceOpt.test_str <- function(var.begin, var.end,
                                    data.xts, add_per, k_mm, basket_weights, 
                                    slips, commissions, 
                                    balance_start, ret_type,
-                                   rolling_opt = FALSE) {
+                                   fast = FALSE) {
   #
   result <- 
     var.begin:var.end %>% 
@@ -705,7 +705,7 @@ BruteForceOpt.test_str <- function(var.begin, var.end,
                                    sma_per = x, add_per, k_mm, basket_weights,
                                    slips, commissions, 
                                    balance_start, ret_type,
-                                   rolling_opt) 
+                                   fast) 
            }
     ) %>%
     {
@@ -735,7 +735,7 @@ OneThreadRun.test_str <- function(data.xts,
                                   sma_per, add_per, k_mm, basket_weights, 
                                   slips, commissions,
                                   balance_start, ret_type, 
-                                  rolling_opt = FALSE) {
+                                  fast = FALSE) {
   ### 
   ## Отработка тестового робота
   data_strategy.list <- TestStr.gear(data_source = data.xts,
@@ -749,7 +749,7 @@ OneThreadRun.test_str <- function(data.xts,
     ### Формирование таблицы сделок
     ## чистим от лишних записей
     data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
-    if (rolling_opt == TRUE) {
+    if (fast == TRUE) {
       ### оценка perfomance-параметров
       perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
                                           STATES = 0,

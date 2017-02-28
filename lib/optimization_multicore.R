@@ -18,20 +18,20 @@
 #' @param expiration Вектор с датами экспирации
 #' @param ticker Тикер инструмента
 #' @param return_type Тип доходности
-#' @param rolling_opt Упрощенный/полный perfomance анализ
+#' @param fast Упрощенный/полный perfomance анализ
 #' @param eval_string Сторока с описанием переменных внутри lapply-цикла
 #' @param 
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
+BruteForceOpt_mc <- function(var.df, ohlc_source,
                                       from_date, to_date, lookback = FALSE,
                                       FUN, 
                                       linker_file = 'bots/test/linker.R',
                                       balance_start, slips, commissions,
                                       expiration, ticker, return_type = 'ret',
-                                      rolling_opt = FALSE, 
+                                      fast = FALSE, 
                                       eval_string) {
     #
     #.CurrentEnv <- environment()
@@ -40,7 +40,7 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
     FUN <- match.fun(FUN)
     
     workers <- detectCores() - 1    
-    if (rolling_opt == FALSE) {    
+    if (fast == FALSE) {    
         registerDoParallel(cores = workers)    
     }
      
@@ -54,7 +54,7 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
             ohlc_source = ohlc_source, 
             from_date, to_date, lookback,
             FUN = FUN, 
-            rolling_opt = rolling_opt,
+            fast = fast,
             balance_start = balance_start, slips = slips, commissions = commissions,
             expiration = expiration, ticker = ticker, return_type = return_type,
             eval_string = eval_string)
@@ -85,7 +85,6 @@ BruteForceOpt_parallel_mc <- function(var.df, ohlc_source,
 #' @param expiration Вектор с датами экспирации
 #' @param ticker Тикер инструмента
 #' @param return_type Тип доходности
-#' @param rolling_opt Упрощенный/полный perfomance анализ
 #' @param eval_string Сторока с описанием переменных внутри lapply-цикла
 #' @param 
 #'
@@ -98,7 +97,6 @@ RollerOpt_learning_mc <- function(slice_index, ohlc_source,
                                   linker_file = 'bots/test/linker.R',
                                   balance_start, slips, commissions,
                                   expiration, ticker, return_type = 'ret',
-                                  rolling_opt = FALSE, 
                                   eval_string) {
     #
     #.CurrentEnv <- environment()                                                    
@@ -113,7 +111,7 @@ RollerOpt_learning_mc <- function(slice_index, ohlc_source,
     n_vars <- nrow(var.df)
     bf_data.list <- lapply(1:length(slice_index$widthSlice),
         function(x) {
-            BruteForceOpt_parallel_mc(var.df = var.df, 
+            BruteForceOpt_mc(var.df = var.df, 
                 ohlc_source = ohlc_source,
                 from_date = slice_index$widthSlice[[x]][1, ], 
                 to_date = slice_index$widthSlice[[x]][2, ], 
@@ -122,7 +120,7 @@ RollerOpt_learning_mc <- function(slice_index, ohlc_source,
                 linker_file = 'bots/test/linker.R',
                 balance_start = balance_start, slips = slips, commissions = commissions,
                 expiration = expiration, ticker = ticker, return_type = return_type,
-                rolling_opt = rolling_opt, 
+                fast = TRUE, 
                 eval_string = eval_string)   
         })
 

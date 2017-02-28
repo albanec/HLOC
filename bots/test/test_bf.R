@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
+data_source <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
   paste0(from.date,'::',to.date) %>%
@@ -52,17 +52,17 @@ data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret
 #                                              data.xts = data_source.list[[1]], 
 #                                              add_per, k_mm, balance_start, 
 #                                              basket_weights, slips, commissions, ret_type,
-#                                              rolling_opt = FALSE)
+#                                              fast = FALSE)
 #   }
 # )
 #
 ### Parallel BruteForce оптимизация 
 system.time(
   {
-    PerfomanceTable <- BruteForceOpt_parallel_cl.test_str(
+    PerfomanceTable <- BruteForceOpt_cl.test_str(
       #input_data = 'data_source.list',
       sma_begin = 10, sma_end = 100, sma_step = 1,
-      rolling_opt = FALSE
+      fast = FALSE
       #add_per, k_mm, balance_start, 
       #basket_weights, slips, commissions, ret_type
     )

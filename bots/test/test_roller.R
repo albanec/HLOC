@@ -1,10 +1,10 @@
 TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'data_source.list', 
                                  sma_begin, sma_end, sma_step,
                                  # add_perbegin, add_perend, add_perstep,
-                                 rolling_opt = FALSE, ...) {
+                                 fast = FALSE, ...) {
                                  #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
                                  #         add_perbegin, add_perend, add_perstep,
-                                 #         rolling_opt = FALSE, ...) {
+                                 #         fast = FALSE, ...) {
   #
   require(parallel)
   # Формирование параметров оптимизации
@@ -63,7 +63,7 @@ TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'data_source.list',
                                     sma_per = x, add_per = 10, k_mm, basket_weights,
                                     slips, commissions,
                                     balance_start, ret_type,
-                                    rolling_opt = TRUE)
+                                    fast = TRUE)
             }
           ) 
         result %<>%

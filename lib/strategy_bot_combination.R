@@ -21,12 +21,12 @@
 #' @param ticker
 #'
 #' @export
-BotCombination.raw_data <- function(ohlc_source,
-                                    from_date, to_date, lookback = FALSE,
-                                    bot.list,
-                                    balance_start, slips, 
-                                    commissions, return_type, expiration, ticker,
-                                    add_benchmark = FALSE) {
+BotCombiner.raw_data <- function(ohlc_source,
+                                 from_date, to_date, lookback = FALSE,
+                                 bot.list,
+                                 balance_start, slips, 
+                                 commissions, return_type, expiration, ticker,
+                                 add_benchmark = FALSE) {
     require(doParallel)
     
     # определение нужных окружений
@@ -60,7 +60,7 @@ BotCombination.raw_data <- function(ohlc_source,
             FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
             assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
         } else {
-            stop(paste0('ERROR(testBotCombination): Сan\'t find ',FUN_name,' function !!!'))
+            stop(paste0('ERROR(BotCombiner): Сan\'t find ',FUN_name,' function !!!'))
         }
     }
 
@@ -79,7 +79,7 @@ BotCombination.raw_data <- function(ohlc_source,
             result <- lapply(1:length(map_data),
                 function(x) {
                     if (!is.data.frame(map_data[[x]])) {
-                        warning('WARNING(testBotCombination): strategies data wrong type', '\n')
+                        warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                     }
                     # имя бота            
                     bot_name <- map_data[[x]]$name
@@ -110,7 +110,7 @@ BotCombination.raw_data <- function(ohlc_source,
                             return_type = return_type,
                             exp.vector = expiration, 
                             ticker = ticker,
-                            basket_handler = TRUE,',
+                            basket_tradesHandler = TRUE,',
                             eval_str,')'
                     )
                     eval(parse(text = temp_text))
@@ -139,7 +139,7 @@ BotCombination.raw_data <- function(ohlc_source,
                 FUN <- get(as.character(FUN_name), mode = "function", envir = .ParentEnv)
                 assign(paste0(FUN_name), FUN, envir = .CurrentEnv)
             } else {
-                stop(paste0('ERROR(testBotCombination): Сan\'t find ',FUN_name,' function !!!'))
+                stop(paste0('ERROR(BotCombiner): Сan\'t find ',FUN_name,' function !!!'))
             }
         }
         # расчёт benchmark-данных по каждому боту (на выходе - листы по каждому боту)
@@ -158,7 +158,7 @@ BotCombination.raw_data <- function(ohlc_source,
                 tradeTable <- lapply(1:length(map_data),
                     function(x) {
                         if (!is.data.frame(map_data[[x]])) {
-                            warning('WARNING(testBotCombination): strategies data wrong type', '\n')
+                            warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                         }
                         # имя бота            
                         bot_name <- map_data[[x]]$name
@@ -242,14 +242,14 @@ BotCombination.raw_data <- function(ohlc_source,
 #' @param balance_start Стартовый баланс
 #' @param commiss Коммиссия по инструменту
 #' @param ... 
-BotCombination.handler <- function(ohlc.xts,
-                                   DATA, 
-                                   benchmark = FALSE,
-                                   bot.list = bot.list[[i]],
-                                   balance_start,
-                                   commiss,
-                                   ##dots параметы
-                                   k_mm, tick_price ) {
+BotCombiner.trades_handler <- function(ohlc.xts,
+                                       DATA, 
+                                       benchmark = FALSE,
+                                       bot.list = bot.list[[i]],
+                                       balance_start,
+                                       commiss,
+                                       ##dots параметы
+                                       k_mm, tick_price ) {
     # определение нужных окружений
     .CurrentEnv <- environment()
     .ParentEnv <- parent.frame(2)
@@ -360,7 +360,7 @@ BotCombination.handler <- function(ohlc.xts,
             FUN <- get(as.character(temp.name), mode = "function", envir = .ParentEnv)
             assign(paste0(temp.name), FUN, envir = .CurrentEnv)
         } else {
-            stop(paste0('ERROR(BotCombination): Сan\'t find ',temp.name,' function !!!'))
+            stop(paste0('ERROR(BotCombiner): Сan\'t find ',temp.name,' function !!!'))
         }
     }
     rm(temp.name)

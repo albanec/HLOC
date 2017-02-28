@@ -121,6 +121,112 @@ GetOHLC.one_ticker <- function(ticker, period = '15min',
 }
 #
 ###
+#' Функция чтения XTS рядов из .csv файлов (выгрузки из Finam)
+#' 
+#' @param filename Название файла (без расширения .csv)
+#' @param period Указать в название период свечей
+#' @param tframe Указать в названии номер тайм-фрейма во FrameList'е
+#' @param sep Тип разделителя
+#'
+#' @return data XTS ряд, полученный из файла
+#'
+#' @export
+ReadOHLC.FinamCSV <- function(filename) {
+    require(tidyr)
+    require(foreach)
+    require(lubridate)
+
+    ## считывание .csv
+    cat('INFO(ReadOHLC.FinamCSV):    Load file ... ',filename, '\n', sep = '')
+    data <- Read_CSV.toDF(file.path = filename, sep = ',')
+    ## проверка полей-заголовков
+    colNames.temp <- data[1, ]
+    data <- data[-1, ]
+    #
+    if ('<TICKER>' %in% colNames.temp) {
+        ticker_name <- 
+            which(colNames.temp %in% '<TICKER>') %>%
+            data[1, .]
+    } else {
+        ticker_name <- 'Unkown ticker'
+    }
+    cat('INFO(ReadOHLC.FinamCSV):    Export ticker ... \"',ticker_name,'\" data', '\n', sep = '')
+    #
+    if ('<PER>' %in% colNames.temp) {
+        per <-    
+            which(colNames.temp %in% '<TICKER>') %>%
+            data[1, .]
+        if (per <= 10 && per != 0) {    
+            per <- 
+                c('tick', '1min', '5min', '10min', '15min', '30min', 'hour', 'day', 'week', 'month') %>%
+                .[per]
+        } else {
+            per <- 'Unkown period'
+        }
+    } else {
+        per <- 'Unkown period'
+    }
+    cat('INFO(ReadOHLC.FinamCSV):    Data period ... \"',per,'\"', '\n', sep = '')
+    ### формирование XTS
+    ## выделяем полезные данные
+    data <- 
+        c('<DATE>', '<TIME>', '<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
+        {
+            which(colNames.temp %in% .) 
+        } %>%    
+        data[, .] 
+    ## обработка
+    ## выделение и обработка котировок
+    quotes <- 
+        c('<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
+        {
+            which(colNames.temp %in% .) 
+        } %>%
+        data[, .] %>%
+        # конвертирование котировок в numeric
+        {
+            foreach(i = 1:ncol(.), .combine = cbind) %do% {
+                as.numeric(.[, i]) %>%
+                data.frame(.)
+            } 
+        } %>%
+        # переименование столбцов
+        {
+            colnames(.) <- c('Open', 'High', 'Low', 'Close', 'Volume')
+            return(.) 
+        }
+    ## формирование временного ряда
+    ts <-
+        c('<DATE>', '<TIME>') %>%
+        {
+            which(colNames.temp %in% .) 
+        } %>%
+        data[, .] %>%
+        ## конвертирование в integer
+        {
+            foreach(i = 1:ncol(.), .combine = cbind) %do% {
+                as.integer(.[, i]) %>%
+                data.frame(.)
+            }
+        } %>%
+        {
+            colnames(.) <- c('date', 'time')
+            return(.)
+        } %>%
+        # конвертация в DF и объеденение столбцов даты и времени в один 
+        unite(., 'trueTime', date, time, sep = ' ')        
+    ## результирующий XTS
+    data <- xts(quotes, 
+        order.by = lubridate::fast_strptime(ts$trueTime, '%Y%m%d %H%M%S') %>% as.POSIXct(.), 
+        src = 'finam', 
+        updated = Sys.time())
+    rm(quotes)
+    rm(ts)
+    #
+    return(data)
+}
+#
+###
 #' Функция выделения данных по tf и временному интервалу
 #'
 #' @param data.list Лист с котировками в XTS

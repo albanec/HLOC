@@ -710,7 +710,7 @@ SimpleStr_OneThreadRun <- function(data_source = data_source.list[[1]],
                                    sma_per, add_per, k_mm, basket_weights, 
                                    slips, commissions, 
                                    balance_start, ret_type,
-                                   rolling_opt = FALSE) {
+                                   fast = FALSE) {
   ### отработка тестового робота
   data_strategy.list <- SimpleStr.gear(data_source,
                                        sma_per, add_per, k_mm, 
@@ -724,7 +724,7 @@ SimpleStr_OneThreadRun <- function(data_source = data_source.list[[1]],
     ### Формирование таблицы сделок
     ## чистим от лишних записей
     data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
-    if (rolling_opt == TRUE) {
+    if (fast == TRUE) {
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data_strategy.list[[1]], 
                                          states = 0,

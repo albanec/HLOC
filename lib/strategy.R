@@ -789,10 +789,10 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
 #' @return Лист с данными стратегии (data + states)
 #'
 #' @export
-Trades_handler <- function(data, states, ohlc_source,
-                           commiss, balance_start,
-                           FUN.CalcTrades,
-                           ...) {
+TradesHandler <- function(data, states, ohlc_source,
+                         commiss, balance_start,
+                         FUN.CalcTrades,
+                         ...) {
     #
     FUN.CalcTrades <- match.fun(FUN.CalcTrades)
     # 2.1.4 Начальные параметры для расчёта сделок

@@ -11,7 +11,7 @@
 #' @param to_date Конец торговли
 #' @param lookback Обучающее окно (перед началом торговли)
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
-#' @param rolling_opt Упрощенный/полный perfomance анализ
+#' @param fast Упрощенный/полный perfomance анализ
 #' @param balance_start Стартовый баланс
 #' @param slips Слипы (вектор)
 #' @param commissions Комиссии (вектор)
@@ -26,7 +26,7 @@
 BruteForceOpt <- function(DATA, ohlc_source, 
                           from_date, to_date, lookback = FALSE,
                           FUN, 
-                          rolling_opt = FALSE,
+                          fast = FALSE,
                           balance_start, slips, commissions,
                           expiration, ticker, return_type = 'ret',
                           eval_string) { 
@@ -38,7 +38,7 @@ BruteForceOpt <- function(DATA, ohlc_source,
             function(x) {
                 FUN(ohlc_source = ohlc_source,
                     from_date, to_date, lookback,
-                    rolling_opt = rolling_opt, 
+                    fast = fast, 
                     balance_start = balance_start, slips = slips, commissions = commissions,
                     expiration = expiration, ticker = ticker, return_type = return_type, ',
                     eval_string,')
@@ -61,7 +61,7 @@ BruteForceOpt <- function(DATA, ohlc_source,
 #' 
 #' @param data.xts XTS с котировками
 #' @param FUN Функция движка стратегии
-#' @param rolling_opt Упрощенный/полный perfomance анализ
+#' @param fast Упрощенный/полный perfomance анализ
 #' @param var_names Вектор имен переменных стратегии
 #' @param balance_start Стартовый баланс
 #' @param slips Слипы (вектор)
@@ -74,7 +74,7 @@ BruteForceOpt <- function(DATA, ohlc_source,
 #'
 #' @export
 OneThreadRun <- function(data.xts, FUN,
-                         rolling_opt = FALSE, var_names = NULL,
+                         fast = FALSE, var_names = NULL,
                          balance_start, slips, commissions,
                          expiration, ticker, return_type = 'ret',
                          dd_data_output = FALSE,
@@ -82,47 +82,47 @@ OneThreadRun <- function(data.xts, FUN,
     #
     FUN <- match.fun(FUN) 
     
-    ## отработка робота
+    ### отработка робота
     data_strategy.list <- FUN(data_source = data.xts, 
         balance_start = balance_start, slips = slips, commiss = commissions,
         exp.vector = expiration, ticker, return_type = return_type, 
         dd_data_output = FALSE,
         ...)
-    
-    ## Анализ perfomanc'ов
     # для стратегий, у которых нет сделок
     if (is.null(data_strategy.list$states)) {
         return(NULL)
+    } 
+    # чистим от лишних записей
+    data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
+    
+    ### Анализ perfomanc'ов
+    # формирование таблицы сделок
+    if (fast == TRUE) {
+        # оценка perfomance-параметров
+        perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+            STATES = 0,
+            TRADES = 0,
+            balance = balance_start, ret_type = 0, 
+            fast = TRUE)    
     } else {
-        ### Формирование таблицы сделок
-        ## чистим от лишних записей
-        data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
-        if (rolling_opt == TRUE) {
-            ### оценка perfomance-параметров
-            perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                STATES = 0,
-                TRADES = 0,
-                balance = balance_start, ret_type = 0, 
-                fast = TRUE)    
-        } else {
-            ## лист с данными по сделкам (по тикерам и за всю корзину)
-            trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
-            if (length(ticker) == 1) {
-                trades_table.list[[1]]$TradeReturnPercent <- trades_table.list[[1]]$TradeReturn * 100 / balance_start
-            }
-            ### оценка perfomance-параметров
-            perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                STATES = data_strategy.list[[2]],
-                TRADES = trades_table.list,
-                balance_start = balance_start, 
-                ret_type = return_type,
-                dd_data_output = dd_data_output)
-            if (dd_data_output == TRUE) {
-                dd_data_output.list <- perfomance_table$dd.list
-                perfomance_table <- perfomance_table$perfomance_table
-            }
+        # лист с данными по сделкам (по тикерам и за всю корзину)
+        trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
+        if (length(ticker) == 1) {
+            trades_table.list[[1]]$TradeReturnPercent <- trades_table.list[[1]]$TradeReturn * 100 / balance_start
+        }
+        # оценка perfomance-параметров
+        perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
+            STATES = data_strategy.list[[2]],
+            TRADES = trades_table.list,
+            balance_start = balance_start, 
+            ret_type = return_type,
+            dd_data_output = dd_data_output)
+        if (dd_data_output == TRUE) {
+            dd_data_output.list <- perfomance_table$dd.list
+            perfomance_table <- perfomance_table$perfomance_table
         }
     }
+    
     # добавление использованных параметров
     if (!is.null(var_names)) {
         for (i in 1:length(var_names)) {
@@ -137,5 +137,6 @@ OneThreadRun <- function(data.xts, FUN,
     if (dd_data_output == TRUE) {
         return(list(perfomance_table = perfomance_table, dd.list = dd_data_output.list))
     }
+    #
     return(perfomance_table)
 }

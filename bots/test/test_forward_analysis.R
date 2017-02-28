@@ -19,7 +19,7 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data_source <- Read_CSV.toXTS.FinamQuotes(filename = 'data/temp/si_data.csv')
+data_source <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
 data_source <- 
   paste0(from.date,'::',to.date) %>%
@@ -63,7 +63,7 @@ system.time(
 #                                          temp_slice <<- list(x) 
 #                                          Parallel_test(input_data = 'temp_slice',
 #                                                        sma_begin = 10, sma_end = 100, sma_step = 1,
-#                                                        rolling_opt = TRUE)
+#                                                        fast = TRUE)
 #                                        }) 
 #   }
 # )
@@ -93,7 +93,7 @@ system.time(
   {
     learning_data <- TestStr_RollerOpt_cl(data_slices, 
         sma_begin = 10, sma_end = 100, sma_step = 1,
-        rolling_opt = TRUE)
+        fast = TRUE)
   }
 )
 CleanGarbage(target = 'temp', env = '.GlobalEnv')
