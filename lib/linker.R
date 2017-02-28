@@ -7,7 +7,6 @@ source('lib/generic_mining.R')
 source('lib/generic_getdata.R')
 source('lib/generic_data.R')
 source('lib/generic_quotes.R')
-source('lib/generic_parallel.R')
 source('lib/generic.R')
 
 ### STR

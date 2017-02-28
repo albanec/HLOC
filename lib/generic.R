@@ -103,3 +103,77 @@ CleanGarbage <- function(target = 'temp', env = '.GlobalEnv') {
     gc()
     cat('INFO(CleanTempData): Garbage Collect..    OK', '\n')
 }
+#
+#' Copy arguments into env and re-bind any function's lexical scope to bindTargetEnv .
+#' 
+#' @param obj_names Вектор имен переиенных, которые надо привязать к окружению
+#' @param obj_pattern Таргет для поиска имен переменных
+#' @param targetEnv Окружение, к которому надо привязать данные
+#' @param parentEnv Окружение-источник данных
+#' @export
+BindToEnv <- function(obj_names = NULL, obj_pattern = NULL, .TargetEnv, .ParentEnv = parent.frame(),
+                      doNotRebind = c()) {
+    # содержимое материнского окружения
+    env_content <- ls(name = .ParentEnv)
+    if (!is.null(obj_pattern)) {
+        obj_names <- 
+            grep(pattern = obj_pattern, env_content) %>%
+            env_content[.]      
+    }
+    for (i in 1:length(obj_names)) {
+        temp.obj <- get(as.character(obj_names[i]), envir = .ParentEnv)
+        # if(is.function(temp.obj) && (!(temp.obj %in% doNotRebind))) {
+        #     environment(temp.obj) <- .TargetEnv
+        # }
+        assign(paste0(obj_names), temp.obj, envir = .TargetEnv)
+    } 
+}
+#
+# Integer Mapping для multicore вычислений
+#'
+#' Выдаёт индексы строк входных данных, предназначенных для обработки конкретному worker'у
+#' Если для worker'а нет задачи - выдаёт NULL
+#' 
+#' @param i ID процесса
+#' @param n Число строк в анализируемых данных
+#' @param k Окно (по умалчанию == 1)
+#' @param p Число worker-процессов
+#' @export
+Delegate <- function(i, n, k = 1, p) {
+    nOut <- n - k + 1
+    nProc <- ceiling(nOut / p)
+    result <- ((i - 1) * nProc + 1):min(i * nProc + k - 1, n) 
+    if (any(result > n)) {
+        return(NULL)    
+    }
+    #
+    return(result)
+}
+#
+mcTimeSeries <- function(data, tsfunc, byColumn, windowSize, workers) {
+    # foreach вычисления
+    SERIES <- foreach(i = 1:workers, .combine = rbind) %dopar% {
+        jRange <- Delegate(i = i, n = nrow (data), k = windowSize, p = workers)
+        rollapply(data[jRange, ],
+            width = windowSize,
+            FUN = tsfunc,
+            align = "right",
+            by.column = byColumn)
+    }
+    # переформатирование имен столбцов
+    names(SERIES) <- gsub("\\..+", "", names(SERIES))
+    if (windowSize > 1) {
+        PAD <- zoo(
+            matrix(nrow = windowSize - 1, ncol = ncol(SERIES), NA),
+            order.by = index(data)[1:(windowSize - 1)]
+        )
+        names(PAD) <- names(SERIES)
+        SERIES <- rbind(PAD, SERIES)
+    }
+    if (is.null(names(SERIES))) {
+        names(SERIES) <- gsub("\\..+", "", names(data)[1:ncol(SERIES)])
+    }
+    #
+    return(SERIES)
+}
+#
