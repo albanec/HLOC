@@ -3,126 +3,6 @@
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 #
-###
-#' Рачёт "сырых" торговых данных по пачке ботов
-#' 
-#' @param ohlc_source XTS с полными котировками
-#' @param from_date Начало торговли
-#' @param to_date Конец торговли
-#' @param lookback Обучающее окно (перед началом торговли)
-#' @param bot.list Лист с набором ботов (каждый лист содержит df по конкретному боту) 
-#' каждый элемент листа - один бот с названием == тип бота, 
-#' внутри - data.frame с параметрами и числом строк == числу ботов данного типа в корзине
-#' @param balance_start
-#' @param slips
-#' @param commissions
-#' @param return_type
-#' @param expiration
-#' @param ticker
-#'
-#' @export
-BotCombiner.raw_data <- function(ohlc_source,
-                                 from_date, to_date, lookback = FALSE,
-                                 bot.list,
-                                 balance_start, slips, 
-                                 commissions, return_type, expiration, ticker,
-                                 add_benchmark = FALSE) {
-    require(doParallel)
-    
-    # определение нужных окружений
-    .CurrentEnv <- environment()
-    .ParentEnv <- globalenv()
-    # регистрация ядер
-    workers <- detectCores() - 1    
-    registerDoParallel(cores = workers)
-    
-    # всего ботов
-    n_bots <- length(bot.list) 
-    # типы ботов, участвующие в торговле
-    bot_names <- 
-        foreach(i = 1:length(bot.list), .combine = c) %do% {
-            bot.list[[i]]$name
-        } %>%
-        unique(.)
-    
-    # подгрузка gear-функиций
-    BindToEnv(obj_pattern = 'StrGear_', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
-    FUN_names <- paste0('StrGear_', bot_names)
-    if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
-        stop(
-            which(FUN_names %in% ls(.CurrentEnv)) %>%
-            paste0('ERROR(BotCombiner): Сan\'t find ',FUN_names[.],' function !!!', sep = '\n')
-        )
-    }
-
-    # расчёт сырых данных по пакету ботов (на выходе - листы по каждому боту)
-    TRADES <- 
-        foreach(i = 1:workers) %dopar% {
-            # распределение ботов по потоку
-            map_range <- Delegate(i, n_bots, p = workers)
-            # проверка на наличие задания для worker'а
-            if (is.null(map_range)) {
-                return(NA)
-            } 
-
-            ### вычисления
-            map_data <- bot.list[map_range]    
-            # расчёт ботов
-            result <- lapply(1:length(map_data),
-                function(x) {
-                    if (!is.data.frame(map_data[[x]])) {
-                        warning('WARNING(BotCombiner): strategies data wrong type', '\n')
-                    }
-                    # имя бота            
-                    bot_name <- map_data[[x]]$name
-                    # подготовка eval-строки
-                    var <- map_data[[x]][, grep('_', names(map_data[[x]]))]
-                    var_names <- names(var)
-                    eval_str <- 
-                        foreach(i = 1:length(var_names), .combine = c) %do% {
-                            paste0(var_names[i],'=',var[1, i])
-                        } %>%
-                        paste(., collapse = ",")
-                    # выделение нужных котировок
-                    if (lookback == TRUE) {
-                        temp_text <- paste0('lookback <- max(',eval_str,')')
-                        eval(parse(text = temp_text))
-                        rm(temp_text)
-                        ohlc_source <- Subset_TradeOHLC(ohlc_source = ohlc_source, 
-                            from_date, to_date, 
-                            lookback = lookback)
-                    } else {
-                        ohlc_source <- Subset_TradeOHLC(ohlc_source = ohlc_source, from_date, to_date, lookback = NULL)
-                    }
-                    # лист с параметрами бота (типичные параметры gear-функиций + специфичные переменные)
-                    temp_text <- paste0(
-                        'var.list <- list(data_source = ohlc_source,
-                            balance_start = 0, 
-                            slips = slips, commiss = commissions, 
-                            return_type = return_type,
-                            exp.vector = expiration, 
-                            ticker = ticker,
-                            basket_handler = TRUE,',
-                            eval_str,')'
-                    )
-                    eval(parse(text = temp_text))
-                    rm(temp_text)
-                    # запуск gear-функции
-                    FUN_name <- paste0('StrGear_', bot_name) 
-                    tradeTable <- do.call(FUN_name, var.list, envir = .CurrentEnv)    
-                    comment(tradeTable) <- bot_name
-                    return(tradeTable)
-                })
-            return(result)
-        } %>%
-        {
-            .[!is.na(.)]
-        } %>%
-        unlist(., recursive = FALSE)
-    #
-    return(TRADES)
-}
-#
 BotCombiner.benchmark <- function(TRADES) {
     workers <- detectCores() - 1
     #
@@ -340,8 +220,8 @@ BotCombiner.trades_handler <- function(ohlc.xts,
         sapply(1:n_bots,
             function(x) {
                 bot.list[[x]]$name
-            }) #%>%
-        #unique(.)
+            }) 
+
     BindToEnv(obj_pattern = 'CalcTrades_inStates_one_trade.', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
     FUN_names <- paste0('CalcTrades_inStates_one_trade.', bot_names)
     if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
@@ -721,11 +601,15 @@ BotCombiner.trades_handler <- function(ohlc.xts,
     return(list(DATA, PORTFOLIO))
 }
 #
-mcApplyBotList <- function(bot.list, FUN_pattern, FUN_varList, ...) {
+BotList.mcapply <- function(bot.list, 
+                            data = NULL,
+                            eval_str = NULL, 
+                            FUN_pattern = NULL, 
+                            var_pattern = NULL,
+                            ...) {
     require(doParallel)
-    
-    FUN_varList <- match.fun(FUN_varList)
     dots.list <- list(...)
+    
     # определение нужных окружений
     .CurrentEnv <- environment()
     .ParentEnv <- globalenv()
@@ -740,9 +624,8 @@ mcApplyBotList <- function(bot.list, FUN_pattern, FUN_varList, ...) {
             bot.list[[i]]$name
         } %>%
         unique(.)
-
     # подгрузка gear-функиций
-    BindToEnv(obj_pattern = FUN_pattern, .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
+    BindToEnv(obj_pattern = FUN_pattern, .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)        
     FUN_names <- paste0(FUN_pattern, bot_names)
     if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
         stop(
@@ -757,62 +640,40 @@ mcApplyBotList <- function(bot.list, FUN_pattern, FUN_varList, ...) {
             map_range <- Delegate(i, n_bots, p = workers)
             # проверка на наличие задания для worker'а
             if (is.null(map_range)) {
+                #
                 return(NA)
             } 
             ### вычисления
             map_data <- bot.list[map_range]
             # расчёт ботов
-            result <- lapply(1:length(map_data),
+            result <- lapply(1:length(map_range),
                 function(x) {
                     if (!is.data.frame(map_data[[x]])) {
                         warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                     }
-                    var.list <- do.call(FUN_varList, c(var = map_data[[x]], ...))
-                    # запуск gear-функции
-                    data <- do.call(FUN_names[i], var.list, envir = .CurrentEnv)    
+                    if (!is.null(var_pattern)) {
+                        var.list <- append(map_data[[x]][grep(var_pattern, names(map_data[[x]]))], dots.list) 
+                    } else {
+                        var.list <- append(map_data[[x]], dots.list) 
+                    }
+                    # запуск функции
+                    data <- 
+                        grep(map_data[[x]]$name, FUN_names) %>%
+                        {
+                            do.call(FUN_names[.], var.list, envir = .CurrentEnv)
+                        }    
                     comment(data) <- map_data[[x]]$name
-                    return(data)})
+                    #
+                    return(data)
+                })
             #
             return(result)
-        }
+        } %>%
+        {
+            .[!is.na(.)]
+        } %>%
+        unlist(., recursive = FALSE)
+    #
     return(result)
 }
 #
-VarList.gear <- function(var, ...) {
-    dots.list <- list(...)
-    # подготовка eval-строки
-    var <- var[, grep('_', names(var))]
-    var_names <- names(var)
-    eval_str <- 
-        foreach(i = 1:length(var_names), .combine = c) %do% {
-            paste0(var_names[i],'=',var[1, i])
-        } %>%
-        paste(., collapse = ",")
-    # выделение нужных котировок
-    if (lookback == TRUE) {
-        temp_text <- paste0('lookback <- max(',eval_str,')')
-        eval(parse(text = temp_text))
-        rm(temp_text)
-        ohlc_source <- Subset_TradeOHLC(ohlc_source = dots.list$ohlc_source, 
-            dots.list$from_date, dots.list$to_date, 
-            lookback = dots.list$lookback)
-    } else {
-        ohlc_source <- Subset_TradeOHLC(ohlc_source = dots.list$ohlc_source, 
-            dots.list$from_date, dots.list$to_date, lookback = NULL)
-    }
-    # лист с параметрами бота (типичные параметры gear-функиций + специфичные переменные)
-    temp_text <- paste0(
-        # 'var.list <- list(data_source = ohlc_source,
-        #     balance_start = 0, 
-        #     slips = slips, commiss = commissions, 
-        #     return_type = return_type,
-        #     exp.vector = expiration, 
-        #     ticker = ticker,
-        #     basket_handler = TRUE,',
-        #     eval_str,')'
-        'var.list <- c(dots.list,', eval_str, ')'
-    )
-    eval(parse(text = temp_text))
-    #
-    return(var.list)
-}

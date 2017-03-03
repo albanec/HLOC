@@ -73,7 +73,9 @@ BruteForceOpt <- function(DATA, ohlc_source,
 #' @return perfomanceTable Строка с perfomance-данными прогона робота
 #'
 #' @export
-OneThreadRun <- function(data.xts, FUN,
+OneThreadRun <- function(data.xts, 
+                         from_date, to_date, lookback = FALSE,   
+                         FUN,
                          fast = FALSE, var_names = NULL,
                          balance_start, slips, commissions,
                          expiration, ticker, return_type = 'ret',
@@ -81,9 +83,9 @@ OneThreadRun <- function(data.xts, FUN,
                          ...) {
     #
     FUN <- match.fun(FUN) 
-    
     ### отработка робота
     data_strategy.list <- FUN(data_source = data.xts, 
+        from_date = from_date, to_date = to_date, lookback = lookback,
         balance_start = balance_start, slips = slips, commiss = commissions,
         exp.vector = expiration, ticker, return_type = return_type, 
         dd_data_output = FALSE,
