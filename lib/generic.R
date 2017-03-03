@@ -125,7 +125,7 @@ BindToEnv <- function(obj_names = NULL, obj_pattern = NULL, .TargetEnv, .ParentE
         # if(is.function(temp.obj) && (!(temp.obj %in% doNotRebind))) {
         #     environment(temp.obj) <- .TargetEnv
         # }
-        assign(paste0(obj_names), temp.obj, envir = .TargetEnv)
+        assign(paste0(obj_names[i]), temp.obj, envir = .TargetEnv)
     } 
 }
 #

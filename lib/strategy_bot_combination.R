@@ -46,7 +46,7 @@ BotCombiner.raw_data <- function(ohlc_source,
         unique(.)
     
     # подгрузка gear-функиций
-    BindToEnv(obj_pattern = 'StrGear_', .TargetEnv = .CurrentEnv, .ParentEnv = .GlobalEnv)
+    BindToEnv(obj_pattern = 'StrGear_', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
     FUN_names <- paste0('StrGear_', bot_names)
     if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
         stop(
@@ -342,7 +342,7 @@ BotCombiner.trades_handler <- function(ohlc.xts,
                 bot.list[[x]]$name
             }) #%>%
         #unique(.)
-    BindToEnv(obj_pattern = 'CalcTrades_inStates_one_trade.', .TargetEnv = .CurrentEnv, .ParentEnv = .GlobalEnv)
+    BindToEnv(obj_pattern = 'CalcTrades_inStates_one_trade.', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
     FUN_names <- paste0('CalcTrades_inStates_one_trade.', bot_names)
     if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
         stop(
@@ -721,8 +721,6 @@ BotCombiner.trades_handler <- function(ohlc.xts,
     return(list(DATA, PORTFOLIO))
 }
 #
-
-
 mcApplyBotList <- function(bot.list, FUN_pattern, FUN_varList, ...) {
     require(doParallel)
     
@@ -774,9 +772,12 @@ mcApplyBotList <- function(bot.list, FUN_pattern, FUN_varList, ...) {
                     data <- do.call(FUN_names[i], var.list, envir = .CurrentEnv)    
                     comment(data) <- map_data[[x]]$name
                     return(data)})
-    #
+            #
+            return(result)
+        }
     return(result)
 }
+#
 VarList.gear <- function(var, ...) {
     dots.list <- list(...)
     # подготовка eval-строки
