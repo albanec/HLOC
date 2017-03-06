@@ -1,8 +1,8 @@
-TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'data_source.list', 
+TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'ohlc_data.list', 
                                  sma_begin, sma_end, sma_step,
                                  # add_perbegin, add_perend, add_perstep,
                                  fast = FALSE, ...) {
-                                 #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
+                                 #function(input_data = 'ohlc_data.list', sma_begin, sma_end, sma_step,
                                  #         add_perbegin, add_perend, add_perstep,
                                  #         fast = FALSE, ...) {
   #

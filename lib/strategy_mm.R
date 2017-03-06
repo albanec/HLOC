@@ -15,7 +15,7 @@
 #'
 #' @export
 CalcMM.byDCIwidth <- function(balance, IM, ...) { 
-    #risk, widthDCI,    tick.price) {
+    #risk, widthDCI, tick.price) {
     dots <- list(...)
     var1 <-
         {
@@ -30,6 +30,7 @@ CalcMM.byDCIwidth <- function(balance, IM, ...) {
         floor(.) %>%
         max(., 1)
     result <- min(var1, var2)
+    cat(result)
     #
     return(result)
 }

@@ -18,7 +18,7 @@ slips <- c(6, 20, 0.06) # в пунктах
 commissions <- c(2, 2, 2)  # в рублях
 #
 ### загрузка данных
-data_source.list <- 
+ohlc_data.list <- 
   {
     cat('Start Loading Data... ', '\n')
     GetData.Tickers(tickers, from.date, to.date, period, dir = 'data/temp', maxattempts = 5)
@@ -30,9 +30,9 @@ data_source.list <-
 #
 ### нормализация данных
 cat('Start Normalization&Improve Data... ', '\n')
-data_source.list[[1]] <- 
+ohlc_data.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_inXTS.na(data = data_source.list[[1]], type = 'full') %>%
+  NormData_inXTS.na(data = ohlc_data.list[[1]], type = 'full') %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
@@ -40,23 +40,23 @@ data_source.list[[1]] <-
 #
 ### расчёт суммарных показателей портфеля 
 # расчёт суммарного ГО (согласно весам инструмента в портфеле)
-data_source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data_source.list[[1]], 
+ohlc_data.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = ohlc_data.list[[1]], 
                                                                target = 'IM', basket_weights)
 # расчёт суммарного return'a 
 # перевод return'ов в валюту
-data_source.list[[1]]$SPFB.SI.cret <- data_source.list[[1]]$SPFB.SI.ret 
-data_source.list[[1]] <- NormData_inXTS.price(data = data_source.list[[1]], 
-                                              norm.data = data_source.list[[1]]$USDRUB, 
+ohlc_data.list[[1]]$SPFB.SI.cret <- ohlc_data.list[[1]]$SPFB.SI.ret 
+ohlc_data.list[[1]] <- NormData_inXTS.price(data = ohlc_data.list[[1]], 
+                                              norm.data = ohlc_data.list[[1]]$USDRUB, 
                                               names = c('SPFB.RTS.ret', 'SPFB.BR.ret'), 
                                               outnames = c('SPFB.RTS.cret', 'SPFB.BR.cret'), 
                                               tick.val = c(10, 0.01), tick.price = c(0.02, 0.01), 
                                               convert.to = 'RUB')
 # суммирование
-data_source.list[[1]]$cret <- CalcSum_inXTS_byTargetCol.basket(data = data_source.list[[1]], 
+ohlc_data.list[[1]]$cret <- CalcSum_inXTS_byTargetCol.basket(data = ohlc_data.list[[1]], 
                                                                  target = 'cret', basket_weights)
 #
 ### отработка тестового робота
-data_strategy.list <- SimpleStr.gear(data_source = data_source.list[[1]],
+data_strategy.list <- SimpleStr.gear(ohlc_data = ohlc_data.list[[1]],
                                      sma_per, add_per, k_mm, balance_start, 
                                      basket_weights, slips, commissions)
 #

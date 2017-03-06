@@ -151,7 +151,7 @@ AddData_inXTS.futuresSpecs <- function(data, from.date, to.date, dir, add.USDRUB
     for (i in 1:length(data.names)) {
         temp.text <- paste0(
             'temp.data <- Read_CSV.toXTS(filename = \"',data.names[i],'.IM\") ; 
-                data$',data.names[i],'.IM <- temp.data ; 
+            data$',data.names[i],'.IM <- temp.data ; 
             remove(temp.data) ; 
             data$',data.names[i],'.IM <- na.locf(data$',data.names[i],'.IM) ; '
         )

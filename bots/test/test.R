@@ -19,28 +19,28 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-data_source <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
+ohlc_data <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
-data_source <- 
+ohlc_data <- 
   paste0(from.date,'::',to.date) %>%
-  data_source[.]
+  ohlc_data[.]
 # переход к нужному периоду свечей
-data_source <- ExpandData.toPeriod(x = data_source, per = '15min')
-data_source.list <- list(data_source)
-colnames(data_source.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
+ohlc_data <- ExpandData.toPeriod(x = ohlc_data, per = '15min')
+ohlc_data.list <- list(ohlc_data)
+colnames(ohlc_data.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
 #
-data_source.list[[1]] <- 
+ohlc_data.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_inXTS.na(data = data_source.list[[1]], type = 'full') %>%
+  NormData_inXTS.na(data = ohlc_data.list[[1]], type = 'full') %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
   CalcReturn_inXTS(data = ., price = 'Open', type = ret_type)
 # суммарное ГО по корзине 
-data_source.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = data_source.list[[1]], 
+ohlc_data.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = ohlc_data.list[[1]], 
                                                            target = 'IM', basket_weights)
 ## расчёт суммарного return'a 
 # перевод return'ов в валюту
-data_source.list[[1]]$SPFB.SI.cret <- data_source.list[[1]]$SPFB.SI.ret 
-data_source.list[[1]]$cret <- data_source.list[[1]]$SPFB.SI.cret 
+ohlc_data.list[[1]]$SPFB.SI.cret <- ohlc_data.list[[1]]$SPFB.SI.ret 
+ohlc_data.list[[1]]$cret <- ohlc_data.list[[1]]$SPFB.SI.cret 
 #

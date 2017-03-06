@@ -554,27 +554,27 @@ CleanSignal.gap <- function(signals) {
 #'
 #' @param price Данные цен на сделках
 #' @param action Данные action
-#' @param data_source Данные с котировками
+#' @param ohlc_data Данные с котировками
 #' @param slips Слипы
 #'
 #' @return price XTS с ценами
 #'
 #' @export
-CalcPrice.slips <- function(price, action, data_source, slips) {
+CalcPrice.slips <- function(price, action, ohlc_data, slips) {
     price <- price + slips * sign(action)
     price.ind <- index(price)
     low.ind <-
         {
-            which(price < Lo(data_source[price.ind]))
+            which(price < Lo(ohlc_data[price.ind]))
         } %>%
         price.ind[.]
     high.ind <-
         {
-            which(price > Hi(data_source[price.ind]))
+            which(price > Hi(ohlc_data[price.ind]))
         } %>% 
         price.ind[.]
-    price[low.ind] <- Lo(data_source[low.ind])
-    price[high.ind] <- Hi(data_source[high.ind])
+    price[low.ind] <- Lo(ohlc_data[low.ind])
+    price[high.ind] <- Hi(ohlc_data[high.ind])
     #
     return(price)
 }
@@ -596,9 +596,12 @@ StatesTable.clean <- function(x) {
 }
 #
 # ------------------------------------------------------------------------------
+
+
+
 #' Функция для расчёта позиций
 #'
-#' @param data_source XTS с исходными котировками
+#' @param ohlc_data XTS с исходными котировками
 #' @param exp.vector Вектор с датами экспирации
 #' @param gap_filter Фильтрация на gap'ах
 #' @param FUN_AddIndicators Функция расчета индикаторов
@@ -610,7 +613,7 @@ StatesTable.clean <- function(x) {
 #' @return data 
 #'
 #' @export
-AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
+AddPositions <- function(ohlc_data, exp.vector, gap_filter = TRUE,
                          FUN_AddIndicators, FUN_AddSignals,
                          FUN_CleanOrders, FUN_CalcPosition_byOrders,
                          ...) {
@@ -623,13 +626,13 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
 
     ### Расчёт индикаторов и позиций
     ## 1.1 Добавляем индикаторы (fastSMA & slowSMA, DCI) и позиции
-    data <- xts()
+    data <- xts(NULL, index(ohlc_data))
     #
-    data <- FUN_AddIndicators(ohlc_source = data_source, ...)
+    data <- FUN_AddIndicators(ohlc_data = ohlc_data, ...)
     #
     ## Расчёт сигналов и позиций
     #cat('TurtlesStrategy INFO:  Calculate $sig and $pos...', '\n')
-    data <- FUN_AddSignals(data = data, ohlc_source = data_source)
+    data <- FUN_AddSignals(data = data, ohlc_data = ohlc_data)
     # выделение сигналов на ордера в отдельный XTS
     order.xts <- xts()
     order.xts$bto <- Subset_byTarget.col(data = data, target = 'bto')
@@ -676,7 +679,7 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
 #' @param data Данные states
 #' @param Calc_one_trade.FUN Функция обсчёта одной сделки
 #' @param commiss Коммиссия
-#' @param data_source Исходные данные котировок
+#' @param ohlc_data Исходные данные котировок
 #' @param balance_start Стартовый баланс
 #' @param ... Параметры, специфичные для стратегии
 #'
@@ -684,9 +687,9 @@ AddPositions <- function(data_source, exp.vector, gap_filter = TRUE,
 #'
 #' @export
 CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
-                                commiss, data_source, balance_start,
+                                commiss, ohlc_data, balance_start,
                                 target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss',
-                                              'margin', 'perfReturn', 'equity'),
+                                    'margin', 'perfReturn', 'equity'),
                                 ...) {
     FUN <- match.fun(Calc_one_trade.FUN)
     temp.env <- new.env()
@@ -704,7 +707,7 @@ CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
             cache <- FUN(cache = cache, 
                 row_ind = x,
                 pos = data$pos[x], pos_bars = data$pos.bars[x],
-                IM = data_source$IM[temp.ind], cret = data$cret[x],
+                IM = ohlc_data$IM[temp.ind], cret = data$cret[x],
                 balance_start = balance_start, commiss = commiss,
                 ...)
             #
@@ -745,11 +748,14 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
             MM.FUN(
                 balance = ifelse(!is.null(external_balance),
                     external_balance,
-                    cache$balance[row_ind - 1]), #* cache$weight[row_ind - 1]),
+                    ifelse(row_ind != 1,
+                        cache$balance[row_ind - 1],
+                        balance_start)
+                    ), #* cache$weight[row_ind - 1]),
                 IM = IM,
                 ...
             ),
-            cache$n[row_ind - 1])
+            cache$n[row_ind])
     )
     cache$diff.n[row_ind] <- ifelse(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
@@ -780,7 +786,7 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
 #'
 #' @param data Посвечные данные отработки робота
 #' @param states Данные состояний
-#' @param ohlc_source Котировки
+#' @param ohlc_data Котировки
 #' @param commiss Коммиссия
 #' @param balance_start Стартовый баланс
 #' @param FUN.CalcTrades Функция расчета сделок
@@ -789,10 +795,10 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
 #' @return Лист с данными стратегии (data + states)
 #'
 #' @export
-TradesHandler <- function(data, states, ohlc_source,
-                         commiss, balance_start,
-                         FUN.CalcTrades,
-                         ...) {
+TradesHandler <- function(data, states, ohlc_data,
+                          commiss, balance_start,
+                          FUN.CalcTrades,
+                          ...) {
     #
     FUN.CalcTrades <- match.fun(FUN.CalcTrades)
     # 2.1.4 Начальные параметры для расчёта сделок
@@ -809,13 +815,13 @@ TradesHandler <- function(data, states, ohlc_source,
     states$commiss <- NA
     states$equity <- NA
     states$im.balance <- NA
-    states$im.balance[1] <- 0
+    #states$im.balance[1] <- 0
     # т.к. обработчик не пакетный, вес бота всегда = 1
     #states$weight <- 1
     ## 2.2 Расчёт самих сделок
     temp.df <- FUN.CalcTrades(
         data = states, commiss = commiss,
-        data_source = ohlc_source,
+        ohlc_data = ohlc_data,
         balance_start = balance_start, #* states$weight[1],
         ...
     )

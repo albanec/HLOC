@@ -59,7 +59,7 @@ CalcTrades_inStates.testStr <- function(data) {
 #' @return list(data, states) Лист с данными отработки и данные сделок
 #'
 #' @export
-TestStr.gear <- function(data_source,
+TestStr.gear <- function(ohlc_data,
                          sma_per, add_per, 
                          k_mm, balance_start, 
                          basket_weights, slips, commissions) {
@@ -73,8 +73,8 @@ TestStr.gear <- function(data_source,
   #
   ## Вектор имён инструментов внутри торгуемой корзины
   data.names <- 
-    grep('.Close', names(data_source)) %>%
-    names(data_source)[.] %>%
+    grep('.Close', names(ohlc_data)) %>%
+    names(ohlc_data)[.] %>%
     sub('.Close', '', .)
   #
   # расчёт суммарной комиссии по корзине
@@ -93,19 +93,19 @@ TestStr.gear <- function(data_source,
   ## 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
   data %<>% 
     {
-      data <- xts()
+      data <- xts(NULL, order.by = index(ohlc_data))
       cat('TestStrategy INFO:  Calculate SMA with period:  ', sma_per, '\n')
       # тикер-индикатор: SI    
       #data$sma <- 
-      #  SMA(data_source$SPFB.SI.Close, sma_per) %>%
+      #  SMA(ohlc_data$SPFB.SI.Close, sma_per) %>%
       #  round(., digits = 0)
-      data$sma <- CalcIndicator.SMA(x = data_source$SPFB.SI.Close, per = sma_per)
+      data$sma <- CalcIndicator.SMA(x = ohlc_data$SPFB.SI.Close, per = sma_per)
       cat('TestStrategy INFO:  Calculate $sig and $pos...', '\n')
       data$sig <- ifelse(
-        data$sma < data_source$SPFB.SI.Close, 
+        data$sma < ohlc_data$SPFB.SI.Close, 
         1, 
         ifelse(
-          data$sma > data_source$SPFB.SI.Close, -1, 0
+          data$sma > ohlc_data$SPFB.SI.Close, -1, 0
         )
       )
       data$sig[index(xts::last(data$sig))] <- 0
@@ -144,8 +144,8 @@ TestStr.gear <- function(data_source,
       cat('TestStrategy INFO:  Calculate $sig.drop...', '\n')
       data$sig.drop <- ifelse(
         (
-          ((data$sma > data_source$SPFB.SI.Low) & (data$sig == 1)) | 
-          ((data$sma < data_source$SPFB.SI.High) & (data$sig == -1))
+          ((data$sma > ohlc_data$SPFB.SI.Low) & (data$sig == 1)) | 
+          ((data$sma < ohlc_data$SPFB.SI.High) & (data$sig == -1))
         ) & (data$sig == data$pos), 
         1, 0
       )
@@ -389,8 +389,8 @@ TestStr.gear <- function(data_source,
   # все действия проходят внутри одного цикла перебера имён инструментов
   #
   # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
-  # котировки берём из data_source
-  cat('TestStrategy INFO:  Loading Tickers Price from data_source...', '\n')
+  # котировки берём из ohlc_data
+  cat('TestStrategy INFO:  Loading Tickers Price from ohlc_data...', '\n')
   # индексы строк states
   states.ind <- index(states)
   ## соотшение позиций внутри корзины
@@ -405,12 +405,12 @@ TestStr.gear <- function(data_source,
         t <- paste0(       
           # перенос Open'ов в states (в пунктах) с учётом проскальзываний
           'states$',.,'.Price <- ', 
-          'merge(states, data_source$',.,'.Open[states.ind]) %$% ',
+          'merge(states, ohlc_data$',.,'.Open[states.ind]) %$% ',
           'na.locf(',.,'.Open) %>% 
           { . + slips[i] * states$state } ; ',
           # перенос Open'ов в data 
           'data$',.,'.Price <- ', 
-          'merge(data, data_source$',.,'.Open[data.ind]) %$% ',
+          'merge(data, ohlc_data$',.,'.Open[data.ind]) %$% ',
           'na.locf(',.,'.Open) ; ',  
           # перенос данных по Open'ам на свечах изменения позиций (в пунктах) в data
           'temp <- merge(data$',.,'.Price, states$',.,'.Price[states.ind]) ; ',
@@ -477,12 +477,12 @@ TestStr.gear <- function(data_source,
     index(states$state) %>%
     unique(.) %>%
     {
-      states$n * data_source$IM[.]
+      states$n * ohlc_data$IM[.]
     }
   states$im.balance %<>% 
     is.na(.) %>%
     {
-      states$im.balance[.] <- states$n[.] * data_source$IM[index(states$n[.])]
+      states$im.balance[.] <- states$n[.] * ohlc_data$IM[index(states$n[.])]
       return(states$im.balance)
     }
   states$im.balance[1] <- 0                   
@@ -597,11 +597,11 @@ TestStr.gear <- function(data_source,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_cl.test_str <- function(#input_data = 'data_source.list', 
+BruteForceOpt_cl.test_str <- function(#input_data = 'ohlc_data.list', 
                                                sma_begin, sma_end, sma_step,
                                                # add_perbegin, add_perend, add_perstep,
                                                fast = FALSE, ...) {
-                                               #function(input_data = 'data_source.list', sma_begin, sma_end, sma_step,
+                                               #function(input_data = 'ohlc_data.list', sma_begin, sma_end, sma_step,
                                                #         add_perbegin, add_perend, add_perstep,
                                                #         fast = FALSE, ...) {                          
   #
@@ -622,7 +622,7 @@ BruteForceOpt_cl.test_str <- function(#input_data = 'data_source.list',
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      'data_source.list', 
+      'ohlc_data.list', 
       'add_per',
       'k_mm', 'balance_start', 
       'basket_weights', 'slips', 'commissions', 'ret_type'
@@ -651,7 +651,7 @@ BruteForceOpt_cl.test_str <- function(#input_data = 'data_source.list',
       parallel_cluster,
       ., 
       function(x){
-        OneThreadRun.test_str(data.xts = data_source.list[[1]],
+        OneThreadRun.test_str(data.xts = ohlc_data.list[[1]],
                               sma_per = x, add_per = 10, k_mm, basket_weights,
                               slips, commissions, 
                               balance_start, ret_type,
@@ -738,7 +738,7 @@ OneThreadRun.test_str <- function(data.xts,
                                   fast = FALSE) {
   ### 
   ## Отработка тестового робота
-  data_strategy.list <- TestStr.gear(data_source = data.xts,
+  data_strategy.list <- TestStr.gear(ohlc_data = data.xts,
                                      sma_per, add_per, k_mm, balance_start, 
                                      basket_weights, slips, commissions)
   ## Анализ perfomanc'ов

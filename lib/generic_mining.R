@@ -423,7 +423,7 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
 #
 #' Функция выделения торговых интервалов из источника котировок
 #'
-#' @param ohlc_source Источник котировок
+#' @param ohlc_data Источник котировок
 #' @param from_date Дата старта торговли
 #' @param to_date Дата окончания торговли
 #' @param lookback "Обучающее" окно для робота (в количестве свечей)
@@ -431,27 +431,25 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
 #' @return result_subset XTS с данными котировок для торговли
 #'
 #' @export
-Subset_TradeOHLC <- function(ohlc_source, from_date, to_date, lookback = NULL) {
+Subset_TradeOHLC <- function(ohlc_data, from_date, to_date, lookback = NULL) {
     if (!is.null(lookback)) {
         result_subset <- 
             paste0(from_date,'::',to_date) %>%
-            ohlc_source[.] 
+            ohlc_data[.] 
         lookback_rows <- 
             {
-                which(index(ohlc_source) == index(xts::first(result_subset)))
+                which(index(ohlc_data) == index(xts::first(result_subset)))
             } %>%
             {
-                ifelse(lookback > ., 
-                             1, 
-                             . - lookback) : (. - 1)
+                ifelse(lookback > ., 1, . - lookback):.
             }
         result_subset <- 
-            ohlc_source[lookback_rows, ] %>%
+            ohlc_data[lookback_rows, ] %>%
             rbind(., result_subset)
     } else {
         result_subset <- 
             paste0(from_date,'::',to_date) %>%
-            ohlc_source[.] 
+            ohlc_data[.] 
     }
     #
     return(result_subset)

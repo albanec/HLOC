@@ -52,7 +52,7 @@ BotCombiner.benchmark <- function(TRADES) {
                     temp_text <- paste0(
                         'var.list <- list(data = tradeTable[[x]][[1]],
                             states = tradeTable[[x]][[2]], 
-                            ohlc_source = ohlc_source,
+                            ohlc_data = ohlc_data,
                             commiss = commissions,
                             balance_start = balance_start / n_bots,',
                             eval_str,')'
@@ -301,7 +301,7 @@ BotCombiner.trades_handler <- function(ohlc.xts,
                     pos = DATA[[bot_num]][[2]]$pos[row_num],
                     pos_bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
                     # !!! в дальнейшем применить ГО по инструменту, а не корзине
-                    IM = ohlc_source$IM[temp.index],
+                    IM = ohlc_data$IM[temp.index],
                     cret = DATA[[bot_num]][[2]]$cret[row_num],
                     balance_start = 0,
                     commiss = commiss,
@@ -602,7 +602,6 @@ BotCombiner.trades_handler <- function(ohlc.xts,
 }
 #
 BotList.mcapply <- function(bot.list, 
-                            data = NULL,
                             eval_str = NULL, 
                             FUN_pattern = NULL, 
                             var_pattern = NULL,
@@ -649,15 +648,17 @@ BotList.mcapply <- function(bot.list,
                         warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                     }
                     if (!is.null(var_pattern)) {
-                        var.list <- append(
-                            bot.list[[map_range[x]]][grep(var_pattern, names(bot.list[[map_range[x]]]))], 
-                            dots.list
-                        ) 
+                        var.list <- append(bot.list[[map_range[x]]][grep(var_pattern, names(bot.list[[map_range[x]]]))], 
+                            dots.list) 
                     } else {
                         var.list <- append(bot.list[[map_range[x]]], dots.list) 
                     }
                     # запуск функции
-                    data <- do.call(FUN_names[map_range[x]], var.list, envir = .CurrentEnv)  
+                    if (!is.null(eval_str)) {
+                        eval(parse(text = eval_str))                    
+                    } else {
+                        data <- do.call(FUN_names[map_range[x]], var.list, envir = .CurrentEnv)      
+                    }
                     #comment(data) <- bot.list[[map_range[x]]]$name
                     #
                     return(data)
