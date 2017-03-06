@@ -622,8 +622,7 @@ BotList.mcapply <- function(bot.list,
     bot_names <- 
         foreach(i = 1:length(bot.list), .combine = c) %do% {
             bot.list[[i]]$name
-        } %>%
-        unique(.)
+        }
     # подгрузка gear-функиций
     BindToEnv(obj_pattern = FUN_pattern, .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)        
     FUN_names <- paste0(FUN_pattern, bot_names)
@@ -640,29 +639,26 @@ BotList.mcapply <- function(bot.list,
             map_range <- Delegate(i, n_bots, p = workers)
             # проверка на наличие задания для worker'а
             if (is.null(map_range)) {
-                #
                 return(NA)
             } 
-            ### вычисления
-            map_data <- bot.list[map_range]
             # расчёт ботов
+            #map_data <- bot.list[map_range]
             result <- lapply(1:length(map_range),
                 function(x) {
-                    if (!is.data.frame(map_data[[x]])) {
+                    if (!is.data.frame(bot.list[[map_range[x]]])) {
                         warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                     }
                     if (!is.null(var_pattern)) {
-                        var.list <- append(map_data[[x]][grep(var_pattern, names(map_data[[x]]))], dots.list) 
+                        var.list <- append(
+                            bot.list[[map_range[x]]][grep(var_pattern, names(bot.list[[map_range[x]]]))], 
+                            dots.list
+                        ) 
                     } else {
-                        var.list <- append(map_data[[x]], dots.list) 
+                        var.list <- append(bot.list[[map_range[x]]], dots.list) 
                     }
                     # запуск функции
-                    data <- 
-                        grep(map_data[[x]]$name, FUN_names) %>%
-                        {
-                            do.call(FUN_names[.], var.list, envir = .CurrentEnv)
-                        }    
-                    comment(data) <- map_data[[x]]$name
+                    data <- do.call(FUN_names[map_range[x]], var.list, envir = .CurrentEnv)  
+                    #comment(data) <- bot.list[[map_range[x]]]$name
                     #
                     return(data)
                 })
