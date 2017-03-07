@@ -6,7 +6,7 @@
 #' Функция BF оптимизации движка стратегии (multicore)
 #' 
 #' @param var.df DF с данными для перебора
-#' @param ohlc_data XTS с полными котировками
+#' @param ohlc XTS с полными котировками
 #' @param from_date Начало торговли
 #' @param to_date Конец торговли
 #' @param lookback Обучающее окно (перед началом торговли)
@@ -25,7 +25,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_mc <- function(var.df, ohlc_data,
+BruteForceOpt_mc <- function(var.df, ohlc,
                                       from_date, to_date, lookback = FALSE,
                                       FUN, 
                                       linker_file = 'bots/test/linker.R',
@@ -51,7 +51,7 @@ BruteForceOpt_mc <- function(var.df, ohlc_data,
         map_range <- Delegate(i, n_vars, p = workers)
         x <- var.df[map_range, ]
         df <- BruteForceOpt(DATA = x, 
-            ohlc_data = ohlc_data, 
+            ohlc = ohlc, 
             from_date, to_date, lookback,
             FUN = FUN, 
             fast = fast,
@@ -74,7 +74,7 @@ BruteForceOpt_mc <- function(var.df, ohlc_data,
 #' Roller функция обучающей оптимизации движка стратегии (multicore)
 #' 
 #' @param slice_index Временные интервалы оптимизационных окон (индексы start/end)
-#' @param ohlc_data XTS с исходными котировками
+#' @param ohlc XTS с исходными котировками
 #' @param var.df DF с данными для перебора
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param win_size Период обучения (нужно для более точной кластеризации)
@@ -91,7 +91,7 @@ BruteForceOpt_mc <- function(var.df, ohlc_data,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export                             
-RollerOpt_learning_mc <- function(slice_index, ohlc_data,
+RollerOpt_learning_mc <- function(slice_index, ohlc,
                                   var.df,
                                   FUN, win_size,
                                   linker_file = 'bots/test/linker.R',
@@ -112,7 +112,7 @@ RollerOpt_learning_mc <- function(slice_index, ohlc_data,
     bf_data.list <- lapply(1:length(slice_index$widthSlice),
         function(x) {
             BruteForceOpt_mc(var.df = var.df, 
-                ohlc_data = ohlc_data,
+                ohlc = ohlc,
                 from_date = slice_index$widthSlice[[x]][1, ], 
                 to_date = slice_index$widthSlice[[x]][2, ], 
                 lookback = TRUE,

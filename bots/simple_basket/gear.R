@@ -17,7 +17,7 @@
 #' @return list(data, states) Лист с данными отработки и данные сделок
 #'
 #' @export
-SimpleStr.gear <- function(ohlc_data,
+SimpleStr.gear <- function(ohlc,
                                 sma_per, add_per, 
                                 k_mm, balance_start, 
                                 basket_weights, slips, commissions) {
@@ -31,8 +31,8 @@ SimpleStr.gear <- function(ohlc_data,
   #
   ## Вектор имён инструментов внутри торгуемой корзины
   data.names <- 
-    grep('.Close', names(ohlc_data)) %>%
-    names(ohlc_data)[.] %>%
+    grep('.Close', names(ohlc)) %>%
+    names(ohlc)[.] %>%
     sub('.Close', '', .)
   #
   # расчёт суммарной комиссии по корзине
@@ -52,16 +52,16 @@ SimpleStr.gear <- function(ohlc_data,
   ## 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
   data %<>%  
     {
-      data <- xts(NULL, order.by = ohlc_data)
+      data <- xts(NULL, order.by = ohlc)
       cat('TestStrategy INFO:  Calculate SMA with period:  ', sma_per, '\n')
       # тикер-индикатор: SI        
-      #data$sma <- SMA(ohlc_data$SPFB.SI.Close, sma_per)
-      data$sma <- CalcIndicator.SMA(x = ohlc_data$SPFB.SI.Close, per = sma_per)
+      #data$sma <- SMA(ohlc$SPFB.SI.Close, sma_per)
+      data$sma <- CalcIndicator.SMA(x = ohlc$SPFB.SI.Close, per = sma_per)
       cat('TestStrategy INFO:  Calculate $sig and $pos...', '\n')
       data$sig <- ifelse(
-        data$sma < ohlc_data$SPFB.SI.Close, 1, 
+        data$sma < ohlc$SPFB.SI.Close, 1, 
         ifelse(
-          data$sma > ohlc_data$SPFB.SI.Close, -1, 0
+          data$sma > ohlc$SPFB.SI.Close, -1, 0
         )
       )
       return(data)
@@ -101,8 +101,8 @@ SimpleStr.gear <- function(ohlc_data,
       cat('TestStrategy INFO:  Calculate $sig.drop...', '\n')
       data$sig.drop <- ifelse(
         (
-          ((data$sma > ohlc_data$SPFB.SI.Low) & (data$sig == 1)) | 
-          ((data$sma < ohlc_data$SPFB.SI.High) & (data$sig == -1))
+          ((data$sma > ohlc$SPFB.SI.Low) & (data$sig == 1)) | 
+          ((data$sma < ohlc$SPFB.SI.High) & (data$sig == -1))
         ) & (data$sig == data$pos), 
         1, 0
       )
@@ -343,8 +343,8 @@ SimpleStr.gear <- function(ohlc_data,
   # все действия проходят внутри одного цикла перебера имён инструментов
   #
   # 2.1.3.1 выгрузка Open'ов и расчёт return'ов (здесь переходим к return'ам стратегии)  
-    # котировки берём из ohlc_data
-  cat('TestStrategy INFO:  Loading Tickers Price from ohlc_data...', '\n')
+    # котировки берём из ohlc
+  cat('TestStrategy INFO:  Loading Tickers Price from ohlc...', '\n')
   # индексы строк states
   states.ind <- index(states)
   ## соотшение позиций внутри корзины
@@ -359,12 +359,12 @@ SimpleStr.gear <- function(ohlc_data,
         t <- paste0(             
           # перенос Open'ов в states (в пунктах) с учётом проскальзываний
           'states$',.,'.Price <- ', 
-            'merge(states, ohlc_data$',.,'.Open[states.ind]) %$% ',
+            'merge(states, ohlc$',.,'.Open[states.ind]) %$% ',
             'na.locf(',.,'.Open) %>% 
             { . + slips[i] * states$state } ; ',
           # перенос Open'ов в data 
           'data$',.,'.Price <- ', 
-            'merge(data, ohlc_data$',.,'.Open[data.ind]) %$% ',
+            'merge(data, ohlc$',.,'.Open[data.ind]) %$% ',
             'na.locf(',.,'.Open) ; ',  
           # перенос данных по Open'ам на свечах изменения позиций (в пунктах) в data
           'temp <- merge(data$',.,'.Price, states$',.,'.Price[states.ind]) ; ',
@@ -399,7 +399,7 @@ SimpleStr.gear <- function(ohlc_data,
   # расчёт для data
   # добавление курса
   data <- 
-    merge(data, ohlc_data$USDRUB[data.ind]) %$%
+    merge(data, ohlc$USDRUB[data.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
     NormData_inXTS.price(data = data, 
@@ -413,7 +413,7 @@ SimpleStr.gear <- function(ohlc_data,
   # расчёт суммарного cret для states
   cat('TestStrategy INFO:  CalcCRet for states', '\n')
   states <- 
-    merge(states, ohlc_data$USDRUB[states.ind]) %$%
+    merge(states, ohlc$USDRUB[states.ind]) %$%
     na.locf(USDRUB) %>%
     # расчёт cret по инструментам
     NormData_inXTS.price(data = states, 
@@ -468,7 +468,7 @@ SimpleStr.gear <- function(ohlc_data,
           states$n[n] <-
             {
               states$balance[[n - 1]] * k_mm / 
-              coredata(ohlc_data$IM[temp.index]) * 
+              coredata(ohlc$IM[temp.index]) * 
               runif(1, 0.6, 1.4) 
             } %>%
             round(.) %>%
@@ -499,7 +499,7 @@ SimpleStr.gear <- function(ohlc_data,
       # изменение контрактов на такте
       states$diff.n[n] <- states$n[[n]] - states$n[[n - 1]]
       # расчёт баланса, заблокированного на ГО
-      states$im.balance[n] <- states$n[[n]] * coredata(ohlc_data$IM[temp.index])
+      states$im.balance[n] <- states$n[[n]] * coredata(ohlc$IM[temp.index])
       # комиссия на такте
       states$commiss[n] <- basket.commiss * abs(states$diff.n[[n]])
       # баланс на такте
@@ -618,7 +618,7 @@ SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
   # подгрузка переменных
   clusterExport(parallel_cluster, envir = .GlobalEnv, 
     varlist = c(
-      'ohlc_data.list', 
+      'ohlc.list', 
       'add_per', 'k_mm', 'balance_start', 
       'basket_weights', 'slips', 'commissions', 'ret_type'
     )
@@ -630,7 +630,7 @@ SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
       parallel_cluster,
       ., 
       function(x){
-        SimpleStr_OneThreadRun(ohlc_data = ohlc_data.list[[1]],
+        SimpleStr_OneThreadRun(ohlc = ohlc.list[[1]],
                                sma_per = x, add_per, k_mm, balance_start, 
                                basket_weights, slips, commissions, ret_type)
       }
@@ -670,7 +670,7 @@ SimpleStr_BruteForceOpt.Parallel <- function(var.begin, var.end, ...) {
 #'
 #' @export
 SimpleStr_BruteForceOpt <- function(var.begin, var.end,
-                                    ohlc_data, add_per, k_mm, balance_start, 
+                                    ohlc, add_per, k_mm, balance_start, 
                                     basket_weights, slips, commissions, ret_type) {
   #
   result <- 
@@ -678,7 +678,7 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
     lapply(
       ., 
       function(x){
-        SimpleStr_OneThreadRun(ohlc_data = ohlc_data.list[[1]],
+        SimpleStr_OneThreadRun(ohlc = ohlc.list[[1]],
                                sma_per = x, add_per, k_mm, balance_start, 
                                basket_weights, slips, commissions, ret_type)
       }
@@ -706,13 +706,13 @@ SimpleStr_BruteForceOpt <- function(var.begin, var.end,
 #' @return list(data, states) Лист с данными отработки и данные сделок
 #'
 #' @export
-SimpleStr_OneThreadRun <- function(ohlc_data = ohlc_data.list[[1]], 
+SimpleStr_OneThreadRun <- function(ohlc = ohlc.list[[1]], 
                                    sma_per, add_per, k_mm, basket_weights, 
                                    slips, commissions, 
                                    balance_start, ret_type,
                                    fast = FALSE) {
   ### отработка тестового робота
-  data_strategy.list <- SimpleStr.gear(ohlc_data,
+  data_strategy.list <- SimpleStr.gear(ohlc,
                                        sma_per, add_per, k_mm, 
                                        basket_weights, slips, commissions,
                                        balance_start)

@@ -48,16 +48,16 @@ CrossLine.down <- function(x1, x2, eq = FALSE) {
 #' Функция для расчёта SMA
 #' 
 #' @param x XTS
-#' @param per Период SMA
+#' @param n Период SMA
 #' @param digits Округление до знаков после точки
 #'
 #' @return x XTS ряд со значениями SMA
 #'
 #' @export
-CalcIndicator.SMA <- function(x, per, digits = 0, ...) {
+CalcIndicator.SMA <- function(x, n, digits = 0, ...) {
     #
     x <- 
-        SMA(x = x, n = per) %>%
+        SMA(x, n) %>%
         round(., digits = digits)
     #
     return(x)
@@ -67,16 +67,16 @@ CalcIndicator.SMA <- function(x, per, digits = 0, ...) {
 #' Функция для расчёта DCI
 #' 
 #' @param x XTS
-#' @param per Период DCI
+#' @param n Период DCI
 #' @param digits Округление до знаков после точки
 #'
 #' @return x XTS со значениями DCI ($high, $mid, $low)
 #'
 #' @export
-CalcIndicator.DCI <- function(x, per, digits = 0, lag = TRUE) {
+CalcIndicator.DCI <- function(x, n, digits = 0, lag = TRUE) {
     #
     x <- 
-        DonchianChannel(HL = x, n = per, include.lag = lag) %>%
+        DonchianChannel(HL = x, n = n, include.lag = lag) %>%
         round(., digits = digits)
     #
     return(x)

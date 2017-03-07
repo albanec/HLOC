@@ -194,7 +194,7 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 ###
 #' Функция скользящей нарезки периодов
 #' 
-#' @param ohlc_data Данные XTS
+#' @param ohlc Данные XTS
 #' @param from_date Стартавая дата (гг-мм-дд) анализа
 #' @param to_date Конечная дата анализа
 #' @param period Период окна скольжения ('seconds', 'mins', 'hours', 'days', 'weeks', 'months', 'quarters', 'years')
@@ -208,19 +208,19 @@ CalcQuantile <- function(data, var, q.hi = 0, q.low = 0,
 #' @return result.list Лист с данными, разложенными по индексам окон (либо с индексами)
 #'
 #' @export 
-RollingSlicer <- function(ohlc_data, 
+RollingSlicer <- function(ohlc, 
                           from_date, to_date, period = NULL, 
                           width, by = NULL, align = c('left', 'right'),
                           add_bySlice = FALSE, 
                           justIndex = FALSE) {
     ### подготовка
-    n_rows <- nrow(ohlc_data)
-    n_cols <- ncol(ohlc_data)
-    freq <- periodicity(ohlc_data) 
+    n_rows <- nrow(ohlc)
+    n_cols <- ncol(ohlc)
+    freq <- periodicity(ohlc) 
     # проверка на правильность условий
     stopifnot(width > 0, width <= n_rows)
     # индкесы исходных данных
-    data_ind <- index(ohlc_data)
+    data_ind <- index(ohlc)
     # интервал анализа 
     interval <- paste0(from_date,'::',to_date)
     if (is.null(by)) {
@@ -238,9 +238,9 @@ RollingSlicer <- function(ohlc_data,
         row_nums <- 
             {
                 if (add_bySlice == FALSE) {
-                    ohlc_data[interval]
+                    ohlc[interval]
                 } else {
-                    ohlc_data
+                    ohlc
                 }
             } %>%
             index(.) %>%
@@ -249,7 +249,7 @@ RollingSlicer <- function(ohlc_data,
             }
         rm(data_ind)
         # подготовка данных для анализа
-        temp_subset <- ohlc_data[row_nums, ]
+        temp_subset <- ohlc[row_nums, ]
         # полный набор индексов для выходных данных (пока не используется)
         # result_ind <- 
         #     nrow(temp_subset) %>%
@@ -283,7 +283,7 @@ RollingSlicer <- function(ohlc_data,
                 temp_subset[., ]
             RESULT.list <- 
                 RollingSlicer(
-                    ohlc_data = temp_subset, 
+                    ohlc = temp_subset, 
                     from_date, to_date, period = NULL, 
                     width = by, by = NULL, align,
                     add_bySlice = FALSE, justIndex = justIndex
@@ -312,8 +312,8 @@ RollingSlicer <- function(ohlc_data,
                 'right' = { 0 })
 
         ### простановка enpoint'ов в исходные данные 
-        ohlc_data$ends <- 
-            endpoints(x = ohlc_data, on = period, k = 1) %>%
+        ohlc$ends <- 
+            endpoints(x = ohlc, on = period, k = 1) %>%
             # модификация (перенос endpoint'ов на начало периода)
             {
                 x <- .
@@ -325,15 +325,15 @@ RollingSlicer <- function(ohlc_data,
                 return(x)
             } %>% 
             {
-                ohlc_data$ends <- NA
-                ohlc_data$ends[.] <- 1
-                ohlc_data$ends[.] <- cumsum(ohlc_data$ends[.])
-                return(ohlc_data$ends)
+                ohlc$ends <- NA
+                ohlc$ends[.] <- 1
+                ohlc$ends[.] <- cumsum(ohlc$ends[.])
+                return(ohlc$ends)
             } %>%
             na.locf(.) 
         # выделение старт/стоп номеров строк 
         interval_rows <- 
-            ohlc_data[interval] %>%
+            ohlc[interval] %>%
             index(.) %>%
             { 
                 which(data_ind %in% .) 
@@ -341,10 +341,10 @@ RollingSlicer <- function(ohlc_data,
         rm(data_ind)
         
         ## выделение нужного для анализа интервала
-        ohlc_data <- ohlc_data[1:last(interval_rows), ]
+        ohlc <- ohlc[1:last(interval_rows), ]
         # полный набор индексов для выходных данных (пока не используется)
         # result_ind <- 
-        #     unique(coredata(ohlc_data$ends)) %>%
+        #     unique(coredata(ohlc$ends)) %>%
         #     max(.) %>%
         #     {
         #         seq((width - offset), (. - offset), by = by) 
@@ -355,7 +355,7 @@ RollingSlicer <- function(ohlc_data,
         #
         # endpoint'ы строк начала окон
         start_ends <- 
-            unique(coredata(ohlc_data$ends[interval_rows])) %>%
+            unique(coredata(ohlc$ends[interval_rows])) %>%
             {
                 seq.int(
                     min(.), max(.), 
@@ -370,22 +370,22 @@ RollingSlicer <- function(ohlc_data,
                         start_ends[x] - offset 
                     } %>%
                     {
-                        xts::first(which(ohlc_data$ends == .))
+                        xts::first(which(ohlc$ends == .))
                     } 
-                win_end <- xts::last(which(coredata(ohlc_data$ends) == start_ends[x] - sign(offset)))
+                win_end <- xts::last(which(coredata(ohlc$ends) == start_ends[x] - sign(offset)))
                 if (justIndex == TRUE) {
                     rbind.data.frame(
-                        data.frame(Index = index(ohlc_data[win_start, ])), 
-                        data.frame(Index = index(ohlc_data[win_end, ]))
+                        data.frame(Index = index(ohlc[win_start, ])), 
+                        data.frame(Index = index(ohlc[win_end, ]))
                     )    
                 } else {
-                    .subset_xts(ohlc_data, win_start:win_end)
+                    .subset_xts(ohlc, win_start:win_end)
                 }
             })    
         if (add_bySlice == TRUE) {
             RESULT.list <- 
                 RollingSlicer(
-                    ohlc_data = ohlc_data, 
+                    ohlc = ohlc, 
                     from_date, to_date, period, 
                     width = by, by = NULL, align = 'right',
                     add_bySlice = FALSE, justIndex = justIndex
@@ -423,7 +423,7 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
 #
 #' Функция выделения торговых интервалов из источника котировок
 #'
-#' @param ohlc_data Источник котировок
+#' @param ohlc Источник котировок
 #' @param from_date Дата старта торговли
 #' @param to_date Дата окончания торговли
 #' @param lookback "Обучающее" окно для робота (в количестве свечей)
@@ -431,25 +431,25 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
 #' @return result_subset XTS с данными котировок для торговли
 #'
 #' @export
-Subset_TradeOHLC <- function(ohlc_data, from_date, to_date, lookback = NULL) {
+Subset_TradeOHLC <- function(ohlc, from_date, to_date, lookback = NULL) {
     if (!is.null(lookback)) {
         result_subset <- 
             paste0(from_date,'::',to_date) %>%
-            ohlc_data[.] 
+            ohlc[.] 
         lookback_rows <- 
             {
-                which(index(ohlc_data) == index(xts::first(result_subset)))
+                which(index(ohlc) == index(xts::first(result_subset)))
             } %>%
             {
-                ifelse(lookback > ., 1, . - lookback):.
+                ifelse(lookback > ., 1, . - (lookback - 1)):(. - 1)
             }
         result_subset <- 
-            ohlc_data[lookback_rows, ] %>%
+            ohlc[lookback_rows, ] %>%
             rbind(., result_subset)
     } else {
         result_subset <- 
             paste0(from_date,'::',to_date) %>%
-            ohlc_data[.] 
+            ohlc[.] 
     }
     #
     return(result_subset)

@@ -6,7 +6,7 @@
 #' Функция BF оптимизации параметров стратегии 
 #' 
 #' @param DATA data.frame с данными для перебора
-#' @param ohlc_data XTS с полными котировками
+#' @param ohlc XTS с полными котировками
 #' @param from_date Начало торговли
 #' @param to_date Конец торговли
 #' @param lookback Обучающее окно (перед началом торговли)
@@ -23,7 +23,7 @@
 #' @return df data.frame с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt <- function(DATA, ohlc_data, 
+BruteForceOpt <- function(DATA, ohlc, 
                           from_date, to_date, lookback = FALSE,
                           FUN, 
                           fast = FALSE,
@@ -36,7 +36,7 @@ BruteForceOpt <- function(DATA, ohlc_data,
     temp_text <- paste0(
         'df <- lapply(1:nrow(DATA),
             function(x) {
-                FUN(ohlc_data = ohlc_data,
+                FUN(ohlc = ohlc,
                     from_date, to_date, lookback,
                     fast = fast, 
                     balance_start = balance_start, slips = slips, commissions = commissions,
@@ -84,7 +84,7 @@ OneThreadRun <- function(data.xts,
     #
     FUN <- match.fun(FUN) 
     ### отработка робота
-    data_strategy.list <- FUN(ohlc_data = data.xts, 
+    data_strategy.list <- FUN(ohlc = data.xts, 
         from_date = from_date, to_date = to_date, lookback = lookback,
         balance_start = balance_start, slips = slips, commiss = commissions,
         exp.vector = expiration, ticker, return_type = return_type, 

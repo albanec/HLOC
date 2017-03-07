@@ -52,7 +52,7 @@ BotCombiner.benchmark <- function(TRADES) {
                     temp_text <- paste0(
                         'var.list <- list(data = tradeTable[[x]][[1]],
                             states = tradeTable[[x]][[2]], 
-                            ohlc_data = ohlc_data,
+                            ohlc = ohlc,
                             commiss = commissions,
                             balance_start = balance_start / n_bots,',
                             eval_str,')'
@@ -301,7 +301,7 @@ BotCombiner.trades_handler <- function(ohlc.xts,
                     pos = DATA[[bot_num]][[2]]$pos[row_num],
                     pos_bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
                     # !!! в дальнейшем применить ГО по инструменту, а не корзине
-                    IM = ohlc_data$IM[temp.index],
+                    IM = ohlc$IM[temp.index],
                     cret = DATA[[bot_num]][[2]]$cret[row_num],
                     balance_start = 0,
                     commiss = commiss,

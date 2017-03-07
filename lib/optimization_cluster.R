@@ -6,7 +6,7 @@
 #' Функция BF оптимизации движка стратегии (на SOCK-кластерах)
 #' 
 #' @param var.df DF с данными для перебора
-#' @param ohlc_data XTS с полными котировками
+#' @param ohlc XTS с полными котировками
 #' @param from_date Начало торговли
 #' @param to_date Конец торговли
 #' @param lookback Обучающее окно (перед началом торговли)
@@ -27,7 +27,7 @@
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_cl <- function(var.df, ohlc_data,
+BruteForceOpt_cl <- function(var.df, ohlc,
                              from_date, to_date, lookback = FALSE,
                              FUN, 
                              linker_file = 'bots/test/linker.R',
@@ -50,7 +50,7 @@ BruteForceOpt_cl <- function(var.df, ohlc_data,
         makeCluster(.)#, type = 'PSOCK')
     ## Подгрузка данных в кластер
     clusterExport(parallel_cluster, envir = .CurrentEnv, 
-        varlist = c('ohlc_data', 'from_date', 'to_date', 'lookback',
+        varlist = c('ohlc', 'from_date', 'to_date', 'lookback',
             'FUN', 'linker_file', 
             'balance_start', 'slips', 'commissions', 'expiration', 
             'ticker', 'return_type', 'fast', 
@@ -74,7 +74,7 @@ BruteForceOpt_cl <- function(var.df, ohlc_data,
                 .,    
                 function(x) {
                     FUN <- match.fun(FUN)
-                    df <- FUN(data.xts = ohlc_data,
+                    df <- FUN(data.xts = ohlc,
                         from_date, to_date, lookback,
                         fast = fast, 
                         balance_start = balance_start, slips = slips, commissions = commissions,
@@ -109,7 +109,7 @@ BruteForceOpt_cl <- function(var.df, ohlc_data,
 #' Roller функция обучающей оптимизации движка стратегии (на SOCK кластерах)
 #' 
 #' @param slice_index Временные интервалы оптимизационных окон (индексы start/end)
-#' @param ohlc_data XTS с исходными котировками
+#' @param ohlc XTS с исходными котировками
 #' @param var.df DF с данными для перебора
 #' @param FUN Функция анализа (OneThreadRun ветка функций)
 #' @param win_size Период обучения (нужно для более точной кластеризации)
@@ -129,7 +129,7 @@ BruteForceOpt_cl <- function(var.df, ohlc_data,
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export                             
-RollerOpt_learning_cl <- function(slice_index, ohlc_data,
+RollerOpt_learning_cl <- function(slice_index, ohlc,
                                   var.df,
                                   FUN, win_size,
                                   linker_file = 'bots/test/linker.R',
@@ -178,7 +178,7 @@ RollerOpt_learning_cl <- function(slice_index, ohlc_data,
                         ., 
                         function(x) {
                             FUN <- match.fun(FUN)
-                            df <- FUN(ohlc_data = ohlc_data,
+                            df <- FUN(ohlc = ohlc,
                                 from_date = temp_slice_index[1, ], 
                                 to_date = temp_slice_index[2, ], 
                                 lookback = TRUE,

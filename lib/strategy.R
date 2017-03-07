@@ -441,19 +441,19 @@ CalcPosition_byOrders <- function(bto, stc, sto, btc) {
 ###
 #' Функция очистки сигналов на датах экспирации
 #'
-#' @param signals Данные ордеров (bto/stc/sto/btc)
+#' @param x Данные ордеров (bto/stc/sto/btc)
 #' @param exp.vector Вектор с датами экспирации
 #' @param pos Расчёт по состояниям или ордерам
 #'
 #' @return result.list Лист с очищенными рядами сигналов
 #'
 #' @export
-CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
+CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
     require(lubridate)
 
     if (pos == FALSE) {
         # выделение данных ордеров
-        col.names <- names(signals)
+        col.names <- names(x)
         bto_col <- grep('bto', col.names)
         stc_col <- grep('stc', col.names)
         sto_col <- grep('sto', col.names)
@@ -461,7 +461,7 @@ CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
     }
 
     temp.ind <-
-        index(signals) %>%
+        index(x) %>%
         strptime(., '%Y-%m-%d') %>%
         unique(.) %>%
         as.POSIXct(., origin = '1970-01-01', tz='MSK')
@@ -475,106 +475,101 @@ CleanSignal.expiration <- function(signals, exp.vector, pos = FALSE) {
     if (length(temp.ind) != 0) {
         if (pos == FALSE) {
             # удаление входов в дни экспирации
-            signals[temp.ind, bto_col] <- 0
-            signals[temp.ind, sto_col] <- 0
+            x[temp.ind, bto_col] <- 0
+            x[temp.ind, sto_col] <- 0
         }
         # принудительное закрытие сделок в 16:00 дня экспирации
         temp.ind <-
             as.character(temp.ind) %>%
             paste(., '16:00:00', sep = ' ')
         if (pos == FALSE) {
-            signals[temp.ind, stc_col] <- 1
-            signals[temp.ind, btc_col] <- -1
+            x[temp.ind, stc_col] <- 1
+            x[temp.ind, btc_col] <- -1
         } else {
-            signals[temp.ind] <- 0
+            x[temp.ind] <- 0
         }
     }
     rm(temp.ind)
     #
-    return(signals)
+    return(x)
 }
 #
 ###
 #' Функция фильтрации канальных индикаторах на утренних gap'ах
 #'
-#' @param signals Данные ордеров (bto/stc/sto/btc)
+#' @param x xts с данными ордеров (bto/stc/sto/btc)
 #'
-#' @return result.list Лист с очищенными рядами сигналов
+#' @return  Лист с очищенными рядами сигналов
 #'
 #' @export
-CleanSignal.gap <- function(signals) {
+CleanSignal.gap <- function(x) {
     # расчёт enpoint'ов
-    ends <- CalcEndpoints(x = signals, on = 'days', k = 1, findFirst = TRUE)
-    signals$gap <- 0
+    ends <- CalcEndpoints(x, on = 'days', k = 1, findFirst = TRUE)
+    x$gap <- 0
     # свечи gap'ов
-    signals$gap[ends] <- 1
-
+    x$gap[ends] <- 1
     # выделение данных ордеров
-    col.names <- names(signals)
+    col.names <- names(x)
     bto_col <- grep('bto', col.names)
     stc_col <- grep('stc', col.names)
     sto_col <- grep('sto', col.names)
     btc_col <- grep('btc', col.names)
-
+    
     ## на gap'ах:
     # заход в позиции запрещён
-    signals[ends, bto_col] <- 0
-    signals[ends, sto_col] <- 0
+    x[ends, bto_col] <- 0
+    x[ends, sto_col] <- 0
     #data <- na.omit(data)
 
     # # выходы на следующей свече по Open
-    # temp.ind <- which(signals$gap == 1 & signals[, stc_col] != 0)
+    # temp.ind <- which(x$gap == 1 & x[, stc_col] != 0)
     # if (length(temp.ind) != 0) {
-    #     signals[temp.ind + 1, stc_col] <- ifelse(signals[temp.ind, stc_col] != 0,
-    #         signals[temp.ind, stc_col],
+    #     x[temp.ind + 1, stc_col] <- ifelse(x[temp.ind, stc_col] != 0,
+    #         x[temp.ind, stc_col],
     #         0)
-    #     #signals[temp.ind, stc_col] <- 0
+    #     #x[temp.ind, stc_col] <- 0
     # }
     # rm(temp.ind)
-    # temp.ind <- which(signals$gap == 1 & signals[, btc_col] != 0)
+    # temp.ind <- which(x$gap == 1 & x[, btc_col] != 0)
     # if (length(temp.ind) != 0) {
-    #     signals[temp.ind + 1, btc_col] <- ifelse(signals[temp.ind, btc_col] != 0,
-    #         signals[temp.ind, btc_col],
+    #     x[temp.ind + 1, btc_col] <- ifelse(x[temp.ind, btc_col] != 0,
+    #         x[temp.ind, btc_col],
     #         0)
-    #     #signals[temp.ind, btc_col] <- 0
+    #     #x[temp.ind, btc_col] <- 0
     # }
     # rm(temp.ind)
-    signals[ends, stc_col] <- 0
-    signals[ends, btc_col] <- 0
 
-    gap <- signals$gap
-    signals$gap <- NULL
-    rm(ends)
-    result.list <- list(signals, gap)
+    x[ends, stc_col] <- 0
+    x[ends, btc_col] <- 0
     #
-    return(result.list)
+    return(x)
 }
 # ------------------------------------------------------------------------------
 #' Функция вычисления цены инструмента с учётом проскальзывания (на action-точках)
 #'
 #' @param price Данные цен на сделках
 #' @param action Данные action
-#' @param ohlc_data Данные с котировками
+#' @param ohlc Данные с котировками
 #' @param slips Слипы
 #'
 #' @return price XTS с ценами
 #'
 #' @export
-CalcPrice.slips <- function(price, action, ohlc_data, slips) {
+CalcPrice.slips <- function(price, action, ohlc, slips) {
     price <- price + slips * sign(action)
     price.ind <- index(price)
     low.ind <-
         {
-            which(price < Lo(ohlc_data[price.ind]))
+            which(price < Lo(ohlc[price.ind]))
         } %>%
         price.ind[.]
     high.ind <-
         {
-            which(price > Hi(ohlc_data[price.ind]))
+            which(price > Hi(ohlc[price.ind]))
         } %>% 
         price.ind[.]
-    price[low.ind] <- Lo(ohlc_data[low.ind])
-    price[high.ind] <- Hi(ohlc_data[high.ind])
+    price[low.ind] <- Lo(ohlc[low.ind])
+    price[high.ind] <- Hi(ohlc[high.ind])
     #
     return(price)
 }
@@ -601,7 +596,7 @@ StatesTable.clean <- function(x) {
 
 #' Функция для расчёта позиций
 #'
-#' @param ohlc_data XTS с исходными котировками
+#' @param ohlc XTS с исходными котировками
 #' @param exp.vector Вектор с датами экспирации
 #' @param gap_filter Фильтрация на gap'ах
 #' @param FUN_AddIndicators Функция расчета индикаторов
@@ -613,51 +608,14 @@ StatesTable.clean <- function(x) {
 #' @return data 
 #'
 #' @export
-AddPositions <- function(ohlc_data, exp.vector, gap_filter = TRUE,
-                         FUN_AddIndicators, FUN_AddSignals,
+AddPositions <- function(
+                        
                          FUN_CleanOrders, FUN_CalcPosition_byOrders,
                          ...) {
     #
-    FUN_AddIndicators <- match.fun(FUN_AddIndicators)
-    FUN_AddSignals <- match.fun(FUN_AddSignals)
     FUN_CleanOrders <- match.fun(FUN_CleanOrders)
     FUN_CalcPosition_byOrders <- match.fun(FUN_CalcPosition_byOrders)
     dots <- list(...)
-
-    ### Расчёт индикаторов и позиций
-    ## 1.1 Добавляем индикаторы (fastSMA & slowSMA, DCI) и позиции
-    data <- xts(NULL, index(ohlc_data))
-    #
-    data <- FUN_AddIndicators(ohlc_data = ohlc_data, ...)
-    #
-    ## Расчёт сигналов и позиций
-    #cat('TurtlesStrategy INFO:  Calculate $sig and $pos...', '\n')
-    data <- FUN_AddSignals(data = data, ohlc_data = ohlc_data)
-    # выделение сигналов на ордера в отдельный XTS
-    order.xts <- xts()
-    order.xts$bto <- Subset_byTarget.col(data = data, target = 'bto')
-    order.xts$sto <- Subset_byTarget.col(data = data, target = 'sto')
-    order.xts$stc <- Subset_byTarget.col(data = data, target = 'stc')
-    order.xts$btc <- Subset_byTarget.col(data = data, target = 'btc')
-
-    ### фильтрация индикаторов на утренних gap'ах
-    if (gap_filter == TRUE) {
-        order.list <- CleanSignal.gap(signals = order.xts)
-        data$gap <- order.list[[2]]
-    } else {
-        order.list <- list(order.xts)
-    }
-    rm(order.xts)
-
-    ### фильтрация сделок на склейках фьючерсов
-    if (!is.null(exp.vector)) {
-        order.list[[1]] <- CleanSignal.expiration(
-            signals = order.list[[1]],
-            exp.vector = exp.vector)
-    }
-    #
-    #order.list[[1]] <- na.omit(order.list[[1]])
-    data <- na.omit(data)
 
     ### Фильтрация ордеров в сделках
     temp.list <- FUN_CleanOrders(orders = order.list[[1]], data = data)
@@ -679,7 +637,7 @@ AddPositions <- function(ohlc_data, exp.vector, gap_filter = TRUE,
 #' @param data Данные states
 #' @param Calc_one_trade.FUN Функция обсчёта одной сделки
 #' @param commiss Коммиссия
-#' @param ohlc_data Исходные данные котировок
+#' @param ohlc Исходные данные котировок
 #' @param balance_start Стартовый баланс
 #' @param ... Параметры, специфичные для стратегии
 #'
@@ -687,7 +645,7 @@ AddPositions <- function(ohlc_data, exp.vector, gap_filter = TRUE,
 #'
 #' @export
 CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
-                                commiss, ohlc_data, balance_start,
+                                commiss, ohlc, balance_start,
                                 target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss',
                                     'margin', 'perfReturn', 'equity'),
                                 ...) {
@@ -707,7 +665,7 @@ CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
             cache <- FUN(cache = cache, 
                 row_ind = x,
                 pos = data$pos[x], pos_bars = data$pos.bars[x],
-                IM = ohlc_data$IM[temp.ind], cret = data$cret[x],
+                IM = ohlc$IM[temp.ind], cret = data$cret[x],
                 balance_start = balance_start, commiss = commiss,
                 ...)
             #
@@ -736,8 +694,15 @@ CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
 #' @return data DF с данными по сделкам
 #'
 #' @export
-CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
-                                          MM.FUN,  IM, cret, balance_start, commiss,
+CalcTrades_inStates_one_trade <- function(cache, 
+                                          row_ind, 
+                                          pos, 
+                                          pos_bars,
+                                          MM.FUN,
+                                          IM, 
+                                          cret, 
+                                          balance_start, 
+                                          commiss,
                                           external_balance = NULL,
                                           ...) {
     MM.FUN <- match.fun(MM.FUN)
@@ -784,99 +749,76 @@ CalcTrades_inStates_one_trade <- function(cache, row_ind, pos, pos_bars,
 #
 #' Функция-обработчик сделок
 #'
-#' @param data Посвечные данные отработки робота
-#' @param states Данные состояний
-#' @param ohlc_data Котировки
-#' @param commiss Коммиссия
-#' @param balance_start Стартовый баланс
+#' @param data Данные отработки робота
 #' @param FUN.CalcTrades Функция расчета сделок
-#' @param ... Параметры, специфичные MM стратегии
 #'
 #' @return Лист с данными стратегии (data + states)
 #'
 #' @export
-TradesHandler <- function(data, states, ohlc_data,
-                          commiss, balance_start,
+TradesHandler <- function(data, 
                           FUN.CalcTrades,
-                          ...) {
+                          ohlc_args, 
+                          trade_args, 
+                          str_args) {
     #
     FUN.CalcTrades <- match.fun(FUN.CalcTrades)
     # 2.1.4 Начальные параметры для расчёта сделок
     # начальный баланс
-    states$balance <- NA
-    states$balance[1] <- balance_start
+    data[[2]]$balance <- NA
+    data[[2]]$balance[1] <- trade_args$balance_start
     # начальное число синтетических контрактов корзины
-    states$n <- NA
-    #states$n <- 0
+    data[[2]]$n <- NA
+    #data[[2]]$n <- 0
     # прочее
-    states$diff.n <- NA
-    states$diff.n[1] <- 0
-    states$margin <- NA
-    states$commiss <- NA
-    states$equity <- NA
-    states$im.balance <- NA
-    #states$im.balance[1] <- 0
+    data[[2]]$diff.n <- NA
+    data[[2]]$diff.n[1] <- 0
+    data[[2]]$margin <- NA
+    data[[2]]$commiss <- NA
+    data[[2]]$equity <- NA
+    data[[2]]$im.balance <- NA
+    #data[[2]]$im.balance[1] <- 0
     # т.к. обработчик не пакетный, вес бота всегда = 1
-    #states$weight <- 1
+    #data[[2]]$weight <- 1
     ## 2.2 Расчёт самих сделок
-    temp.df <- FUN.CalcTrades(
-        data = states, commiss = commiss,
-        ohlc_data = ohlc_data,
-        balance_start = balance_start, #* states$weight[1],
-        ...
-    )
+    temp.df <- FUN.CalcTrades(data, ohlc_args, trade_args, str_args)
     # Изменение контрактов на такте
-    states$n <- temp.df$n
-    states$diff.n <- temp.df$diff.n
+    data[[2]]$n <- temp.df$n
+    data[[2]]$diff.n <- temp.df$diff.n
     # Расчёт баланса, заблокированного на ГО
-    states$im.balance <- temp.df$im.balance
+    data[[2]]$im.balance <- temp.df$im.balance
     # Расчёт комиссии на такте
-    states$commiss <- temp.df$commiss
+    data[[2]]$commiss <- temp.df$commiss
     # Расчёт вариационки
-    states$margin <- temp.df$margin
-    # расчёт equity по корзине в states
-    states$perfReturn <- temp.df$perfReturn
-    states$equity <- temp.df$equity
+    data[[2]]$margin <- temp.df$margin
+    # расчёт equity по корзине в state-таблице
+    data[[2]]$perfReturn <- temp.df$perfReturn
+    data[[2]]$equity <- temp.df$equity
     # Расчёт баланса
-    states$balance <- temp.df$balance
+    data[[2]]$balance <- temp.df$balance
     #
     rm(temp.df)
     #
-    ## Перенос данных из state в full таблицу
+    ## Перенос данных из state в data таблицу
     # перенос данных по количеству контрактов корзины
-    data$n <-
-        merge(data, states$n) %>%
-        {
-            data <- .
-            data$n <- na.locf(data$n)
-            return(data$n)
-        }
+    data[[1]]$n <- merge(data[[1]], data[[2]]$n)
+    data[[1]]$n <- na.locf(data[[1]]$n)
     # перенос данных по комиссии корзины
-    data$commiss <-
-        merge(data, states$commiss) %>%
-        {
-            data <- .
-            data$commiss[is.na(data$commiss)] <- 0
-            return(data$commiss)
-        }
+    data[[1]]$commiss <- merge(data[[1]], data[[2]]$commiss)
+    data[[1]]$commiss[is.na(data[[1]]$commiss)] <- 0
     # перенос данных по суммарному ГО
-    data$im.balance <-
-        merge(data, states$im.balance) %>%
-        {
-            data <- .
-            data$im.balance <- na.locf(data$im.balance)
-            return(data$im.balance)
-        }
+    data[[1]]$im.balance <- merge(data[[1]], data[[2]]$im.balance) 
+    data[[1]]$im.balance <- na.locf(data[[1]]$im.balance)
+    
     ## Расчёт показателей в full данных
     # расчёт вариационки в data
-    data$margin <- stats::lag(data$n) * data$cret
-    data$margin[1] <- 0
+    data[[1]]$margin <- stats::lag(data[[1]]$n) * data[[1]]$cret
+    data[[1]]$margin[1] <- 0
     # расчёт equity по корзине в data
-    data$perfReturn <- data$margin - data$commiss
-    data$equity <- cumsum(data$perfReturn)
+    data[[1]]$perfReturn <- data[[1]]$margin - data[[1]]$commiss
+    data[[1]]$equity <- cumsum(data[[1]]$perfReturn)
     # расчёт баланса
-    data$balance <- balance_start + data$equity - data$im.balance
-    data$balance[1] <- balance_start
+    data[[1]]$balance <- trade_args$balance_start + data[[1]]$equity - data[[1]]$im.balance
+    data[[1]]$balance[1] <- trade_args$balance_start
     #
-    return(list(data = data, states = states))
+    return(data)
 }

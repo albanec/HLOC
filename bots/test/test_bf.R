@@ -19,37 +19,37 @@ commissions <- c(10, 0, 0)  # в рублях
 #
 ## подготовка исходных данных
 # загрузка данных из .csv Финама
-ohlc_data <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
+ohlc <- ReadOHLC.FinamCSV(filename = 'data/temp/si_data.csv')
 # выделение нужного периода
-ohlc_data <- 
+ohlc <- 
   paste0(from.date,'::',to.date) %>%
-  ohlc_data[.]
+  ohlc[.]
 # переход к нужному периоду свечей
-ohlc_data <- ExpandData.toPeriod(x = ohlc_data, per = '15min')
-ohlc_data.list <- list(ohlc_data)
-colnames(ohlc_data.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
+ohlc <- ExpandData.toPeriod(x = ohlc, per = '15min')
+ohlc.list <- list(ohlc)
+colnames(ohlc.list[[1]]) <- c('SPFB.SI.Open', 'SPFB.SI.High', 'SPFB.SI.Low','SPFB.SI.Close', 'SPFB.SI.Volume')
 #
-ohlc_data.list[[1]] <- 
+ohlc.list[[1]] <- 
   # удаление NA (по свечам)
-  NormData_inXTS.na(data = ohlc_data.list[[1]], type = 'full') %>%
+  NormData_inXTS.na(data = ohlc.list[[1]], type = 'full') %>%
   # добавляем ГО и данные по USDRUB
   AddData_inXTS.futuresSpecs(data = ., from.date, to.date, dir = im.dir) %>%
   # вычисляем return'ы (в пунктах)
   CalcReturn_inXTS(data = ., price = 'Open', type = ret_type)
 # суммарное ГО по корзине 
-ohlc_data.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = ohlc_data.list[[1]], 
+ohlc.list[[1]]$IM <- CalcSum_inXTS_byTargetCol.basket(data = ohlc.list[[1]], 
                                                            target = 'IM', basket_weights)
 ## расчёт суммарного return'a 
 # перевод return'ов в валюту
-ohlc_data.list[[1]]$SPFB.SI.cret <- ohlc_data.list[[1]]$SPFB.SI.ret 
-ohlc_data.list[[1]]$cret <- ohlc_data.list[[1]]$SPFB.SI.cret 
+ohlc.list[[1]]$SPFB.SI.cret <- ohlc.list[[1]]$SPFB.SI.ret 
+ohlc.list[[1]]$cret <- ohlc.list[[1]]$SPFB.SI.cret 
 #
 #
 ### BruteForce оптимизация (в один поток)
 # system.time(
 #   {
 #     PerfomanceTable <- BruteForceOpt.test_str(var.begin = 1, var.end = 100,
-#                                              data.xts = ohlc_data.list[[1]], 
+#                                              data.xts = ohlc.list[[1]], 
 #                                              add_per, k_mm, balance_start, 
 #                                              basket_weights, slips, commissions, ret_type,
 #                                              fast = FALSE)
@@ -60,7 +60,7 @@ ohlc_data.list[[1]]$cret <- ohlc_data.list[[1]]$SPFB.SI.cret
 system.time(
   {
     PerfomanceTable <- BruteForceOpt_cl.test_str(
-      #input_data = 'ohlc_data.list',
+      #input_data = 'ohlc.list',
       sma_begin = 10, sma_end = 100, sma_step = 1,
       fast = FALSE
       #add_per, k_mm, balance_start, 
