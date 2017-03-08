@@ -6,31 +6,28 @@
 #' Функция MM относительно ширины канала:
 #' 
 #' @param balance Свободные средства на счёте
-#' @param risk Риск
-#' @param widthDCI Ширина канала / 2
-#' @param IM ГО на инструмент
-#' @param tick.price Цена тика 
+#' @param row Строка с анализируемыми данными
+#' @param ohlc_args Торговые параметры
+#' @param trade_args Торговые параметры
+#' @param str_args Параметры стратегии
 #'
 #' @return result Количество контрактов для покупки
 #'
 #' @export
-CalcMM.byDCIwidth <- function(balance, IM, ...) { 
-    #risk, widthDCI, tick.price) {
-    dots <- list(...)
+CalcMM.byDCIwidth <- function(balance, row, ohlc_args, trade_args, str_args) { 
     var1 <-
         {
-            coredata(balance) * dots$risk * dots$tick.price / coredata(dots$widthDCI)
+            as.integer(balance) * str_args$k_mm * trade_args$tick.price / as.integer(row$widthDCI)
         } %>%
         floor(.) %>%
         max(., 1)
     var2 <- 
         {
-            coredata(balance) / coredata(IM)
+            as.integer(balance) / as.integer(ohlc_args$ohlc$IM[index(row)])
         } %>%
         floor(.) %>%
         max(., 1)
     result <- min(var1, var2)
-    cat(result)
     #
     return(result)
 }

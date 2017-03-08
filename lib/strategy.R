@@ -459,7 +459,6 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
         sto_col <- grep('sto', col.names)
         btc_col <- grep('btc', col.names)
     }
-
     temp.ind <-
         index(x) %>%
         strptime(., '%Y-%m-%d') %>%
@@ -471,7 +470,6 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
         } %>%
         temp.ind[.] %>%
         as.character(.)
-
     if (length(temp.ind) != 0) {
         if (pos == FALSE) {
             # удаление входов в дни экспирации
@@ -592,88 +590,48 @@ StatesTable.clean <- function(x) {
 #
 # ------------------------------------------------------------------------------
 
-
-
-#' Функция для расчёта позиций
-#'
-#' @param ohlc XTS с исходными котировками
-#' @param exp.vector Вектор с датами экспирации
-#' @param gap_filter Фильтрация на gap'ах
-#' @param FUN_AddIndicators Функция расчета индикаторов
-#' @param FUN_AddSignals Функция расчета торговых сигналов
-#' @param FUN_CleanOrders Функция очистки ордеров
-#' @param FUN_CalcPosition_byOrders Функция расчета позиций
-#' @param ... Исходные параметры индикаторов
-#'
-#' @return data 
-#'
-#' @export
-AddPositions <- function(
-                        
-                         FUN_CleanOrders, FUN_CalcPosition_byOrders,
-                         ...) {
-    #
-    FUN_CleanOrders <- match.fun(FUN_CleanOrders)
-    FUN_CalcPosition_byOrders <- match.fun(FUN_CalcPosition_byOrders)
-    dots <- list(...)
-
-    ### Фильтрация ордеров в сделках
-    temp.list <- FUN_CleanOrders(orders = order.list[[1]], data = data)
-    order.list[[1]] <- temp.list[[1]]
-    data <- temp.list[[2]]
-    rm(temp.list)
-
-    ### Добавление столбцов сделок в основную таблицу
-    data <- FUN_CalcPosition_byOrders(orders = order.list[[1]], data = data)
-    rm(order.list)
-    #
-    return (data)
-}
 # ------------------------------------------------------------------------------
 # Функции для расчета данных по сделкам
 #
 #' Функция расчёта сделок
 #'
-#' @param data Данные states
-#' @param Calc_one_trade.FUN Функция обсчёта одной сделки
-#' @param commiss Коммиссия
-#' @param ohlc Исходные данные котировок
-#' @param balance_start Стартовый баланс
-#' @param ... Параметры, специфичные для стратегии
+#' @param data Данные стратегии
+#' @param FUN.CalcOneTrade Функция обсчёта одной сделки
+#' @param MM.FUN MM функция
+#' @param ohlc_args
+#' @param trade_args
+#' @param str_args
 #'
 #' @return result DF с данными по сделкам
 #'
 #' @export
-CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
-                                commiss, ohlc, balance_start,
-                                target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss',
-                                    'margin', 'perfReturn', 'equity'),
-                                ...) {
-    FUN <- match.fun(Calc_one_trade.FUN)
-    temp.env <- new.env()
-    ind <- 1:nrow(data)
-    temp.cache <-
-        data[, target_col] %>%
-        as.data.frame(., row.names=NULL)
-    assign('cache', temp.cache, envir = temp.env)
-    rm(temp.cache)
-    sapply(ind,
-        function(x) {
-            cache <- get('cache', envir = temp.env)
-            #data[x, ] <- FUN(data, x, ...)
-            temp.ind <- index(data[x, ])
-            cache <- FUN(cache = cache, 
-                row_ind = x,
-                pos = data$pos[x], pos_bars = data$pos.bars[x],
-                IM = ohlc$IM[temp.ind], cret = data$cret[x],
-                balance_start = balance_start, commiss = commiss,
-                ...)
-            #
-            assign('cache', cache, envir = temp.env)
-        }
+CalcTrade <- function(data, 
+                      FUN.CalcOneTrade, 
+                      FUN.MM,
+                      ohlc_args, trade_args, str_args) {
+    FUN.CalcOneTrade <- match.fun(FUN.CalcOneTrade)
+    FUN.MM <- match.fun(FUN.MM) 
+    .TempEnv <- new.env()
+
+    target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
+        'margin', 'perfReturn', 'equity'#, 'weight'
     )
-    result <- get('cache', envir = temp.env)
-    rm(temp.env)
+    assign('cache', data[[2]][, target_col] %>% as.data.frame(., row.names=NULL), envir = .TempEnv)
+    # вес бота на первой сделке
+    #initial_weight <- temp.cache$weight[1]
+    sapply(1:nrow(data[[2]]),
+        function(x) {
+            #data[[2]][x, ] <- FUN.CalcOneTrade(data[[2]], x, ...)  
+            FUN.CalcOneTrade(cache = get('cache', envir = .TempEnv), 
+                row_ind = x,
+                row = data[[2]][x, ], 
+                FUN.MM = FUN.MM,
+                external_balance = NULL,
+                ohlc_args, trade_args, str_args) %>%
+            assign('cache', ., envir = .TempEnv)
+        })
+    result <- get('cache', envir = .TempEnv)
+    rm(.TempEnv)
     #
     return(result)
 }
@@ -682,52 +640,44 @@ CalcTrades_inStates <- function(data, Calc_one_trade.FUN,
 #'
 #' @param cahce Данные кэша
 #' @param row_ind Номер анализируемой строки
-#' @param pos Позиция
-#' @param pos_bars Число баров в позиции
-#' @param MM.FUN Функция MM
-#' @param IM ГО
-#' @param cret Return (в деньгах)
-#' @param balance_start Стартовый баланс
-#' @param commiss Коммиссия
-#' @param ... Параметры, специфичные MM стратегии
+#' @param row Строка для анализа 
+#' @param FUN.MM Функция MM
+#' @param external_balance
+#' @param ohlc_args
+#' @param trade_args
+#' @param str_args
 #'
 #' @return data DF с данными по сделкам
 #'
 #' @export
-CalcTrades_inStates_one_trade <- function(cache, 
-                                          row_ind, 
-                                          pos, 
-                                          pos_bars,
-                                          MM.FUN,
-                                          IM, 
-                                          cret, 
-                                          balance_start, 
-                                          commiss,
-                                          external_balance = NULL,
-                                          ...) {
-    MM.FUN <- match.fun(MM.FUN)
+CalcOneTrade <- function(cache, 
+                         row_ind, 
+                         row,
+                         FUN.MM,
+                         external_balance = NULL,
+                         ohlc_args, trade_args, str_args) {
+    FUN.MM <- match.fun(FUN.MM)
     #
-    cache$n[row_ind] <- ifelse(coredata(pos) == 0,
+    cache$n[row_ind] <- ifelse(as.integer(row$pos) == 0,
         0,
-        ifelse(coredata(pos_bars) == 0,
-            MM.FUN(
+        ifelse(as.integer(row$pos.bars) == 0,
+            FUN.MM(
                 balance = ifelse(!is.null(external_balance),
                     external_balance,
                     ifelse(row_ind != 1,
                         cache$balance[row_ind - 1],
-                        balance_start)
-                    ), #* cache$weight[row_ind - 1]),
-                IM = IM,
-                ...
+                        trade_args$balance_start)), #* cache$weight[row_ind - 1]),
+                row,
+                ohlc_args, trade_args, str_args 
             ),
             cache$n[row_ind])
     )
     cache$diff.n[row_ind] <- ifelse(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
         0)
-    cache$commiss[row_ind] <- commiss * abs(cache$diff.n[row_ind])
+    cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
     cache$margin[row_ind] <- ifelse(row_ind != 1,
-        coredata(cret) * cache$n[row_ind - 1],
+        coredata(row$cret) * cache$n[row_ind - 1],
         0)
     cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
     cache$equity[row_ind] <- ifelse(row_ind != 1,
@@ -738,7 +688,7 @@ CalcTrades_inStates_one_trade <- function(cache,
         cache$balance[row_ind] <- NA
     } else {
         cache$balance[row_ind] <- ifelse(row_ind != 1,
-            balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
+            trade_args$balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
             cache$balance[row_ind])
     }
     #
@@ -750,18 +700,18 @@ CalcTrades_inStates_one_trade <- function(cache,
 #' Функция-обработчик сделок
 #'
 #' @param data Данные отработки робота
-#' @param FUN.CalcTrades Функция расчета сделок
+#' @param FUN.CalcTrade Функция расчета сделок
 #'
 #' @return Лист с данными стратегии (data + states)
 #'
 #' @export
-TradesHandler <- function(data, 
-                          FUN.CalcTrades,
-                          ohlc_args, 
-                          trade_args, 
-                          str_args) {
+TradesHandler <- function(data,
+                          FUN.CalcTrade = CalcTrade,
+                          FUN.CalcOneTrade = CalcOneTrade,
+                          FUN.MM,
+                          ohlc_args, trade_args, str_args) {
     #
-    FUN.CalcTrades <- match.fun(FUN.CalcTrades)
+    FUN.CalcTrade <- match.fun(FUN.CalcTrade)
     # 2.1.4 Начальные параметры для расчёта сделок
     # начальный баланс
     data[[2]]$balance <- NA
@@ -776,11 +726,14 @@ TradesHandler <- function(data,
     data[[2]]$commiss <- NA
     data[[2]]$equity <- NA
     data[[2]]$im.balance <- NA
-    #data[[2]]$im.balance[1] <- 0
+    data[[2]]$im.balance[1] <- 0
     # т.к. обработчик не пакетный, вес бота всегда = 1
     #data[[2]]$weight <- 1
     ## 2.2 Расчёт самих сделок
-    temp.df <- FUN.CalcTrades(data, ohlc_args, trade_args, str_args)
+    temp.df <- FUN.CalcTrade(data, 
+        FUN.CalcOneTrade,
+        FUN.MM, 
+        ohlc_args, trade_args, str_args)
     # Изменение контрактов на такте
     data[[2]]$n <- temp.df$n
     data[[2]]$diff.n <- temp.df$diff.n
@@ -795,7 +748,6 @@ TradesHandler <- function(data,
     data[[2]]$equity <- temp.df$equity
     # Расчёт баланса
     data[[2]]$balance <- temp.df$balance
-    #
     rm(temp.df)
     #
     ## Перенос данных из state в data таблицу
@@ -822,3 +774,4 @@ TradesHandler <- function(data,
     #
     return(data)
 }
+

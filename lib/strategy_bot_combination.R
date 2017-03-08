@@ -271,10 +271,10 @@ BotCombiner.trades_handler <- function(ohlc.xts,
             #             temp.pos <- ifelse(!is.na(DATA[[x]][[2]]$pos[[row_num]]),
             #                 DATA[[x]][[2]]$pos[[row_num]],
             #                 0) 
-            #             temp.pos_bars <- ifelse(!is.na(DATA[[x]][[2]]$pos.bars[[row_num]]),
+            #             temp.pos.bars <- ifelse(!is.na(DATA[[x]][[2]]$pos.bars[[row_num]]),
             #                 DATA[[x]][[2]]$pos.bars[[row_num]],
             #                 0)
-            #             out <- ifelse(temp.pos != 0 & temp.pos_bars == 0,
+            #             out <- ifelse(temp.pos != 0 & temp.pos.bars == 0,
             #                 1,
             #                 0)
             #             return(out)
@@ -299,7 +299,7 @@ BotCombiner.trades_handler <- function(ohlc.xts,
                     cache = temp.cache[[bot_num]], 
                     row_ind = row_num,
                     pos = DATA[[bot_num]][[2]]$pos[row_num],
-                    pos_bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
+                    pos.bars = DATA[[bot_num]][[2]]$pos.bars[row_num],
                     # !!! в дальнейшем применить ГО по инструменту, а не корзине
                     IM = ohlc$IM[temp.index],
                     cret = DATA[[bot_num]][[2]]$cret[row_num],
