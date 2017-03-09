@@ -10,15 +10,22 @@
 #' по данным отработки стратегии (data_strategy.list[[1]]) 
 #' 
 #' @param DATA Лист данных стратегии
-#' @param balance Стартовый баланс
+#' @param trade_table Таблица сделок
+#' @param asset_cols Имена колонок с asset-параметром (balance + im.balance)
+#' @param balance_start Стартовый баланс
+#' @param ret_type Тип return'а
+#' @param fast Быстрый расчёт (считаются только х-ки для КА)
+#' @param dd_data_output Вывод данных по dd (T/F)
+#' @param trade_stats Расчёт статистики по сдеокам (T/F)
 #'    
-#' @return perfomanceTable.list Итоговая perfomance-таблица (list)
+#' @return perfomance_table Итоговая perfomance-таблица (list)
 #'
 #' @export
 PerfomanceTable <- function(DATA,
-                            tradeTable,
+                            trade_table,
                             asset_cols = c('balance', 'im.balance'),
-                            balance_start, ret_type, 
+                            balance_start, 
+                            ret_type, 
                             fast = FALSE, 
                             dd_data_output = FALSE,
                             trade_stats = TRUE) {
@@ -68,7 +75,7 @@ PerfomanceTable <- function(DATA,
     ### profit метрики
     cat('INFO(PerfomanceTable):    Calc ProfitTable', '\n')
     profit_table <- ProfitTable(asset, 
-        trade_table = tradeTable, 
+        trade_table = trade_table, 
         #DrawdownsTable = drawdowns_table,
         balance_start = balance_start, 
         by = ifelse(trade_stats == TRUE, 'both', 'days'),

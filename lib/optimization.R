@@ -23,31 +23,22 @@
 #' @return df data.frame с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt <- function(DATA, ohlc, 
-                          from_date, to_date, lookback = FALSE,
-                          FUN, 
-                          fast = FALSE,
-                          balance_start, slips, commissions,
-                          expiration, ticker, return_type = 'ret',
-                          eval_string) { 
+BruteForceOptimizer <- function(var_df, 
+                                FUN.StrategyGear ,
+                                fast = FALSE,
+                                ohlc_args, trade_args) { 
     #
-    FUN <- match.fun(FUN)
-    
-    temp_text <- paste0(
-        'df <- lapply(1:nrow(DATA),
+    #FUN.StrategyGear <- match.fun(FUN.StrategyGear)
+    df <- 
+        lapply(1:nrow(var_df),
             function(x) {
-                FUN(ohlc = ohlc,
-                    from_date, to_date, lookback,
+                OneThreadRun(match.fun(FUN.StrategyGear),
                     fast = fast, 
-                    balance_start = balance_start, slips = slips, commissions = commissions,
-                    expiration = expiration, ticker = ticker, return_type = return_type, ',
-                    eval_string,')
-            })'
-    )
-
-    eval(parse(text = temp_text))
-    rm(temp_text)
-    df %<>%
+                    dd_data_output = FALSE,
+                    ohlc_args, 
+                    trade_args, 
+                    do.call(list, var_df[x, ]))
+            }) %>%
         {
             .[!is.null(.)]
         } %>%
@@ -96,7 +87,7 @@ OneThreadRun <- function(FUN.StrategyGear,
     } else {
         # лист с данными по сделкам (по тикерам и за всю корзину)
         tradeTable <- TradeTable.calc(DATA[[2]], basket = FALSE, convert = TRUE)
-        if (length(ticker) == 1) {
+        if (length(ohlc_args$ticker) == 1) {
             tradeTable[[1]]$TradeReturnPercent <- tradeTable[[1]]$TradeReturn * 100 / trade_args$balance_start
         }
         # оценка perfomance-параметров

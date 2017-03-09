@@ -5,7 +5,7 @@
 ###
 #' Создание итоговой таблицы сделок
 #' 
-#' @param x Входной xts ряд сделок (STATE)
+#' @param data Входной xts ряд сделок
 #' @param basket Расчитывать по корзине, или нет (T/F)
 #' @param ticker_names Вектор тикеров (необязательно)
 #' @param convert Переносить открытия/закрытия в одну строку или нет (по умолчанию нет)
@@ -13,23 +13,23 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-TradeTable.calc <- function(x, 
+TradeTable.calc <- function(data, 
                             basket = FALSE, convert = FALSE, ticker_names = NULL,
                             bto.name = 'BTO', bto_add.name = 'BTO_add',
                             sto.name = 'STO', sto_add.name = 'STO_add',
                             stc.name = 'STC', stc_drop.name = 'STC_drop',
                             btc.name = 'BTC', btc_drop.name = 'BTC_drop') {
     #
-    x <- x[!is.na(x$pos.num)]
+    data <- data[!is.na(data$pos.num)]
     
     if (is.null(ticker_names)) {
         ticker_names <- 
-            grep('.equity', names(x)) %>%
-            names(x)[.] %>%
+            grep('.equity', names(data)) %>%
+            names(data)[.] %>%
             sub('.equity', '', .)     
     }
     pos.num.list <- 
-        max(x$pos.num) %>%
+        max(data$pos.num) %>%
             1:. %>%
         {
             names(.) <- .
@@ -41,8 +41,8 @@ TradeTable.calc <- function(x,
     tradeTable_byTickers <- 
         # посделочный расчёт, на выходе лист с df по каждой сделке
         lapply(pos.num.list,
-            function (x) {
-                TradeSummary(x, type = 'byTicker', n = x, ticker_names = ticker_names, 
+            function(x) {
+                TradeSummary(data, type = 'byTicker', n = x, ticker_names = ticker_names, 
                     bto.name, bto_add.name,
                     sto.name, sto_add.name,
                     stc.name, stc_drop.name,
@@ -57,8 +57,8 @@ TradeTable.calc <- function(x,
     if (basket == TRUE) {
         tradeTable_byBasket <- 
             lapply(pos.num.list,
-                function (x) {
-                    TradeSummary(x, type = 'byBasket', n = x, ticker_names = ticker_names, 
+                function(x) {
+                    TradeSummary(data, type = 'byBasket', n = x, ticker_names = ticker_names, 
                         bto.name = , bto_add.name,
                         sto.name, sto_add.name,
                         stc.name, stc_drop.name,
