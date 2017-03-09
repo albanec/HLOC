@@ -8,15 +8,15 @@
 #' Функция вычисляет параметры по доходностям (дней и сделок) и формирует итоговый DF 
 #' 
 #' @param asset Анализируемые данные баланса (balance + im.balance или eqiuty)
-#' @param trades_table Данные таблицы сделок
+#' @param trade_table Данные таблицы сделок
 #' @param balance_start Стартовый баланс
-#' @param by Расчет по дням, трейдам или всё ('days', 'trades', 'both')
+#' @param by Расчет по дням, трейдам или всё ('days', 'trade', 'both')
 #' @param ...
 #'
 #' @return profitTable DF с данными по profit'у
 #'
 #' @export
-ProfitTable <- function(asset, trades_table, balance_start, by = 'both',
+ProfitTable <- function(asset, trade_table, balance_start, by = 'both',
                         ...) {
     ### расчёт итоговой доходности 
     # здесь для анализа используется equty, чтобы лишний раз не считать разницу
@@ -44,9 +44,9 @@ ProfitTable <- function(asset, trades_table, balance_start, by = 'both',
         profit_table_byDays <- ProfitTable.byDays(asset)
     }
     ### расчёт метрик по сделкам для корзины
-    if (by %in% c('trades', 'both')) {
-        profit_table_byTrades <-    
-            ProfitTable.byTrades(trades_table[[1]]) %>%
+    if (by %in% c('trade', 'both')) {
+        profit_table_byTrade <-    
+            ProfitTable.byTrade(trade_table[[1]]) %>%
             {
                 .[[1]]
             }
@@ -74,11 +74,11 @@ ProfitTable <- function(asset, trades_table, balance_start, by = 'both',
     if (by %in% 'days') {
         profit_table %<>% cbind(., profit_table_byDays)    
     }
-    if (by %in% 'trades') {
-        profit_table %<>% cbind(., profit_table_byTrades)    
+    if (by %in% 'trade') {
+        profit_table %<>% cbind(., profit_table_byTrade)    
     }
     if (by %in% 'both') {
-        profit_table %<>% cbind(., profit_table_byDays, profit_table_byTrades)
+        profit_table %<>% cbind(., profit_table_byDays, profit_table_byTrade)
     }
     #
     return(profit_table)

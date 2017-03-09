@@ -439,7 +439,7 @@ SimpleStr.gear <- function(ohlc,
   #
   ## 2.2 Расчёт самих сделок
   #
-  cat('TestStrategy INFO:  Start Calculation Trades...', '\n')
+  cat('TestStrategy INFO:  Start Calculation tradeTable...', '\n')
   for (n in 1:nrow(states)) {
     # на первой строке рассчитываются стартовые значения
     if (n == 1) {
@@ -509,7 +509,7 @@ SimpleStr.gear <- function(ohlc,
         states$commiss[[n]]
     }
   }
-  cat('TestStrategy INFO:  Calculation Trades    OK', '\n')
+  cat('TestStrategy INFO:  Calculation tradeTable    OK', '\n')
   #
   # расчёт equity по корзине в states
   states$perfReturn <- states$margin - states$commiss
@@ -723,24 +723,23 @@ SimpleStr_OneThreadRun <- function(ohlc = ohlc.list[[1]],
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
+    data_strategy.list[[2]] <- StateTable.clean(data_strategy.list[[2]])
     if (fast == TRUE) {
       ### оценка perfomance-параметров
       perfomanceTable <- PerfomanceTable(data = data_strategy.list[[1]], 
                                          states = 0,
-                                         trades_table = 0,
+                                         trade_table = 0,
                                          balance = balance_start, ret_type = 0, 
                                          fast = TRUE) 
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
-      trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = TRUE, convert = TRUE)
+      trade_table.list <- TradeTable.calc(data_strategy.list[[2]], basket = TRUE, convert = TRUE)
       # очистка мусора по target = 'temp'
       CleanGarbage(target = 'temp', env = '.GlobalEnv')
       # 
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                                         STATES = data_strategy.list[[2]],
-                                         TRADES = trades_table.list,
+      perfomanceTable <- PerfomanceTable(data_strategy.list[[1]], 
+                                         trade_table = trade_table.list,
                                          balance = balance_start, 
                                          ret_type = ret_type)  
     }

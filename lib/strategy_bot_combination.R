@@ -9,8 +9,8 @@ BotCombiner.benchmark <- function(TRADES) {
     .CurrentEnv <- environment()
     .ParentEnv <- globalenv() 
     # подгрузка gear-функиций
-    BindToEnv(obj_pattern = 'TradesHandler.', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
-    FUN_names <- paste0('TradesHandler.', bot_names)
+    BindToEnv(obj_pattern = 'TradeHandler.', .TargetEnv = .CurrentEnv, .ParentEnv = .ParentEnv)
+    FUN_names <- paste0('TradeHandler.', bot_names)
     if (!any(FUN_names %in% ls(.CurrentEnv) == TRUE)) { 
         stop(
             which(FUN_names %in% ls(.CurrentEnv)) %>%
@@ -61,7 +61,7 @@ BotCombiner.benchmark <- function(TRADES) {
                     rm(temp_text)
                     
                     ## запуск handler-функции
-                    FUN_name <- paste0('TradesHandler.', bot_name) 
+                    FUN_name <- paste0('TradeHandler.', bot_name) 
                     tradeTable[[x]] <- do.call(FUN_name, var.list, envir = .CurrentEnv)    
                     comment(tradeTable[[x]]) <- bot_name
                         
@@ -116,14 +116,14 @@ BotCombiner.benchmark <- function(TRADES) {
 #' @param balance_start Стартовый баланс
 #' @param commiss Коммиссия по инструменту
 #' @param ... 
-BotCombiner.trades_handler <- function(ohlc.xts,
-                                       DATA, 
-                                       benchmark = FALSE,
-                                       bot.list = bot.list[[i]],
-                                       balance_start,
-                                       commiss,
-                                       ##dots параметы
-                                       k_mm, tick_price ) {
+BotCombiner.trade_handler <- function(ohlc.xts,
+                                      DATA, 
+                                      benchmark = FALSE,
+                                      bot.list = bot.list[[i]],
+                                      balance_start,
+                                      commiss,
+                                      ##dots параметы
+                                      k_mm, tick_price ) {
     # определение нужных окружений
     .CurrentEnv <- environment()
     .ParentEnv <- globalenv()

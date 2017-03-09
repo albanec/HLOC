@@ -5,7 +5,7 @@
 ###
 #' Создание итоговой таблицы сделок
 #' 
-#' @param STATES Входной xts ряд сделок ( == states)
+#' @param x Входной xts ряд сделок (STATE)
 #' @param basket Расчитывать по корзине, или нет (T/F)
 #' @param ticker_names Вектор тикеров (необязательно)
 #' @param convert Переносить открытия/закрытия в одну строку или нет (по умолчанию нет)
@@ -13,23 +13,23 @@
 #' @return list List, содержащий все сделки
 #'
 #' @export
-TradesTable.calc <- function(STATES = data_strategy.list[[2]], 
-                             basket = FALSE, convert = FALSE, ticker_names = NULL,
-                             bto.name = 'BTO', bto_add.name = 'BTO_add',
-                             sto.name = 'STO', sto_add.name = 'STO_add',
-                             stc.name = 'STC', stc_drop.name = 'STC_drop',
-                             btc.name = 'BTC', btc_drop.name = 'BTC_drop') {
+TradeTable.calc <- function(x, 
+                            basket = FALSE, convert = FALSE, ticker_names = NULL,
+                            bto.name = 'BTO', bto_add.name = 'BTO_add',
+                            sto.name = 'STO', sto_add.name = 'STO_add',
+                            stc.name = 'STC', stc_drop.name = 'STC_drop',
+                            btc.name = 'BTC', btc_drop.name = 'BTC_drop') {
     #
-    STATES <- STATES[!is.na(STATES$pos.num)]
+    x <- x[!is.na(x$pos.num)]
     
     if (is.null(ticker_names)) {
         ticker_names <- 
-            grep('.equity', names(STATES)) %>%
-            names(STATES)[.] %>%
+            grep('.equity', names(x)) %>%
+            names(x)[.] %>%
             sub('.equity', '', .)     
     }
     pos.num.list <- 
-        max(STATES$pos.num) %>%
+        max(x$pos.num) %>%
             1:. %>%
         {
             names(.) <- .
@@ -38,11 +38,11 @@ TradesTable.calc <- function(STATES = data_strategy.list[[2]],
         as.list(.)
     #
     ### расчёт таблицы сделок (данные по каждому тикеру)
-    tradesTable_byTickers <- 
+    tradeTable_byTickers <- 
         # посделочный расчёт, на выходе лист с df по каждой сделке
         lapply(pos.num.list,
             function (x) {
-                TradeSummary(STATES, type = 'byTicker', n = x, ticker_names = ticker_names, 
+                TradeSummary(x, type = 'byTicker', n = x, ticker_names = ticker_names, 
                     bto.name, bto_add.name,
                     sto.name, sto_add.name,
                     stc.name, stc_drop.name,
@@ -51,14 +51,14 @@ TradesTable.calc <- function(STATES = data_strategy.list[[2]],
         # объединение данных внутри листа в один df
         MergeData_inList.byRow(.)
     if (convert != FALSE) {
-        tradesTable_byTickers %<>% TradesTable.convert(data_trades = ., type = 'byTicker')
+        tradeTable_byTickers %<>% TradeTable.convert(trade_table = ., type = 'byTicker')
     }
     ### расчёт таблицы сделок (данные по корзине)
     if (basket == TRUE) {
-        tradesTable_byBasket <- 
+        tradeTable_byBasket <- 
             lapply(pos.num.list,
                 function (x) {
-                    TradeSummary(STATES, type = 'byBasket', n = x, ticker_names = ticker_names, 
+                    TradeSummary(x, type = 'byBasket', n = x, ticker_names = ticker_names, 
                         bto.name = , bto_add.name,
                         sto.name, sto_add.name,
                         stc.name, stc_drop.name,
@@ -66,12 +66,12 @@ TradesTable.calc <- function(STATES = data_strategy.list[[2]],
                 }) %>%
             MergeData_inList.byRow(.)
         if (convert != FALSE) {
-            tradesTable_byBasket %<>% TradesTable.convert(data_trades = ., type = 'byBasket')    
+            tradeTable_byBasket %<>% TradeTable.convert(trade_table = ., type = 'byBasket')    
         }
-        result.list <- list(tradesTable_byBasket, tradesTable_byTickers)
+        result.list <- list(tradeTable_byBasket, tradeTable_byTickers)
         names(result.list) <- c('byBasket', 'byTicker')
     } else {
-        result.list <- list(tradesTable_byTickers)
+        result.list <- list(tradeTable_byTickers)
         names(result.list) <- c('byTicker')
     }
     #
@@ -83,17 +83,17 @@ TradesTable.calc <- function(STATES = data_strategy.list[[2]],
 #' 
 #' Функция производит вывод данных по открытию/закрытию позиций в одну строку
 #' 
-#' @param data.trade Данные таблицы сделок
+#' @param trade_table Данные таблицы сделок
 #' @param type Тип данных для анализа (tickers/basket)
 #'
 #' @return result Изменённая таблица данных сделок
 #'
 #' @export
-TradesTable.convert <- function(data_trades, type = 'byTicker') {
+TradeTable.convert <- function(trade_table, type = 'byTicker') {
     ## Номера столбцов, касающихся закрытия 
-    numtrades <- 
+    numtrade <- 
         # ряд номеров позиций
-        xts::last(data_trades$PositionNum) %>%
+        xts::last(trade_table$PositionNum) %>%
         1:. 
     # Выделение нужных столбцов (касаются закрытия)
     if (type == 'byTicker') {
@@ -101,7 +101,7 @@ TradesTable.convert <- function(data_trades, type = 'byTicker') {
             c('ExitSignal', 'ExitDate', 'ExitPrice', 'ExitCommiss', 'TradeReturn', #'Equity', 
                 'BarsHeld') %>%
             {
-                which(colnames(data_trades) %in% .) 
+                which(colnames(trade_table) %in% .) 
             }
     } else {
         colNum <-
@@ -109,42 +109,42 @@ TradesTable.convert <- function(data_trades, type = 'byTicker') {
                 'TradeProfit', 'TradeProfitPercent', #'Equity', 
                 'BarsHeld') %>%
             {
-                which(colnames(data_trades) %in% .) 
+                which(colnames(trade_table) %in% .) 
             }
     }
     ### Перенос данных в нужные строки
     # индексы строк открытия
     openRowIndex <- which(
-        (data_trades$PositionNum %in% numtrades) & !is.na(data_trades$EntrySignal)
+        (trade_table$PositionNum %in% numtrade) & !is.na(trade_table$EntrySignal)
     )
     # индексы строк закрытия
     closeRowIndex <- which(
-        (data_trades$N == 0) & !is.na(data_trades$ExitSignal)
+        (trade_table$N == 0) & !is.na(trade_table$ExitSignal)
     )
     ## Вывод данных по открытию/закрытию позиций в одну строку
-    data_trades <- 
+    trade_table <- 
         # инъекция данных
         {                            
-            data_trades[openRowIndex, colNum] <- data_trades[closeRowIndex, colNum]
-            data_trades$TradeReturn[openRowIndex] <- data_trades$TradeProfit[closeRowIndex]
-            data_trades$TradeReturnPercent[openRowIndex] <- data_trades$TradeProfitPercent[closeRowIndex]
-            data_trades$TradeProfit[openRowIndex] <- data_trades$TradeProfit[closeRowIndex]
-            data_trades$TradeProfitPercent[openRowIndex] <- data_trades$TradeProfitPercent[closeRowIndex]
-            data_trades$MarketCompliance[openRowIndex] <- data_trades$MarketCompliance[closeRowIndex] 
-            #data_trades$Balance[openRowIndex] <- data_trades$Balance[closeRowIndex] 
-            return(data_trades)
+            trade_table[openRowIndex, colNum] <- trade_table[closeRowIndex, colNum]
+            trade_table$TradeReturn[openRowIndex] <- trade_table$TradeProfit[closeRowIndex]
+            trade_table$TradeReturnPercent[openRowIndex] <- trade_table$TradeProfitPercent[closeRowIndex]
+            trade_table$TradeProfit[openRowIndex] <- trade_table$TradeProfit[closeRowIndex]
+            trade_table$TradeProfitPercent[openRowIndex] <- trade_table$TradeProfitPercent[closeRowIndex]
+            trade_table$MarketCompliance[openRowIndex] <- trade_table$MarketCompliance[closeRowIndex] 
+            #trade_table$Balance[openRowIndex] <- trade_table$Balance[closeRowIndex] 
+            return(trade_table)
         } %>%
         # очистка ненужных данных (удаление лога закрытий)
         {
-            data_trades <- data_trades[-closeRowIndex, ]
-            #data_trades$TradeProfit <- NULL
-            #data_trades$TradeProfitPercent <- NULL
-            #names(data_trades)[names(data_trades) == 'TradeReturn'] <- 'TradeProfit'
-            #names(data_trades)[names(data_trades) == 'TradeReturnPercent'] <- 'TradeProfitPercent'
-            return(data_trades)
+            trade_table <- trade_table[-closeRowIndex, ]
+            #trade_table$TradeProfit <- NULL
+            #trade_table$TradeProfitPercent <- NULL
+            #names(trade_table)[names(trade_table) == 'TradeReturn'] <- 'TradeProfit'
+            #names(trade_table)[names(trade_table) == 'TradeReturnPercent'] <- 'TradeProfitPercent'
+            return(trade_table)
         }
     #
-    return(data_trades)
+    return(trade_table)
 }
 #
 ###
@@ -153,7 +153,7 @@ TradesTable.convert <- function(data_trades, type = 'byTicker') {
 #' Выборка данных для конкретного немера сделки
 #' 
 #' @param data Входной xts ряд сделок
-#' @param type ???
+#' @param type Тип анализа (byTicker/byBasket)
 #' @param n Номер сделки
 #' @param ticker_names Вектор тикеров
 #' @type Считать по тикерам или по портфелю
@@ -165,7 +165,7 @@ TradesTable.convert <- function(data_trades, type = 'byTicker') {
 #' @param btc.name Написание закрытия short
 #' @param btc_drop.name Написание сброса позиции short
 #'
-#' @return trades_table data.frame содержащий все сделки
+#' @return trade_table data.frame содержащий все сделки
 #'
 #' @export
 TradeSummary <- function(data, type, n, ticker_names = NULL,
@@ -241,11 +241,11 @@ TradeSummary <- function(data, type, n, ticker_names = NULL,
 } 
 #
 ###
-#' Вычисление номеров сделок в нужном для TradesTable виде (вспомогательная функция)
+#' Вычисление номеров сделок в нужном для TradeTable виде (вспомогательная функция)
 #' 
 #' @param x XTS с номерами позиций из states
 #'
-#' @return x Ряд сделок в нужном для TradesTable виде
+#' @return x Ряд сделок в нужном для TradeTable виде
 #'
 #' @export
 TradeSummary.pos_num <- function(x) {

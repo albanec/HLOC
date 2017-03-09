@@ -581,7 +581,7 @@ CalcPrice.slips <- function(price, action, ohlc, slips) {
 #' @return data Очищенный xts ряд состояний
 #'
 #' @export
-StatesTable.clean <- function(x) {
+StateTable.clean <- function(x) {
     if ((x$n == 0 && x$diff.n ==0) != FALSE) {
         x <- x[-which(x$n == 0 & x$diff.n ==0)]
     }
@@ -705,7 +705,7 @@ CalcOneTrade <- function(cache,
 #' @return Лист с данными стратегии (data + states)
 #'
 #' @export
-TradesHandler <- function(data,
+TradeHandler <- function(data,
                           FUN.CalcTrade = CalcTrade,
                           FUN.CalcOneTrade = CalcOneTrade,
                           FUN.MM,

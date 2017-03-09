@@ -59,86 +59,68 @@ BruteForceOpt <- function(DATA, ohlc,
 ###
 #' Функция одного прогона вычислений движка стратегии (на готовых данных)
 #' 
-#' @param data.xts XTS с котировками
-#' @param FUN Функция движка стратегии
+#' @param FUN.StrategyGear Функция движка стратегии
 #' @param fast Упрощенный/полный perfomance анализ
-#' @param var_names Вектор имен переменных стратегии
-#' @param balance_start Стартовый баланс
-#' @param slips Слипы (вектор)
-#' @param commissions Комиссии (вектор)
-#' @param expiration Вектор с датами экспирации
-#' @param ticker Тикер инструмента
-#' @param ... Другие данные, нужные для вычислений робота
+#' @param dd_data_output Вывод данных по dd (T/F)
+#' @param ohlc_args
+#' @param trade_args
+#' @param str_args
 #'
 #' @return perfomanceTable Строка с perfomance-данными прогона робота
 #'
 #' @export
-OneThreadRun <- function(data.xts, 
-                         from_date, to_date, lookback = FALSE,   
-                         FUN,
-                         fast = FALSE, var_names = NULL,
-                         balance_start, slips, commissions,
-                         expiration, ticker, return_type = 'ret',
+OneThreadRun <- function(FUN.StrategyGear, 
+                         fast = FALSE, 
                          dd_data_output = FALSE,
-                         ...) {
+                         ohlc_args, trade_args, str_args) {
     #
-    FUN <- match.fun(FUN) 
+    FUN.StrategyGear <- match.fun(FUN.StrategyGear) 
     ### отработка робота
-    data_strategy.list <- FUN(ohlc = data.xts, 
-        from_date = from_date, to_date = to_date, lookback = lookback,
-        balance_start = balance_start, slips = slips, commiss = commissions,
-        exp.vector = expiration, ticker, return_type = return_type, 
-        dd_data_output = FALSE,
-        ...)
+    DATA <- FUN.StrategyGear(ohlc_args, trade_args, str_args)
     # для стратегий, у которых нет сделок
-    if (is.null(data_strategy.list$states)) {
+    if (is.null(DATA[[2]])) {
         return(NULL)
     } 
     # чистим от лишних записей
-    data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
+    DATA[[2]] <- StateTable.clean(DATA[[2]])
     
     ### Анализ perfomanc'ов
     # формирование таблицы сделок
     if (fast == TRUE) {
         # оценка perfomance-параметров
-        perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-            STATES = 0,
-            TRADES = 0,
-            balance = balance_start, ret_type = 0, 
+        perfomanceTable <- PerfomanceTable(DATA, 
+            trade_table = 0,
+            balance = trade_args$balance_start, 
+            ret_type = 0, 
             fast = TRUE)    
     } else {
         # лист с данными по сделкам (по тикерам и за всю корзину)
-        trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = FALSE, convert = TRUE)
+        tradeTable <- TradeTable.calc(DATA[[2]], basket = FALSE, convert = TRUE)
         if (length(ticker) == 1) {
-            trades_table.list[[1]]$TradeReturnPercent <- trades_table.list[[1]]$TradeReturn * 100 / balance_start
+            tradeTable[[1]]$TradeReturnPercent <- tradeTable[[1]]$TradeReturn * 100 / trade_args$balance_start
         }
         # оценка perfomance-параметров
-        perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-            STATES = data_strategy.list[[2]],
-            TRADES = trades_table.list,
-            balance_start = balance_start, 
-            ret_type = return_type,
+        perfomanceTable <- PerfomanceTable(DATA, 
+            trade_table = tradeTable,
+            balance_start = trade_args$balance_start, 
+            ret_type = trade_args$return_type,
             dd_data_output = dd_data_output)
         if (dd_data_output == TRUE) {
-            dd_data_output.list <- perfomance_table$dd.list
-            perfomance_table <- perfomance_table$perfomance_table
+            dd_data_output.list <- perfomanceTable$dd.list
+            perfomanceTable <- perfomanceTable$perfomance_table
         }
     }
-    
     # добавление использованных параметров
-    if (!is.null(var_names)) {
-        for (i in 1:length(var_names)) {
-            dots <- list(...)
-            temp_text <- paste0(
-                'perfomance_table %<>% cbind.data.frame(.,',var_names[i],' = ',dots[[var_names[i]]],')'
-            )
-            eval(parse(text = temp_text))
-        }
+    for (i in 1:length(str_args)) {
+        temp_text <- paste0(
+            'perfomanceTable %<>% cbind.data.frame(.,',names(str_args)[i],' = ',str_args[[names(str_args)[i]]],')'
+        )
+        eval(parse(text = temp_text))
     }
     #
     if (dd_data_output == TRUE) {
-        return(list(perfomance_table = perfomance_table, dd.list = dd_data_output.list))
+        return(list(perfomanceTable = perfomance_table, dd.list = dd_data_output.list))
     }
     #
-    return(perfomance_table)
+    return(perfomanceTable)
 }

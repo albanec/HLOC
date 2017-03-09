@@ -62,16 +62,15 @@ data_strategy.list <- SimpleStr.gear(ohlc = ohlc.list[[1]],
 #
 ### формирование таблицы сделок
 ## чистим от лишних записей
-data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
+data_strategy.list[[2]] <- StateTable.clean(data_strategy.list[[2]])
 ## лист с данными по сделкам (по тикерам и за всю корзину)
-trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = TRUE, convert = TRUE)
+trade_table.list <- TradeTable.calc(data_strategy.list[[2]], basket = TRUE, convert = TRUE)
 # очистка мусора по target = 'temp'
 CleanGarbage(target = 'temp', env = '.GlobalEnv')
 #
 ### оценка perfomance-параметров
-perfomanceTable <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                                   STATES = data_strategy.list[[2]],
-                                   TRADES = trades_table.list,
+perfomanceTable <- PerfomanceTable(data_strategy.list, 
+                                   trade_table = trade_table.list,
                                    balance = balance_start, 
                                    ret_type = ret_type)
 #

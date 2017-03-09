@@ -10,7 +10,7 @@
 #' @return result Ряд данных с числом контрактов в сделках
 #'
 #' @export
-CalcTrades_inStates.testStr <- function(data) {
+CalcTrade_inStates.testStr <- function(data) {
   #FUN <- match.fun(FUN)
   temp.env <- new.env()
   ind <- 1:nrow(data)
@@ -467,7 +467,7 @@ TestStr.gear <- function(ohlc,
   #
   cat('TestStrategy INFO:  Start Calculation trades...', '\n')
   #
-  states$n <- CalcTrades_inStates.testStr(data = states)
+  states$n <- CalcTrade_inStates.testStr(data = states)
   # Изменение контрактов на такте
   states$diff.n <- states$n - stats::lag(states$n)
   states$diff.n[1] <- 0
@@ -748,22 +748,21 @@ OneThreadRun.test_str <- function(data.xts,
   } else {
     ### Формирование таблицы сделок
     ## чистим от лишних записей
-    data_strategy.list[[2]] <- StatesTable.clean(data_strategy.list[[2]])
+    data_strategy.list[[2]] <- StateTable.clean(data_strategy.list[[2]])
     if (fast == TRUE) {
       ### оценка perfomance-параметров
-      perfomance_table <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                                          STATES = 0,
+      perfomance_table <- PerfomanceTable(data_strategy.list, 
+                                          trade_table = 0,
                                           TRADES = 0,
                                           balance = balance_start, ret_type = 0, 
                                           fast = TRUE)  
     } else {
       ## лист с данными по сделкам (по тикерам и за всю корзину)
       basket <- TRUE
-      trades_table.list <- TradesTable.calc(STATES = data_strategy.list[[2]], basket = basket, convert = TRUE)
+      trade_table.list <- TradeTable.calc(data_strategy.list[[2]], basket = basket, convert = TRUE)
       ### оценка perfomance-параметров
-      perfomanceTable <- PerfomanceTable(DATA = data_strategy.list[[1]], 
-                                         STATES = data_strategy.list[[2]],
-                                         TRADES = trades_table.list,
+      perfomanceTable <- PerfomanceTable(data_strategy.list, 
+                                         trade_table = trade_table.list,
                                          balance = balance_start, 
                                          ret_type)  
     }

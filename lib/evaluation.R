@@ -9,25 +9,24 @@
 #' просадкам (DrawdownsTable) + коэффициентам продуктивности (ratioTable)) 
 #' по данным отработки стратегии (data_strategy.list[[1]]) 
 #' 
-#' @param data Входной xts данных отработки стратегии (data_strategy.list[[1]])
+#' @param DATA Лист данных стратегии
 #' @param balance Стартовый баланс
 #'    
 #' @return perfomanceTable.list Итоговая perfomance-таблица (list)
 #'
 #' @export
-PerfomanceTable <- function(DATA = data_strategy.list[[1]],
-                            STATES = data_strategy.list[[2]], 
-                            TRADES = trades_table.list,
+PerfomanceTable <- function(DATA,
+                            tradeTable,
                             asset_cols = c('balance', 'im.balance'),
                             balance_start, ret_type, 
                             fast = FALSE, 
                             dd_data_output = FALSE,
-                            trades_stats = TRUE) {
+                            trade_stats = TRUE) {
     #
     asset <-    
-        DATA[, which(colnames(DATA) %in% asset_cols)] %>% 
+        DATA[[1]][, which(colnames(DATA[[1]]) %in% asset_cols)] %>% 
         rowSums() %>%
-        xts(., order.by = index(DATA))
+        xts(., order.by = index(DATA[[1]]))
     colnames(asset) <- c('asset')
 
     # Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
@@ -46,7 +45,7 @@ PerfomanceTable <- function(DATA = data_strategy.list[[1]],
         full_return_percent <- full_return * 100 / balance_start
         #
         # sharp.data <-    
-        #     SharpeRatio.annualized(DATA$perfReturn, scale = 1, geometric = TF) %>%
+        #     SharpeRatio.annualized(DATA[[1]]$perfReturn, scale = 1, geometric = TF) %>%
         #     Ratio.transformMetric(., metric.name = 'SharpRatio')
         #
         perfomance_table <- data.frame(ProfitPercent = full_return_percent, DrawdownMaxPercent = max_drawdown_percent)
@@ -58,7 +57,7 @@ PerfomanceTable <- function(DATA = data_strategy.list[[1]],
     cat('INFO(PerfomanceTable):    Calc PerfomanceMetrics ... Start', '\n')
     ### простые временные метрики
     cat('INFO(PerfomanceTable):    Calc DatesMetrics', '\n', sep = '    ')
-    dates_table <- DatesTable(data = asset, states = STATES)        
+    dates_table <- DatesTable(data = asset, states = DATA[[2]])        
     ### расчёт drawdown'ов
     cat('INFO(PerfomanceTable):    Calc DrawdownsTable', '\n')
     drawdowns_table <- DrawdownsTable(data_balance = asset, dd_data_output = dd_data_output)
@@ -69,24 +68,24 @@ PerfomanceTable <- function(DATA = data_strategy.list[[1]],
     ### profit метрики
     cat('INFO(PerfomanceTable):    Calc ProfitTable', '\n')
     profit_table <- ProfitTable(asset, 
-        trades_table = TRADES, 
+        trade_table = tradeTable, 
         #DrawdownsTable = drawdowns_table,
         balance_start = balance_start, 
-        by = ifelse(trades_stats == TRUE, 'both', 'days'),
+        by = ifelse(trade_stats == TRUE, 'both', 'days'),
         nbar = dates_table$BarsNum,
         nbar.trade = dates_table$BarsNumIn)
     ### расчёт коэффициентов
     cat('INFO(PerfomanceTable):    Calc RatioTable', '\n')
-    ratio_table <- RatioTable(DATA$perfReturn, ret_type = ret_type)
+    ratio_table <- RatioTable(DATA[[1]]$perfReturn, ret_type = ret_type)
     ### фактор восстановления
     rf <-
         profit_table$Profit / drawdowns_table$DrawdownMax %>%
         abs(.) %>%
         data.frame(RatioRecoveryFactor = .)
     ### коэф. выигрыша
-    if (trades_stats == TRUE) {
+    if (trade_stats == TRUE) {
         payoff_ratio <- 
-            profit_table$TradesWinAverageProfit / profit_table$TradesLossAverageLoss %>%
+            profit_table$TradeWinAverageProfit / profit_table$TradeLossAverageLoss %>%
             abs(.) %>%
             data.frame(RatioPayoff = .)
     } else {
