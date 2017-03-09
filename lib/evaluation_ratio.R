@@ -104,9 +104,9 @@ CalmarRatio.calc <- function(R, scale = NA, geometric = TRUE) {
 #'
 #' @export
 SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
-    R = checkData(R)
+    R <- checkData(R)
     if (is.na(scale)) {
-        freq = periodicity(R)
+        freq <- periodicity(R)
         switch(freq$scale, 
             minute = {
                 stop('Data periodicity too high')
@@ -130,10 +130,10 @@ SterlingRatio.calc <- function(R, scale = NA, excess = 0.1, geometric = TRUE) {
                 scale = 1
             })
     }
-    annualized_return = Return.annualized(R, scale = scale, geometric = geometric)
-    drawdown = abs(maxDrawdown(R, geometric = geometric) + excess)
-    result = annualized_return / drawdown
-    rownames(result) = paste0('Sterling Ratio (Excess = ', round(excess * 100, 0), '%)')
+    annualized_return <- Return.annualized(R, scale = scale, geometric = geometric)
+    drawdown <- abs(maxDrawdown(R, geometric = geometric) + excess)
+    result <- annualized_return / drawdown
+    rownames(result) <- paste0('Sterling Ratio (Excess = ', round(excess * 100, 0), '%)')
     return(result)
 }
 #

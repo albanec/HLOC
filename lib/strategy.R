@@ -683,7 +683,7 @@ CalcOneTrade <- function(cache,
     cache$equity[row_ind] <- ifelse(row_ind != 1,
         sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
         0)
-    cache$im.balance[row_ind] <- IM * cache$n[row_ind]
+    cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index(row)] * cache$n[row_ind]
     if (!is.null(external_balance)) {
         cache$balance[row_ind] <- NA
     } else {
