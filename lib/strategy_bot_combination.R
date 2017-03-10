@@ -147,7 +147,7 @@ BotList.trade_handler <- function(bot.list,
             }) %>%
         do.call(merge, .)
     names(temp.cache) <- target_col[!target_col %in% 'im']
-    temp.cache$balance[1] <- available_balance
+    temp.cache$balance[1] <- ohlc_args$balance_start
     assign('cache_portfolio', temp.cache, envir = .CacheEnv)
     rm(temp.cache)
     
@@ -262,8 +262,8 @@ BotList.trade_handler <- function(bot.list,
                         }) %>%
                     do.call(sum, .)
                 # баланс портфолио на индексе
-                cache_portfolio$balance[row_num] <- 
-                    available_balance + cache_portfolio$equity[row_num] - cache_portfolio$im.balance[row_num]
+                cache_portfolio$balance[row_num] <- trade_args$balance_start + 
+                    cache_portfolio$equity[row_num] - cache_portfolio$im.balance[row_num]
             } else {
                 cache_portfolio$n[row_num] <- 0
                 cache_portfolio$diff.n[row_num] <- 0
