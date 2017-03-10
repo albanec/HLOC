@@ -28,7 +28,7 @@ BruteForceOptimizer.mc <- function(var_df,
     }
     # вычисления
     result <- 
-        foreach(i = 1:workers, .combine = data.frame) %dopar% {
+        foreach(i = 1:workers, .combine = rbind) %dopar% {
             BruteForceOptimizer(
                 var_df = Delegate(i, nrow(var_df), p = workers) %>% var_df[., ], 
                 FUN.StrategyGear = match.fun(FUN.StrategyGear), 
@@ -71,29 +71,28 @@ RollerOptimizer.learning <- function(slice_index,
     
     ## Вычисление оптимизаций на обучающих периодах
     # выбор оптимальной стратегии распараллеливания
-    if (length(slice_index$widthSlice) >= workers) {
-        bf_data <- foreach(i = 1:workers) %dopar% {
-            map_data <- Delegate(i, length(slice_index$widthSlice), p = workers)
-            foreach(x = 1:length(map_data)) %do% {
-                ohlc_args %>%
-                {
-                    .$from_date <- slice_index$widthSlice[[map_data[x]]][1, ]
-                    .$to_date <- slice_index$widthSlice[[map_data[x]]][2, ]
-                    return(.)
-                } %>%    
-                BruteForceOptimizer(var_df = var_df,
-                    FUN.StrategyGear = match.fun(FUN.StrategyGear), 
-                    fast = TRUE,
-                    ohlc_args = ., trade_args)    
-            } %>%
-            unlist(., recursive = FALSE)
-        }
-    } else {
+    # if (length(slice_index$widthSlice) >= workers) {
+    #     bf_data <- foreach(i = 1:workers) %dopar% {
+    #         map_data <- Delegate(i, length(slice_index$widthSlice), p = workers)
+    #         foreach(x = 1:length(map_data)) %do% {
+    #             ohlc_args %>%
+    #             {
+    #                 .$from_date <- slice_index$widthSlice[[map_data[x]]][1, ]
+    #                 .$to_date <- slice_index$widthSlice[[map_data[x]]][2, ]
+    #                 return(.)
+    #             } %>%    
+    #             BruteForceOptimizer(var_df = var_df,
+    #                 FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+    #                 fast = TRUE,
+    #                 ohlc_args = ., trade_args)    
+    #         }
+    #     }
+    # } else {
         bf_data <- foreach(i = 1:length(slice_index$widthSlice)) %do% {
             ohlc_args %>%
             {
-                .$from_date <- slice_index$widthSlice[[x]][1, ]
-                .$to_date <- slice_index$widthSlice[[x]][2, ]
+                .$from_date <- slice_index$widthSlice[[i]][1, ]
+                .$to_date <- slice_index$widthSlice[[i]][2, ]
                 return(.)
             } %>%
             BruteForceOptimizer.mc(var_df = var_df,
@@ -101,7 +100,7 @@ RollerOptimizer.learning <- function(slice_index,
                 fast = TRUE,
                 ohlc_args = ., trade_args)
         }
-    }
+    # }
 
     ## КА
     cluster_data <- lapply(1:length(bf_data),

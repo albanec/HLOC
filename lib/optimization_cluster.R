@@ -19,7 +19,7 @@
 #'
 #' @export
 BruteForceOptimizer.psock <- function(var_df, 
-                                      FUN.StrategyGear
+                                      FUN.StrategyGear,
                                       fast = FALSE,
                                       linker_file = 'bots/test/linker.R',
                                       export_varlist = NULL, 
