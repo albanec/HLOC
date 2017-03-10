@@ -5,26 +5,17 @@
 ###
 #' Функция BF оптимизации параметров стратегии 
 #' 
-#' @param DATA data.frame с данными для перебора
-#' @param ohlc XTS с полными котировками
-#' @param from_date Начало торговли
-#' @param to_date Конец торговли
-#' @param lookback Обучающее окно (перед началом торговли)
-#' @param FUN Функция анализа (OneThreadRun ветка функций)
+#' @param var_df Оптимизационная матрица параметров стратегии
+#' @param FUN.StrategyGear Функция стратегии
 #' @param fast Упрощенный/полный perfomance анализ
-#' @param balance_start Стартовый баланс
-#' @param slips Слипы (вектор)
-#' @param commissions Комиссии (вектор)
-#' @param expiration Вектор с датами экспирации
-#' @param ticker Тикер инструмента
-#' @param return_type Тип доходности
-#' @param eval_string Сторока с описанием координат переменных внутри lapply-цикла
+#' @param ohlc_args Лист с параметрами котировок
+#' @param str_args Лист с параметрами стратегии
 #'
 #' @return df data.frame с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
 BruteForceOptimizer <- function(var_df, 
-                                FUN.StrategyGear ,
+                                FUN.StrategyGear,
                                 fast = FALSE,
                                 ohlc_args, trade_args) { 
     #

@@ -5,68 +5,39 @@
 ###
 #' Функция BF оптимизации движка стратегии (multicore)
 #' 
-#' @param var.df DF с данными для перебора
-#' @param ohlc XTS с полными котировками
-#' @param from_date Начало торговли
-#' @param to_date Конец торговли
-#' @param lookback Обучающее окно (перед началом торговли)
-#' @param FUN Функция анализа (OneThreadRun ветка функций)
-#' @param linker_file Путь к linker файлу
-#' @param balance_start Стартовый баланс
-#' @param slips Слипы (вектор)
-#' @param commissions Комиссии (вектор)
-#' @param expiration Вектор с датами экспирации
-#' @param ticker Тикер инструмента
-#' @param return_type Тип доходности
+#' @param var_df Оптимизационная матрица параметров стратегии
+#' @param FUN.StrategyGear Функция стратегии
 #' @param fast Упрощенный/полный perfomance анализ
-#' @param eval_string Сторока с описанием переменных внутри lapply-цикла
-#' @param 
+#' @param ohlc_args Лист с параметрами котировок
+#' @param str_args Лист с параметрами стратегии
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export
-BruteForceOpt_mc <- function(var.df, ohlc,
-                                      from_date, to_date, lookback = FALSE,
-                                      FUN, 
-                                      linker_file = 'bots/test/linker.R',
-                                      balance_start, slips, commissions,
-                                      expiration, ticker, return_type = 'ret',
-                                      fast = FALSE, 
-                                      eval_string) {
-    #
-    #.CurrentEnv <- environment()
+BruteForceOptimizer.mc <- function(var_df, 
+                                   FUN.StrategyGear, 
+                                   fast = FALSE,
+                                   ohlc_args, trade_args) {
     #
     require(doParallel)
-    FUN <- match.fun(FUN)
-    
-    workers <- detectCores() - 1    
-    if (fast == FALSE) {    
-        registerDoParallel(cores = workers)    
+    if (getDoParWorkers() == 1) {
+        workers <- detectCores() - 1    
+        registerDoParallel(cores = workers)
+    } else {
+        workers <- getDoParWorkers()
     }
-     
-    n_vars <- nrow(var.df)
-
-    result <- foreach(i = 1:workers) %dopar% {
-        FUN <- match.fun(FUN)
-        map_range <- Delegate(i, n_vars, p = workers)
-        x <- var.df[map_range, ]
-        df <- BruteForceOpt(DATA = x, 
-            ohlc = ohlc, 
-            from_date, to_date, lookback,
-            FUN = FUN, 
-            fast = fast,
-            balance_start = balance_start, slips = slips, commissions = commissions,
-            expiration = expiration, ticker = ticker, return_type = return_type,
-            eval_string = eval_string)
-        return(df)
-    }
-    # объединение результатов
-    result %<>%    
-        {
-            .[!is.null(.)]
-        } %>%
-        MergeData_inList.byRow(.)
- 
+    # вычисления
+    result <- 
+        foreach(i = 1:workers, .combine = data.frame) %dopar% {
+            BruteForceOptimizer(
+                var_df = Delegate(i, nrow(var_df), p = workers) %>% var_df[., ], 
+                FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+                fast = fast,
+                ohlc_args, trade_args
+            ) %>%
+            data.frame(.)
+        }
+    #
     return(result)
 }
 #
@@ -74,62 +45,70 @@ BruteForceOpt_mc <- function(var.df, ohlc,
 #' Roller функция обучающей оптимизации движка стратегии (multicore)
 #' 
 #' @param slice_index Временные интервалы оптимизационных окон (индексы start/end)
-#' @param ohlc XTS с исходными котировками
-#' @param var.df DF с данными для перебора
-#' @param FUN Функция анализа (OneThreadRun ветка функций)
+#' @param var_df Оптимизационная матрица параметров стратегии
+#' @param FUN.StrategyGear Функция стратегии
 #' @param win_size Период обучения (нужно для более точной кластеризации)
-#' @param linker_file Путь к linker файлу
-#' @param balance_start Стартовый баланс
-#' @param slips Слипы (вектор)
-#' @param commissions Комиссии (вектор)
-#' @param expiration Вектор с датами экспирации
-#' @param ticker Тикер инструмента
-#' @param return_type Тип доходности
-#' @param eval_string Сторока с описанием переменных внутри lapply-цикла
+#' @param ohlc_args Лист с параметрами котировок
+#' @param trade_args Лист с параметрами стратегии
 #' @param 
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
 #' @export                             
-RollerOpt_learning_mc <- function(slice_index, ohlc,
-                                  var.df,
-                                  FUN, win_size,
-                                  linker_file = 'bots/test/linker.R',
-                                  balance_start, slips, commissions,
-                                  expiration, ticker, return_type = 'ret',
-                                  eval_string) {
-    #
+RollerOptimizer.learning <- function(slice_index, 
+                                     var_df,
+                                     FUN.StrategyGear,
+                                     win_size,
+                                     ohlc_args, trade_args) {
+    require(doParallel)
     #.CurrentEnv <- environment()                                                    
-    #
-    #require(doParallel)
-    FUN <- match.fun(FUN)
-    
-    workers <- detectCores() - 1
-    registerDoParallel(cores = workers)  
+    if (getDoParWorkers() == 1) {
+        workers <- detectCores() - 1    
+        registerDoParallel(cores = workers)
+    } else {
+        workers <- getDoParWorkers()
+    }
     
     ## Вычисление оптимизаций на обучающих периодах
-    n_vars <- nrow(var.df)
-    bf_data.list <- lapply(1:length(slice_index$widthSlice),
-        function(x) {
-            BruteForceOpt_mc(var.df = var.df, 
-                ohlc = ohlc,
-                from_date = slice_index$widthSlice[[x]][1, ], 
-                to_date = slice_index$widthSlice[[x]][2, ], 
-                lookback = TRUE,
-                FUN = FUN, 
-                linker_file = 'bots/test/linker.R',
-                balance_start = balance_start, slips = slips, commissions = commissions,
-                expiration = expiration, ticker = ticker, return_type = return_type,
-                fast = TRUE, 
-                eval_string = eval_string)   
-        })
+    # выбор оптимальной стратегии распараллеливания
+    if (length(slice_index$widthSlice) >= workers) {
+        bf_data <- foreach(i = 1:workers) %dopar% {
+            map_data <- Delegate(i, length(slice_index$widthSlice), p = workers)
+            foreach(x = 1:length(map_data)) %do% {
+                ohlc_args %>%
+                {
+                    .$from_date <- slice_index$widthSlice[[map_data[x]]][1, ]
+                    .$to_date <- slice_index$widthSlice[[map_data[x]]][2, ]
+                    return(.)
+                } %>%    
+                BruteForceOptimizer(var_df = var_df,
+                    FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+                    fast = TRUE,
+                    ohlc_args = ., trade_args)    
+            } %>%
+            unlist(., recursive = FALSE)
+        }
+    } else {
+        bf_data <- foreach(i = 1:length(slice_index$widthSlice)) %do% {
+            ohlc_args %>%
+            {
+                .$from_date <- slice_index$widthSlice[[x]][1, ]
+                .$to_date <- slice_index$widthSlice[[x]][2, ]
+                return(.)
+            } %>%
+            BruteForceOptimizer.mc(var_df = var_df,
+                FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+                fast = TRUE,
+                ohlc_args = ., trade_args)
+        }
+    }
 
     ## КА
-    cluster_data.list <- lapply(1:length(bf_data.list),
+    cluster_data <- lapply(1:length(bf_data),
         function(x) {
             ## Подготовка к КА
             data_for_cluster <- 
-                bf_data.list[[x]] %>%
+                bf_data[[x]] %>%
                 {
                     CalcKmean.preparation(data = ., 
                         n.mouth = win_size, 
@@ -157,9 +136,8 @@ RollerOpt_learning_mc <- function(slice_index, ohlc,
                     }
                     return(.)        
                 }    
-            #
             return(clustFull.data)
         }) 
     #
-    return(cluster_data.list)
+    return(cluster_data)
 }

@@ -38,6 +38,7 @@ PerfomanceTable <- function(DATA,
 
     # Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 
     if (fast == TRUE) {
+        rm(trade_table, ret_type)
         # вычисление максимальной просадки (в процентах)
         drawdowns <- Drawdowns(data = asset, fullData = TRUE)
         # max.drawdown <- 
