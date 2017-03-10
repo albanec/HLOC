@@ -601,20 +601,25 @@ BotCombiner.trade_handler <- function(ohlc.xts,
     return(list(DATA, PORTFOLIO))
 }
 #
-BotList.mcapply <- function(bot.list, 
-                            eval_str = NULL, 
+BotList.mcapply <- function(bot.list,
                             FUN_pattern = NULL, 
+                            eval_str = NULL,
                             var_pattern = NULL,
+                            ohlc_args, trades_args,
                             ...) {
     require(doParallel)
-    dots.list <- list(...)
+    dots <- list(...)
     
     # определение нужных окружений
     .CurrentEnv <- environment()
     .ParentEnv <- globalenv()
     # регистрация ядер
-    workers <- detectCores() - 1    
-    registerDoParallel(cores = workers)
+    if (getDoParWorkers() == 1) {
+        workers <- detectCores() - 1    
+        registerDoParallel(cores = workers)
+    } else {
+        workers <- getDoParWorkers()
+    }
     # всего ботов
     n_bots <- length(bot.list) 
     # типы ботов, участвующие в торговле
@@ -633,7 +638,7 @@ BotList.mcapply <- function(bot.list,
     }
     # расчёт сырых данных по пакету ботов (на выходе - листы по каждому боту)
     result <- 
-        foreach(i = 1:workers) %dopar% {
+        foreach(i = 1:workers, .combine = c) %dopar% {
             # распределение ботов по потоку
             map_range <- Delegate(i, n_bots, p = workers)
             # проверка на наличие задания для worker'а
@@ -641,35 +646,33 @@ BotList.mcapply <- function(bot.list,
                 return(NA)
             } 
             # расчёт ботов
-            #map_data <- bot.list[map_range]
-            result <- lapply(1:length(map_range),
+            lapply(1:length(map_range),
                 function(x) {
                     if (!is.data.frame(bot.list[[map_range[x]]])) {
                         warning('WARNING(BotCombiner): strategies data wrong type', '\n')
                     }
                     if (!is.null(var_pattern)) {
-                        var.list <- append(bot.list[[map_range[x]]][grep(var_pattern, names(bot.list[[map_range[x]]]))], 
-                            dots.list) 
+                        var_args <- 
+                            do.call(list, bot.list[[x]][grep('_', names(bot.list[[x]]))]) %>%
+                            list(ohlc_args = ohlc_args, trade_args = trade_args, str_args = .)
                     } else {
-                        var.list <- append(bot.list[[map_range[x]]], dots.list) 
+                        var_args <- 
+                            do.call(list, bot.list[[map_range[x]]]) %>%
+                            list(ohlc_args = ohlc_args, trade_args = trade_args, str_args = .)
                     }
                     # запуск функции
                     if (!is.null(eval_str)) {
+                        cat('here', '\n')
                         eval(parse(text = eval_str))                    
                     } else {
-                        data <- do.call(FUN_names[map_range[x]], var.list, envir = .CurrentEnv)      
+                        do.call(FUN_names[map_range[x]], var_args, envir = .CurrentEnv)      
                     }
                     #comment(data) <- bot.list[[map_range[x]]]$name
-                    #
-                    return(data)
                 })
-            #
-            return(result)
         } %>%
         {
             .[!is.na(.)]
-        } %>%
-        unlist(., recursive = FALSE)
+        }
     #
     return(result)
 }
