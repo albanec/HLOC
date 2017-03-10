@@ -651,8 +651,7 @@ TradeHandler <- function(data,
         merge(data[[1]], data[[2]]$n)$n %>%
         na.locf(.)
     # перенос данных по комиссии корзины
-    data[[1]]$commiss <- 
-        merge(data[[1]], data[[2]]$commiss)$commiss 
+    data[[1]]$commiss <- merge(data[[1]], data[[2]]$commiss)$commiss 
     data[[1]]$commiss[is.na(data[[1]]$commiss)] <- 0
         
     # перенос данных по суммарному ГО
