@@ -21,7 +21,7 @@ ProfitTable <- function(asset, trade_table, balance_start, by = 'both',
     ### расчёт итоговой доходности 
     # здесь для анализа используется equty, чтобы лишний раз не считать разницу
     full_return <- 
-        xts::last(asset) %>%
+        last(asset) - first(asset) %>%
         as.numeric(.)
     full_return_percent <- full_return * 100 / balance_start
     ## доходность в год

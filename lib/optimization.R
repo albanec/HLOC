@@ -115,12 +115,12 @@ OneThreadRun <- function(FUN.StrategyGear,
 #' @param FUN.StrategyGear Функция стратегии
 #' @param win_size Период обучения (нужно для более точной кластеризации)
 #' @param ohlc_args Лист с параметрами котировок
-#' @param trade_args Лист с параметрами стратегии
+#' @param trade_args Лист с торговыми параметрами
 #' @param 
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
 #'
-#' @export                             
+#' @export
 RollerOptimizer.learning <- function(slice_index, 
                                      var_df,
                                      FUN.StrategyGear,
@@ -207,15 +207,40 @@ RollerOptimizer.learning <- function(slice_index,
     return(cluster_data)
 }
 #
+###
+#' Roller функция торговли кластерными ботами
+#' 
+#' @param slice_index Временные интервалы торговых окон (индексы start/end)
+#' @param bot.list Лист с параметрами ботов
+#' @param FUN.CalcOneTrade Функция расчёта трейда
+#' @param FUN.MM Функция MM
+#' @param ohlc_args Лист с параметрами котировок
+#' @param trade_args Лист с торговыми параметрами
+#' @param FUN.StrategyGear_pattern Паттерн поиска StrategyGear-функций (по умолчанию 'StrategyGear.')
+#' @param FUN.TradeHandler_pattern Паттерн поиска TradeHandler-функций (по умолчанию 'TradeHandler.')
+#' @param var_pattern Паттерн поиска переменных стратегии внутри листа с данными по боту
+#'
+#' @return Лист с листами по каждому слайсу (return(list(bot = DATA, portfolio = portfolio_DATA, benchmark = benchmark_DATA)))
+#'
+#' @export                             
 RollerOptimizer.trade <- function(slice_index, 
-                                  bot.list, ) {
-    # 
+                                  bot.list,
+                                  FUN.CalcOneTrade = CalcOneTrade,
+                                  FUN.MM = CalcMM.byDCIwidth,
+                                  ohlc_args, 
+                                  trade_args,
+                                  FUN.StrategyGear_pattern = 'StrategyGear.',
+                                  FUN.TradeHandler_pattern = 'TradeHandler.',
+                                  var_pattern = '_') {
+    require('future')
     ## подготовка данных 
+    FUN.CalcOneTrade <- match.fun(FUN.CalcOneTrade)
+    FUN.MM <- match.fun(FUN.MM)
     # стартовый баланс
-    available_balance <- trade_args$start_balance
+    available_balance <- trade_args$balance_start
 
     # цикл расчёта по временным слайсам $bySlices
-    foreach(i = 1:length(slice_index)) %do% {
+    test <- foreach(i = 1:length(slice_index)) %do% {
         n_bots <- length(bot.list[[i]])
         ## расчёт сырых данных для портфеля ботов
         DATA <- 
@@ -230,26 +255,28 @@ RollerOptimizer.trade <- function(slice_index,
             } %>%
             {
                 BotPortfolio.mcapply(bot.list[[i]], 
-                    FUN_pattern = 'StrategyGear.', 
-                    var_pattern = '_',
+                    FUN_pattern = FUN.StrategyGear_pattern, 
+                    var_pattern = var_pattern,
                     ohlc_args = .[[1]],
                     trade_args = .[[2]])
             }
+        # расчёты через future треды
+        # plan(multiprocess)     
         ## расчёт бэнчмарка
-        benchmark_DATA <- 
+        benchmark_DATA.future_thread <- future({
             # формирование листов аргументов
             list(ohlc_args, trade_args) %>%
             {
                 .[[1]]$from_date <- slice_index[[i]][1, ]
                 .[[1]]$to_date <- slice_index[[i]][2, ]
-                .[[2]]$balance_start <- .[[2]]$balance_start %/% n_bots
+                .[[2]]$balance_start <- available_balance %/% n_bots
                 .[[2]]$trade_handler <- 'standalone'
                 return(.)
             } %>%
             {
                 BotPortfolio.mcapply(bot.list[[i]], 
-                    FUN_pattern = 'TradeHandler.', 
-                    var_pattern = '_',
+                    FUN_pattern = FUN.TradeHandler_pattern, 
+                    var_pattern = var_pattern,
                     #append(list(dots$data[map_range[x]]), var_args[map_range[x]])
                     eval_str = paste0('var_args <- append(dots$data[map_range[x]], var_args);
                         names(var_args) <- c("data", "ohlc_args", "trade_args", "str_args")
@@ -258,13 +285,15 @@ RollerOptimizer.trade <- function(slice_index,
                     trade_args = .[[2]],  
                     data = DATA)
             }
+        }) %plan% multiprocess
+            
         ## расчёт сделок портфеля
-        DATA <- 
+        DATA.future_thread <- future({
             list(ohlc_args, trade_args) %>%
             {
                 .[[1]]$from_date <- slice_index[[i]][1, ]
                 .[[1]]$to_date <- slice_index[[i]][2, ]
-                #.[[2]]$balance_start <- available_balance
+                .[[2]]$balance_start <- available_balance
                 .[[2]]$trade_handler <- 'basket'
                 return(.)
             } %>%
@@ -273,20 +302,24 @@ RollerOptimizer.trade <- function(slice_index,
                     data = DATA,
                     FUN.CalcOneTrade = CalcOneTrade,
                     FUN.MM = CalcMM.byDCIwidth,
-                    var_pattern = '_',
+                    var_pattern = var_pattern,
                     ohlc_args = .[[1]],
                     trade_args = .[[2]])
             }
+        }) %plan% multiprocess
+        #
+        benchmark_DATA <- value(benchmark_DATA.future_thread)
+        DATA <- value(DATA.future_thread)
         # разделение данных по роботам и портфелю
         portfolio_DATA <- DATA[[2]]
         DATA <- DATA[[1]]
 
         ## вычисление perfomance-метрик по портфелю
-        portfolio_DATA <- 
+        portfolio_DATA.future_thread <- future({
             PerfomanceTable(portfolio_DATA,
                 trade_table = NULL,
                 asset_cols = c('balance', 'im.balance'),
-                balance_start = trade_args$balance_start, 
+                balance_start = available_balance, 
                 ret_type = trade_args$return_type,
                 fast = FALSE,
                 dd_data_output = FALSE,
@@ -294,67 +327,80 @@ RollerOptimizer.trade <- function(slice_index,
             {
                 list(data = portfolio_DATA[[1]], state = portfolio_DATA[[2]], trade = NA, perf = .)
             }
+        }) %plan% multiprocess
+            
         # names(PORTFOLIO) <- c('data', 'state', 'trade', 'perf')
-        # /// выдернуть баланс для следующих периодов
+        
         ## вычисление perfomance-метрик по ботам
-        DATA <- lapply(1:n_bots,
-            function(x) {
-                ## формирование таблиц сделок по каждому боту
-                # чистим от лишних записей
-                DATA[[x]][[2]] <- StateTable.clean(DATA[[x]][[2]])
-                # лист с данными по сделкам (по тикерам и за всю корзину)
-                tradeTable <- TradeTable.calc(DATA[[x]][[2]][!is.na(DATA[[x]][[2]]$state)], 
-                    basket = TRUE, convert = TRUE)#TRUE     
-                # добавление perf-данных
-                DATA[[x]] <- 
-                    PerfomanceTable(DATA[[x]],
-                        trade_table = tradeTable,
-                        asset_cols = c('balance', 'im.balance'),
-                        balance_start = trade_args$balance_start %/% n_bots, 
-                        ret_type = trade_args$return_type,
-                        fast = FALSE,
-                        dd_data_output = FALSE,
-                        trade_stats = TRUE) %>%
-                    # добавление использованных параметров
-                    #cbind.data.frame(., 
-                    #    per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, k_mm = k_mm)    
-                    {
-                        list(data = DATA[[x]][[1]], state = DATA[[x]][[2]], trade = tradeTable, perf = .)
-                    }
-                # names(DATA[x]) <- c('data', 'state', 'trade', 'perf')
-            })
+        DATA.future_thread <- future({
+            lapply(1:n_bots,
+                function(x) {
+                    ## формирование таблиц сделок по каждому боту
+                    # чистим от лишних записей
+                    DATA[[x]][[2]] <- StateTable.clean(DATA[[x]][[2]])
+                    # лист с данными по сделкам (по тикерам и за всю корзину)
+                    tradeTable <- TradeTable.calc(DATA[[x]][[2]][!is.na(DATA[[x]][[2]]$state)], 
+                        basket = TRUE, convert = TRUE)#TRUE     
+                    # добавление perf-данных
+                    DATA[[x]] <- 
+                        PerfomanceTable(DATA[[x]],
+                            trade_table = tradeTable,
+                            asset_cols = c('balance', 'im.balance'),
+                            balance_start = available_balance %/% n_bots, 
+                            ret_type = trade_args$return_type,
+                            fast = FALSE,
+                            dd_data_output = FALSE,
+                            trade_stats = TRUE) %>%
+                        # добавление использованных параметров
+                        #cbind.data.frame(., 
+                        #    per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, k_mm = k_mm)    
+                        {
+                            list(data = DATA[[x]][[1]], state = DATA[[x]][[2]], trade = tradeTable, perf = .)
+                        }
+                    # names(DATA[x]) <- c('data', 'state', 'trade', 'perf')
+                })
+        }) %plan% multiprocess
         ## вычисление perfomance-метрик по бенчмарку
-        benchmark_DATA <- lapply(1:n_bots,
-            function(x) {
-                ## формирование таблиц сделок оп каждому боту
-                # чистим от лишних записей
-                benchmark_DATA[[x]][[2]] <- StateTable.clean(benchmark_DATA[[x]][[2]])
-                # лист с данными по сделкам (по тикерам и за всю корзину)
-                tradeTable <- TradeTable.calc(benchmark_DATA[[x]][[2]], basket = FALSE, convert = TRUE)#TRUE     
-                # метрики
-                benchmark_DATA[[x]] <- 
-                    PerfomanceTable(benchmark_DATA[[x]], 
-                        trade_table = tradeTable,
-                        asset_cols = c('balance', 'im.balance'),
-                        balance_start = trade_args$balance_start %/% n_bots, 
-                        ret_type = trade_args$return_type,
-                        fast = FALSE,
-                        dd_data_output = FALSE,
-                        trade_stats = TRUE) %>%
-                    # добавление использованных параметров
-                    #cbind.data.frame(., 
-                    #    per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, k_mm = k_mm)    
-                    {
-                        list(data = benchmark_DATA[[x]][[1]], 
-                            state = benchmark_DATA[[x]][[2]], 
-                            trade = tradeTable, 
-                            perf = .)
-                    }
-                # names(BENCHMARK[x]) <- c('data', 'state', 'trade', 'perf')
-            })
+        benchmark_DATA.future_thread <- future({
+            lapply(1:n_bots,
+                function(x) {
+                    ## формирование таблиц сделок оп каждому боту
+                    # чистим от лишних записей
+                    benchmark_DATA[[x]][[2]] <- StateTable.clean(benchmark_DATA[[x]][[2]])
+                    # лист с данными по сделкам (по тикерам и за всю корзину)
+                    tradeTable <- TradeTable.calc(benchmark_DATA[[x]][[2]], basket = FALSE, convert = TRUE)#TRUE     
+                    # метрики
+                    benchmark_DATA[[x]] <- 
+                        PerfomanceTable(benchmark_DATA[[x]], 
+                            trade_table = tradeTable,
+                            asset_cols = c('balance', 'im.balance'),
+                            balance_start = available_balance %/% n_bots, 
+                            ret_type = trade_args$return_type,
+                            fast = FALSE,
+                            dd_data_output = FALSE,
+                            trade_stats = TRUE) %>%
+                        # добавление использованных параметров
+                        #cbind.data.frame(., 
+                        #    per_DCI = per_DCI, per_slowSMA = per_slowSMA, per_fastSMA = per_fastSMA, k_mm = k_mm)    
+                        {
+                            list(data = benchmark_DATA[[x]][[1]], 
+                                state = benchmark_DATA[[x]][[2]], 
+                                trade = tradeTable, 
+                                perf = .)
+                        }
+                    # names(BENCHMARK[x]) <- c('data', 'state', 'trade', 'perf')
+                })
+        }) %plan% multiprocess
+        
+        result <- list(bot = value(DATA.future_thread), 
+            portfolio = value(portfolio_DATA.future_thread), 
+            benchmark = value(benchmark_DATA.future_thread))
+        # баланс для следующих периодов
+        available_balance <- available_balance + coredata(result$portfolio$perf$Profit)
+        
         # очистка мусора по target = 'temp'
         CleanGarbage(target = 'temp', env = '.GlobalEnv')
-        return(list(bot = DATA, portfolio = portfolio_DATA, benchmark = benchmark_DATA))
+        #
+        return(result)
     }
-
 }
