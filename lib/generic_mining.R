@@ -227,7 +227,7 @@ RollingSlicer <- function(ohlc,
         by <- width
     }
     # если период == NULL, то окна считаются по периодам свечей 
-    if (is.null(period) == TRUE || (period == freq$units) == TRUE) {
+    if (is.null(period) || (period == freq$units)) {
         ### определение сдвига (зависит от направления окна)
         offset <- 
             match.arg(align) %>%
