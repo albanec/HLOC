@@ -696,7 +696,9 @@ CalcTrade <- function(data,
     target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
         'margin', 'perfReturn', 'equity'#, 'weight'
     )
-    assign('cache', data[[2]][, target_col] %>% as.data.frame(., row.names=NULL), envir = .TempEnv)
+    assign('cache', 
+        data[[2]][, target_col] %>% as.data.frame(., row.names=NULL), 
+        envir = .TempEnv)
     # вес бота на первой сделке
     #initial_weight <- temp.cache$weight[1]
     sapply(1:nrow(data[[2]]),
@@ -750,7 +752,7 @@ CalcOneTrade <- function(cache,
                 row,
                 ohlc_args, trade_args, str_args 
             ),
-            cache$n[row_ind])
+            cache$n[row_ind - 1])
     )
     cache$diff.n[row_ind] <- ifelse(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
@@ -765,7 +767,10 @@ CalcOneTrade <- function(cache,
         0)
     cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index(row)] * cache$n[row_ind]
     if (!is.null(external_balance)) {
-        cache$balance[row_ind] <- NA
+        # cache$balance[row_ind] <- NA
+        cache$balance[row_ind] <- ifelse(row_ind != 1,
+            cache$balance[1] + cache$equity[row_ind] - cache$im.balance[row_ind],
+            cache$balance[1])
     } else {
         cache$balance[row_ind] <- ifelse(row_ind != 1,
             trade_args$balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],

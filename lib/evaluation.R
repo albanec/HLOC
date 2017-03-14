@@ -16,7 +16,7 @@
 #' @param ret_type Тип return'а
 #' @param fast Быстрый расчёт (считаются только х-ки для КА)
 #' @param dd_data_output Вывод данных по dd (T/F)
-#' @param trade_stats Расчёт статистики по сдеокам (T/F)
+#' @param trade_stats Расчёт статистики по сделкам (T/F)
 #'    
 #' @return perfomance_table Итоговая perfomance-таблица (list)
 #'

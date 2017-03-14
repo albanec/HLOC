@@ -13,12 +13,12 @@
 #' @param trade_args Лист с параметрами торговли
 #'
 #' @return
-BotList.trade_handler <- function(bot.list,
-                                  data,
-                                  FUN.CalcOneTrade,
-                                  FUN.MM,
-                                  var_pattern = '_',
-                                  ohlc_args, trade_args) {
+BotPortfolio.trade_handler <- function(bot.list,
+                                       data,
+                                       FUN.CalcOneTrade,
+                                       FUN.MM,
+                                       var_pattern = '_',
+                                       ohlc_args, trade_args) {
     # определение нужных окружений
     .CurrentEnv <- environment()
     .ParentEnv <- globalenv()
@@ -59,8 +59,8 @@ BotList.trade_handler <- function(bot.list,
                 }
             # начальный баланс
             data[[x]][[2]]$balance <- NA
-            #data[[x]][[2]]$balance[1] <- trade_args$balance_start #* bot.list[[x]]$weight[1]
-            # начальное число синтетических контрактов корзины
+            data[[x]][[2]]$balance[1] <- trade_args$balance_start %/% n_bots #* bot.list[[x]]$weight[1]
+            # начальное контрактов бота
             data[[x]][[2]]$n <- NA
             #states$n <- 0
             # прочее
@@ -93,6 +93,9 @@ BotList.trade_handler <- function(bot.list,
                 # перенос $pos.bars
                 data[[x]][[2]]$pos.bars[temp_ind] <- data[[x]][[1]]$pos.bars[temp_ind]
                 data[[x]][[2]]$pos.bars[is.na(data[[x]][[2]]$pos.bars)] <- 0
+                # перенос $pos.num
+                data[[x]][[2]]$pos.num[temp_ind] <- data[[x]][[1]]$pos.num[temp_ind]
+                data[[x]][[2]]$pos.num[is.na(data[[x]][[2]]$pos.num)] <- 0
             }
             rm(temp_ind)
             # заполнение action
@@ -134,22 +137,24 @@ BotList.trade_handler <- function(bot.list,
         'margin', 'perfReturn', 'equity')
     assign('cache_bot', 
         lapply(1:n_bots,
-        function(x) {
-            data[[x]][[2]][, target_col] %>% as.data.frame(., row.names=NULL)  
-        }), 
+            function(x) {
+                data[[x]][[2]][, target_col] %>% as.data.frame(., row.names=NULL)  
+            }), 
         envir = .CacheEnv)  
     # кэш для портфеля
-    temp.cache <- 
+    assign('cache_portfolio',
         lapply(1:length(target_col[!target_col %in% 'im']),
             function(x) {
                 xts(rep(NA, length(index_norm)), order.by = index_norm)
                 #xts(NULL, order.by = index_norm)
             }) %>%
-        do.call(merge, .)
-    names(temp.cache) <- target_col[!target_col %in% 'im']
-    temp.cache$balance[1] <- ohlc_args$balance_start
-    assign('cache_portfolio', temp.cache, envir = .CacheEnv)
-    rm(temp.cache)
+        do.call(merge, .) %>%
+        {
+            names(.) <- target_col[!target_col %in% 'im']
+            .$balance[1] <- trade_args$balance_start
+            return(.)
+        },
+        envir = .CacheEnv)
     
     ### перебор расчёта сделок по единой шкале индексов
         # (данные по каждому боту корректируются единым обработчиком + формируются данные в целом по портфелю)
@@ -175,38 +180,42 @@ BotList.trade_handler <- function(bot.list,
             #         }) %>%
             #     do.call(sum, .)
             
-            # определение баланса на индексе
+            # подгрузка кэшей
             cache_portfolio <- get('cache_portfolio', envir = .CacheEnv)
+            cache_bot <- get('cache_bot', envir = .CacheEnv)
+            # определение баланса на индексе
             # было: баланс может делится относительно ботов, входящих в позы (тогда надо раскомментить код для open_pos)
             # available_balance <- cache_portfolio$balance[row_num - 1] / open_pos
             # стало: баланс делится в зависимости от количества ботов 
-            available_balance <- cache_portfolio$balance[row_num - 1] / n_bots
+            available_balance <- ifelse(row_num == 1,
+                cache_portfolio$balance[1] %/% n_bots,
+                cache_portfolio$balance[row_num - 1] %/% n_bots)
             #rm(open_pos)
     
             ## перебор по каждому боту
-            # подгрузка кэша по ботам
-            cache_bot <- get('cache_bot', envir = .CacheEnv)
-            
             # обработка строки сделок
-            lapply(1:n_bots,
-                function(bot_num) {
-                    ## вызов посделочного обработчика
-                    cache_bot[[bot_num]] <- 
-                        list(cache = cache_bot[[bot_num]], 
-                            row_ind = row_num,
-                            row = data[[bot_num]][[2]][row_num, ],
-                            FUN.MM = FUN.MM,
-                            external_balance = available_balance,
-                            ohlc_args = ohlc_args, 
-                            trade_args = trade_args, 
-                            str_args = 
-                                if (!is.null(var_pattern)) {
-                                    do.call(list, bot.list[[bot_num]][grep('_', names(bot.list[[bot_num]]))])
-                                } else {
-                                    do.call(list, bot.list[[bot_num]])
-                                }) %>%
-                        do.call(FUN.CalcOneTrade, ., envir = .CurrentEnv)
-                })
+            cache_bot <- 
+                lapply(1:n_bots,
+                    function(bot_num) {
+                        ## вызов посделочного обработчика
+                        cache_bot[[bot_num]] <- 
+                            list(
+                                cache = cache_bot[[bot_num]], 
+                                row_ind = row_num,
+                                row = data[[bot_num]][[2]][row_num, ],
+                                FUN.MM = FUN.MM,
+                                external_balance = available_balance,
+                                ohlc_args = ohlc_args, 
+                                trade_args = trade_args, 
+                                str_args = 
+                                    if (!is.null(var_pattern)) {
+                                        do.call(list, bot.list[[bot_num]][grep('_', names(bot.list[[bot_num]]))])
+                                    } else {
+                                        do.call(list, bot.list[[bot_num]])
+                                    }
+                            ) %>%
+                            do.call(FUN.CalcOneTrade, ., envir = .CurrentEnv)
+                    })
             assign('cache_bot', cache_bot, envir = .CacheEnv)
 
             ## расчёт общих данных по корзине 
@@ -262,8 +271,8 @@ BotList.trade_handler <- function(bot.list,
                         }) %>%
                     do.call(sum, .)
                 # баланс портфолио на индексе
-                cache_portfolio$balance[row_num] <- trade_args$balance_start + 
-                    cache_portfolio$equity[row_num] - cache_portfolio$im.balance[row_num]
+                cache_portfolio$balance[row_num] <- 
+                    trade_args$balance_start + cache_portfolio$equity[row_num] - cache_portfolio$im.balance[row_num]
             } else {
                 cache_portfolio$n[row_num] <- 0
                 cache_portfolio$diff.n[row_num] <- 0
@@ -275,7 +284,7 @@ BotList.trade_handler <- function(bot.list,
                 cache_portfolio$balance[row_num] <- trade_args$balance_start
             }
             # запись данных по портфолио в кэш
-            assign('portfolio.cache', cache_portfolio, envir = .CacheEnv)
+            assign('cache_portfolio', cache_portfolio, envir = .CacheEnv)
             rm(cache_portfolio, cache_bot)
         }
     )
@@ -381,8 +390,8 @@ BotList.trade_handler <- function(bot.list,
             }
         }
     ## выгрузка данных по портфелю
-    # сделочные данные
-    portfolio_data[[2]] <- get('portfolio.cache', envir = .CacheEnv) 
+    # state данные
+    portfolio_data[[2]] <- get('cache_portfolio', envir = .CacheEnv) 
     # удаление кэша (он больше не нужен)
     rm(.CacheEnv)
     # посвечные данные
@@ -447,34 +456,34 @@ BotList.trade_handler <- function(bot.list,
     
     # добавление нужных на следующих этапах столбцов
     temp.text <- paste0(
-        'portfolio_data[[1]]$',trade_args$ticker,'.n <- portfolio_data[[1]]$n;',
-        'portfolio_data[[1]]$',trade_args$ticker,'.diff.n <- portfolio_data[[1]]$diff.n;',
-        'portfolio_data[[1]]$',trade_args$ticker,'.commiss <- portfolio_data[[1]]$commiss;',
-        'portfolio_data[[1]]$',trade_args$ticker,'.equity <- portfolio_data[[1]]$equity;',
-        'portfolio_data[[1]]$',trade_args$ticker,'.perfReturn <- portfolio_data[[1]]$perfReturn;',
+        'portfolio_data[[1]]$',ohlc_args$ticker,'.n <- portfolio_data[[1]]$n;',
+        'portfolio_data[[1]]$',ohlc_args$ticker,'.diff.n <- portfolio_data[[1]]$diff.n;',
+        'portfolio_data[[1]]$',ohlc_args$ticker,'.commiss <- portfolio_data[[1]]$commiss;',
+        'portfolio_data[[1]]$',ohlc_args$ticker,'.equity <- portfolio_data[[1]]$equity;',
+        'portfolio_data[[1]]$',ohlc_args$ticker,'.perfReturn <- portfolio_data[[1]]$perfReturn;',
         #
-        'portfolio_data[[2]]$',trade_args$ticker,'.n <- portfolio_data[[2]]$n;',
-        'portfolio_data[[2]]$',trade_args$ticker,'.diff.n <- portfolio_data[[2]]$diff.n;',
-        'portfolio_data[[2]]$',trade_args$ticker,'.commiss <- portfolio_data[[2]]$commiss;',
-        'portfolio_data[[2]]$',trade_args$ticker,'.equity <- portfolio_data[[2]]$equity;',
-        'portfolio_data[[2]]$',trade_args$ticker,'.perfReturn <- portfolio_data[[2]]$perfReturn;'
+        'portfolio_data[[2]]$',ohlc_args$ticker,'.n <- portfolio_data[[2]]$n;',
+        'portfolio_data[[2]]$',ohlc_args$ticker,'.diff.n <- portfolio_data[[2]]$diff.n;',
+        'portfolio_data[[2]]$',ohlc_args$ticker,'.commiss <- portfolio_data[[2]]$commiss;',
+        'portfolio_data[[2]]$',ohlc_args$ticker,'.equity <- portfolio_data[[2]]$equity;',
+        'portfolio_data[[2]]$',ohlc_args$ticker,'.perfReturn <- portfolio_data[[2]]$perfReturn;'
     )
     eval(parse(text = temp.text))
     rm(temp.text)
     #
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'n'] <- paste0(trade_args$ticker,'.n')
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'diff.n'] <- paste0(trade_args$ticker,'.diff.n')
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'Price'] <- paste0(trade_args$ticker,'.Price')
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'commiss'] <- paste0(trade_args$ticker,'.commiss')
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'equity'] <- paste0(trade_args$ticker,'.equity')
-    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'perfReturn'] <- paste0(trade_args$ticker,'.equity')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'n'] <- paste0(ohlc_args$ticker,'.n')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'diff.n'] <- paste0(ohlc_args$ticker,'.diff.n')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'Price'] <- paste0(ohlc_args$ticker,'.Price')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'commiss'] <- paste0(ohlc_args$ticker,'.commiss')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'equity'] <- paste0(ohlc_args$ticker,'.equity')
+    # names(portfolio_data[[1]])[names(portfolio_data[[1]]) == 'perfReturn'] <- paste0(ohlc_args$ticker,'.equity')
     #
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'n'] <- paste0(trade_args$ticker,'.n')
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'diff.n'] <- paste0(trade_args$ticker,'.diff.n')
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'Price'] <- paste0(trade_args$ticker,'.Price')
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'commiss'] <- paste0(trade_args$ticker,'.commiss')
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'equity'] <- paste0(trade_args$ticker,'.equity')
-    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'perfReturn'] <- paste0(trade_args$ticker,'.equity')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'n'] <- paste0(ohlc_args$ticker,'.n')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'diff.n'] <- paste0(ohlc_args$ticker,'.diff.n')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'Price'] <- paste0(ohlc_args$ticker,'.Price')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'commiss'] <- paste0(ohlc_args$ticker,'.commiss')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'equity'] <- paste0(ohlc_args$ticker,'.equity')
+    # names(portfolio_data[[2]])[names(portfolio_data[[2]]) == 'perfReturn'] <- paste0(ohlc_args$ticker,'.equity')
     names(portfolio_data) <- c('full', 'states')
 
     # добавление столбцов для пост-обработки в EVA
