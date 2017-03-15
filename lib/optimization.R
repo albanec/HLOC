@@ -234,14 +234,16 @@ RollerOptimizer.trade <- function(slice_index,
                                   FUN.TradeHandler_pattern = 'TradeHandler.',
                                   var_pattern = '_') {
     require('future')
+    .CurrentEnv <- environment()
+
     ## подготовка данных 
     FUN.CalcOneTrade <- match.fun(FUN.CalcOneTrade)
     FUN.MM <- match.fun(FUN.MM)
+    
     # стартовый баланс
     available_balance <- trade_args$balance_start
-
     # цикл расчёта по временным слайсам $bySlices
-    test <- foreach(i = 1:length(slice_index)) %do% {
+    foreach(i = 1:length(slice_index)) %do% {
         n_bots <- length(bot.list[[i]])
         ## расчёт сырых данных для портфеля ботов
         DATA <- 
@@ -261,9 +263,10 @@ RollerOptimizer.trade <- function(slice_index,
                     ohlc_args = .[[1]],
                     trade_args = .[[2]])
             }
-        # расчёты через future треды
+        
+        ## расчёты через future треды
         # plan(multiprocess)     
-        ## расчёт бэнчмарка
+        # расчёт бэнчмарка
         benchmark_DATA.future_thread <- future({
             # формирование листов аргументов
             list(ohlc_args, trade_args) %>%
@@ -287,8 +290,7 @@ RollerOptimizer.trade <- function(slice_index,
                     data = DATA)
             }
         }) %plan% multiprocess
-            
-        ## расчёт сделок портфеля
+        # расчёт сделок портфеля
         DATA.future_thread <- future({
             list(ohlc_args, trade_args) %>%
             {
@@ -308,14 +310,22 @@ RollerOptimizer.trade <- function(slice_index,
                     trade_args = .[[2]])
             }
         }) %plan% multiprocess
-        #
-        benchmark_DATA <- value(benchmark_DATA.future_thread)
-        DATA <- value(DATA.future_thread)
+        
+        # запуск трейдов
+        list(value(benchmark_DATA.future_thread), value(DATA.future_thread)) %>%
+        {
+            assign('benchmark_DATA', .[[1]], env = .CurrentEnv)
+            assign('DATA', .[[2]], env = .CurrentEnv)
+        }
+        # benchmark_DATA <- value(benchmark_DATA.future_thread)
+        # DATA <- value(DATA.future_thread)
+    
         # разделение данных по роботам и портфелю
         portfolio_DATA <- DATA[[2]]
         DATA <- DATA[[1]]
 
-        ## вычисление perfomance-метрик по портфелю
+        ## вычисление perfomance-метрик 
+        # future тред по портфелю
         portfolio_DATA.future_thread <- future({
             PerfomanceTable(portfolio_DATA,
                 trade_table = NULL,
@@ -328,11 +338,9 @@ RollerOptimizer.trade <- function(slice_index,
             {
                 list(data = portfolio_DATA[[1]], state = portfolio_DATA[[2]], trade = NA, perf = .)
             }
-        }) %plan% multiprocess
-            
+        }) %plan% multiprocess    
         # names(PORTFOLIO) <- c('data', 'state', 'trade', 'perf')
-        
-        ## вычисление perfomance-метрик по ботам
+        # future тред по ботам
         DATA.future_thread <- future({
             lapply(1:n_bots,
                 function(x) {
@@ -361,7 +369,7 @@ RollerOptimizer.trade <- function(slice_index,
                     # names(DATA[x]) <- c('data', 'state', 'trade', 'perf')
                 })
         }) %plan% multiprocess
-        ## вычисление perfomance-метрик по бенчмарку
+        # future тред по бенчмарку
         benchmark_DATA.future_thread <- future({
             lapply(1:n_bots,
                 function(x) {
@@ -393,9 +401,11 @@ RollerOptimizer.trade <- function(slice_index,
                 })
         }) %plan% multiprocess
         
+        # запуск вычислений
         result <- list(bot = value(DATA.future_thread), 
             portfolio = value(portfolio_DATA.future_thread), 
             benchmark = value(benchmark_DATA.future_thread))
+        
         # баланс для следующих периодов
         available_balance <- available_balance + coredata(result$portfolio$perf$Profit)
         
@@ -404,4 +414,5 @@ RollerOptimizer.trade <- function(slice_index,
         #
         return(result)
     }
+    # return()
 }
