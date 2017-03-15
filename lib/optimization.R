@@ -164,7 +164,8 @@ RollerOptimizer.learning <- function(slice_index,
             BruteForceOptimizer.mc(var_df = var_df,
                 FUN.StrategyGear = match.fun(FUN.StrategyGear), 
                 fast = TRUE,
-                ohlc_args = ., trade_args)
+                ohlc_args = ., 
+                trade_args)
         }
     # }
 

@@ -370,9 +370,9 @@ RollingSlicer <- function(ohlc,
                         start_ends[x] - offset 
                     } %>%
                     {
-                        first(which(ohlc$ends == .))
+                        xts::first(which(ohlc$ends == .))
                     } 
-                win_end <- last(which(coredata(ohlc$ends) == start_ends[x] - sign(offset)))
+                win_end <- xts::last(which(coredata(ohlc$ends) == start_ends[x] - sign(offset)))
                 if (justIndex == TRUE) {
                     rbind.data.frame(
                         data.frame(Index = index(ohlc[win_start, ])), 
@@ -387,7 +387,7 @@ RollingSlicer <- function(ohlc,
                 RollingSlicer(
                     ohlc = ohlc, 
                     from_date, to_date, period, 
-                    width = by, by = NULL, align = 'left',
+                    width = by, by = NULL, align = 'right',
                     add_bySlice = FALSE, justIndex = justIndex
                 ) %>%
                 list(widthSlice = RESULT.list, bySlice = .)
@@ -438,7 +438,7 @@ Subset_TradeOHLC <- function(ohlc, from_date, to_date, lookback = NULL) {
             ohlc[.] 
         lookback_rows <- 
             {
-                which(index(ohlc) == index(first(result_subset)))
+                which(index(ohlc) == index(xts::first(result_subset)))
             } %>%
             {
                 ifelse(lookback > ., 1, . - (lookback - 1)):(. - 1)
