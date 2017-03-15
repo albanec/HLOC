@@ -239,7 +239,7 @@ RollerOptimizer.trade <- function(slice_index,
     ## подготовка данных 
     FUN.CalcOneTrade <- match.fun(FUN.CalcOneTrade)
     FUN.MM <- match.fun(FUN.MM)
-    
+    cat(length(slice_index))
     # стартовый баланс
     available_balance <- trade_args$balance_start
     # цикл расчёта по временным слайсам $bySlices
@@ -311,18 +311,19 @@ RollerOptimizer.trade <- function(slice_index,
             }
         }) %plan% multiprocess
         
-        # запуск трейдов
+        # запуск тредов
         list(value(benchmark_DATA.future_thread), value(DATA.future_thread)) %>%
         {
             assign('benchmark_DATA', .[[1]], env = .CurrentEnv)
-            assign('DATA', .[[2]], env = .CurrentEnv)
+            assign('DATA', .[[2]][[1]], env = .CurrentEnv)
+            assign('portfolio_DATA', .[[2]][[2]], env = .CurrentEnv)
         }
         # benchmark_DATA <- value(benchmark_DATA.future_thread)
         # DATA <- value(DATA.future_thread)
     
         # разделение данных по роботам и портфелю
-        portfolio_DATA <- DATA[[2]]
-        DATA <- DATA[[1]]
+        # portfolio_DATA <- DATA[[2]]
+        # DATA <- DATA[[1]]
 
         ## вычисление perfomance-метрик 
         # future тред по портфелю
