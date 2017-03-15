@@ -239,7 +239,6 @@ RollerOptimizer.trade <- function(slice_index,
     ## подготовка данных 
     FUN.CalcOneTrade <- match.fun(FUN.CalcOneTrade)
     FUN.MM <- match.fun(FUN.MM)
-    cat(length(slice_index))
     # стартовый баланс
     available_balance <- trade_args$balance_start
     # цикл расчёта по временным слайсам $bySlices
