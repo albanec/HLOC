@@ -17,7 +17,7 @@
 CalcMM.byDCIwidth <- function(balance, row, ohlc_args, trade_args, str_args) { 
     var1 <-
         {
-            as.integer(balance) * str_args$k_mm * trade_args$tick.price / as.integer(row$widthDCI)
+            as.integer(balance) * str_args$k_mm * trade_args$tick_price / as.integer(row$widthDCI)
         } %>%
         floor(.) %>%
         max(., 1)
