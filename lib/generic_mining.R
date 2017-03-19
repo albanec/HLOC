@@ -372,7 +372,9 @@ RollingSlicer <- function(ohlc,
                     {
                         xts::first(which(ohlc$ends == .))
                     } 
-                win_end <- xts::last(which(coredata(ohlc$ends) == start_ends[x] - sign(offset)))
+                win_end <- xts::last(
+                    which(coredata(ohlc$ends) == start_ends[x] - ifelse(align == 'right', -(width - 1), 1))
+                )
                 if (justIndex == TRUE) {
                     rbind.data.frame(
                         data.frame(Index = index(ohlc[win_start, ])), 
