@@ -392,48 +392,50 @@ CleanSignal.duplicate <- function(x) {
 #' @return result DF c $open и $close сделок
 #'
 #' @export
-CalcPosition_byOrders <- function(bto, stc, sto, btc) {
+CalcPosition_byOrders <- function(order.list) {
     #FUN <- match.fun(FUN)
-    temp.env <- new.env()
-    rows <- length(bto)
-    ind <- 1:rows
-    result <- data.frame(open = integer(rows), close = integer(rows))
-    time.ind <- index(bto)
-    bto <- coredata(bto) %>% as.integer(.)
-    stc <- coredata(stc) %>% as.integer(.)
-    sto <- coredata(sto) %>% as.integer(.)
-    btc <- coredata(btc) %>% as.integer(.)
-    assign('cache.state', 0, envir = temp.env)
-    sapply(ind,
+    .CacheEnv<- new.env()
+    ind <- index(order.list$bto)
+    result <- 
+        nrow(order.list$bto) %>%
+        {
+            data.frame(open = integer(.), close = integer(.))
+        }
+    bto <- coredata(order.list$bto) %>% as.integer(.)
+    stc <- coredata(order.list$stc) %>% as.integer(.)
+    sto <- coredata(order.list$sto) %>% as.integer(.)
+    btc <- coredata(order.list$btc) %>% as.integer(.)
+    assign('cache', 0, envir = .CacheEnv)
+    lapply(1:length(bto),
         function(x) {
-            cache.state <- get('cache.state', envir = temp.env)
-            result <- get('result', envir = temp.env)
+            cache <- get('cache', envir = .CacheEnv)
+            result <- get('result', envir = .CacheEnv)
             #data[x, ] <- FUN(data, x, ...)
-            result$open[x] <- ifelse(cache.state == 0 | is.na(cache.state),
+            result$open[x] <- ifelse(cache == 0 | is.na(cache),
                 ifelse(bto[x] != 0, 
                     bto[x], 
                     sto[x]),
-                ifelse(stc[x] == cache.state,
+                ifelse(stc[x] == cache,
                     0,
-                    ifelse(btc[x] == cache.state,
+                    ifelse(btc[x] == cache,
                         0,
-                        cache.state)))
-            result$close[x] <- ifelse(cache.state != 0 | !is.na(cache.state),
-                ifelse(btc[x] == cache.state,
+                        cache)))
+            result$close[x] <- ifelse(cache != 0 | !is.na(cache),
+                ifelse(btc[x] == cache,
                     btc[x],
-                    ifelse(stc[x] == cache.state,
+                    ifelse(stc[x] == cache,
                         stc[x],
                         0)),
                 0)
-            cache.state <- result$open[x]
+            cache <- result$open[x]
             #
-            assign('cache.state', cache.state, envir = temp.env)
-            assign('result', result, envir = temp.env)
+            assign('cache', cache, envir = .CacheEnv)
+            assign('result', result, envir = .CacheEnv)
         }
     )
-    result <- get('result', envir = temp.env)
-    rm(temp.env)
-    result <- xts(result, order.by = time.ind)
+    result <- get('result', envir = .CacheEnv)
+    rm(.CacheEnv)
+    result <- xts(result, order.by = index(order.list$bto))
     #
     return(result)
 }
@@ -459,16 +461,15 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
         sto_col <- grep('sto', col.names)
         btc_col <- grep('btc', col.names)
     }
+    # temp.ind <-
+    #     index(x) %>%
+    #     strptime(., '%Y-%m-%d') %>%
+    #     unique(.) %>%
+    #     as.POSIXct(., origin = '1970-01-01', tz='MSK')
     temp.ind <-
-        index(x) %>%
-        strptime(., '%Y-%m-%d') %>%
-        unique(.) %>%
-        as.POSIXct(., origin = '1970-01-01', tz='MSK')
-    temp.ind <-
-        {
-            which(temp.ind %in% exp.vector)
-        } %>%
-        temp.ind[.] %>%
+            # which(temp.ind %in% exp.vector)
+            which(expiration.dates %in% format(index(x), '%Y-%m-%d')) %>%
+        expiration.dates[.] %>%
         as.character(.)
     if (length(temp.ind) != 0) {
         if (pos == FALSE) {
@@ -477,9 +478,7 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
             x[temp.ind, sto_col] <- 0
         }
         # принудительное закрытие сделок в 16:00 дня экспирации
-        temp.ind <-
-            as.character(temp.ind) %>%
-            paste(., '16:00:00', sep = ' ')
+        temp.ind <- paste(temp.ind, '16:00:00', sep = ' ')
         if (pos == FALSE) {
             x[temp.ind, stc_col] <- 1
             x[temp.ind, btc_col] <- -1
