@@ -384,60 +384,24 @@ CleanSignal.duplicate <- function(x) {
 ###
 #' Функция расчёта позиций относительно ордеров
 #'
-#' @param bto Данные buy-to-open (open long positions)
-#' @param stc Данные sell-to-close (close long positions)
-#' @param sto Данные sell-to-open (open short positions)
-#' @param btc Данные buy-to-close (close short positions)
+#' @param order.xts 
 #'
-#' @return result DF c $open и $close сделок
+#' @return order.xts$pos XTS позиций
 #'
 #' @export
-CalcPosition_byOrders <- function(order.list) {
-    #FUN <- match.fun(FUN)
-    .CacheEnv<- new.env()
-    ind <- index(order.list$bto)
-    result <- 
-        nrow(order.list$bto) %>%
-        {
-            data.frame(open = integer(.), close = integer(.))
-        }
-    bto <- coredata(order.list$bto) %>% as.integer(.)
-    stc <- coredata(order.list$stc) %>% as.integer(.)
-    sto <- coredata(order.list$sto) %>% as.integer(.)
-    btc <- coredata(order.list$btc) %>% as.integer(.)
-    assign('cache', 0, envir = .CacheEnv)
-    lapply(1:length(bto),
-        function(x) {
-            cache <- get('cache', envir = .CacheEnv)
-            result <- get('result', envir = .CacheEnv)
-            #data[x, ] <- FUN(data, x, ...)
-            result$open[x] <- ifelse(cache == 0 | is.na(cache),
-                ifelse(bto[x] != 0, 
-                    bto[x], 
-                    sto[x]),
-                ifelse(stc[x] == cache,
-                    0,
-                    ifelse(btc[x] == cache,
-                        0,
-                        cache)))
-            result$close[x] <- ifelse(cache != 0 | !is.na(cache),
-                ifelse(btc[x] == cache,
-                    btc[x],
-                    ifelse(stc[x] == cache,
-                        stc[x],
-                        0)),
-                0)
-            cache <- result$open[x]
-            #
-            assign('cache', cache, envir = .CacheEnv)
-            assign('result', result, envir = .CacheEnv)
-        }
-    )
-    result <- get('result', envir = .CacheEnv)
-    rm(.CacheEnv)
-    result <- xts(result, order.by = index(order.list$bto))
+CalcPosition_byOrders <- function(order.xts) {
     #
-    return(result)
+    ind <- index(order.xts)
+    order.xts$pos <- NA
+    order.xts$pos <- ifelse(stats::lag(order.xts$pos) == 0 | is.na(stats::lag(order.xts$pos)), # бот вне рынка
+        ifelse(order.xts$bto != 0,
+            order.xts$bto,
+            order.xts$sto),
+        ifelse(order.xts$btc == stats::lag(order.xts$pos) | order.xts$stc == stats::lag(order.xts$pos), # бот в рынке и должен выйти
+            0,
+            stats::lag(order.xts$pos)))
+    #
+    return(order.xts$pos)
 }
 #
 ###
