@@ -177,3 +177,87 @@ mcTimeSeries <- function(data, tsfunc, byColumn, windowSize, workers) {
     return(SERIES)
 }
 #
+#' Быстрая версия ifelse()
+#'
+#' @param cond T / F условие
+#' @param truepart Значения, если условие == T
+#' @param falsepart Значения, если условие == F
+#'
+#' @return обработанные данные
+#'
+#' @export 
+ifelse.fast <- function(cond, truepart, falsepart) {
+    if (length(cond) == 1) { 
+        if (cond) {
+            truepart
+        } else {
+            falsepart
+        } 
+    } else {  
+        if (length(falsepart) == 1) {
+            temp <- falsepart
+            falsepart <- cond
+            falsepart[] <- temp
+        }
+        if (length(truepart) == 1) {
+            falsepart[cond] <- truepart
+        } else {
+            cond <- ReplaceNA(cond, F)
+            if (requireNamespace('xts', quietly = T) && xts::is.xts(truepart)) {
+                falsepart[cond] = coredata(truepart)[cond]    
+            } else {
+                falsepart[cond] = truepart[cond]        
+            }
+        }
+        #falsepart[!is.na(cond)] = temp
+        falsepart
+    }
+} 
+#
+#' Заменяет NA, NaN, Inf значения
+#'
+#' @param x данные для анализа на NA, NaN, Inf
+#' @param y значения, которые заменят NA, NaN, Inf
+#'
+#' @return обработынные значения
+#'
+#' @export 
+Replace.na <- function (x, y)  {   
+  return(ifelse.fast(is.na(x) | is.nan(x) | is.infinite(x), y, x))
+}
+#
+#' Заменяет NULL значения
+#'
+#' @param x данные для анализа на NULL
+#' @param y значения, которые заменят NULL
+#'
+#' @return обработынные значения
+#'
+#' @export 
+Replace.null <- function(x, y) {   
+  return(ifelse.fast(is.null(x), y, x))
+}
+#
+#' Функция очистки ряда от повторяющихся значений
+#'
+#' @param x Ряд сигналов
+#'
+#' @return result Очищенный ряд
+#'
+#' @export
+Clean.duplicate <- function(x) {
+    result <-
+        diff(x) %>%
+        {
+            .[1] <- x[1]
+            return(.)
+        } %>%
+        sign(.) %>%
+        abs(.) %>%
+        {
+            x * .
+        }
+    #
+    return(result)
+}
+#

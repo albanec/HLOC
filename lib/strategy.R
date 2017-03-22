@@ -13,7 +13,7 @@
 Convert.signal_to_states <- function(x) {
     x$a <-
         na.locf(x) %>%
-        ifelse(is.na(x$a) | is.nan(x$a) | is.infinite(x$a), 0, x$a)
+        ifelse.fast(is.na(x$a) | is.nan(x$a) | is.infinite(x$a), 0, x$a)
     ind <- which(x$a != stats::lag(x$a))
     x$y <- rep(NA, length(x$a))
     x$y[ind] = x$a[ind]
@@ -33,11 +33,9 @@ CalcStates.inData <- function(x) {
     #
     x <-
         na.locf(x) %>%
-        { 
-            ifelse(is.na(.) | is.nan(.) | is.infinite(.), 0, .)
-        } %>%
+        Replace.na(., 0) %>%
         xts(., order.by = index(x))
-    ind <- which(x != stats::lag(x))
+    ind <- which(x != lag.xts(x))
     state <- rep(NA, length(x))
     state[ind] <- x[ind]
     state[1] <- x[1]
@@ -342,7 +340,7 @@ CalcPosition.num <- function(x) {
         abs(sign(action)) %>%
         # защита от нумерации позиций 'вне рынка'
         {
-        abs(sign(x)) * .
+            abs(sign(x)) * .
         } %>%
         cumsum(.) %>%
         # защита от нумераций пачек нулевых позиций
@@ -357,29 +355,23 @@ CalcPosition.num <- function(x) {
     return(result)
 }
 #
-###
-#' Функция очистки сигналов от повторяющихся
-#'
-#' @param x Ряд сигналов
-#'
-#' @return result Очищенный ряд сигналов
-#'
-#' @export
-CleanSignal.duplicate <- function(x) {
-    result <-
-        diff(x) %>%
-        {
-            .[1] <- x[1]
-            return(.)
-        } %>%
-        sign(.) %>%
-        abs(.) %>%
-        {
-            x * .
-        }
-    #
-    return(result)
-}
+
+# CalcPosition.stop_apply <- function(pos_colname, Fun.PosStop, x, ohlc_args, trade_args, str_args) {
+#     Fun.PosStop <- match.fun(Fun.PosStop)
+#     # выделение ряда сигналов
+#     sig <- x[, sig_colname]
+#     # выделение индексов входов
+#     entry_row <- which(sig != 0 & !is.na(sig))
+#     entry_index <- 
+#         index(sig[entry_row]) %>%
+#         c(., index(last(sig)))
+#     sig <- lapply(1:length(entry_index),
+#         function(x) {
+#             Fun.PosStop
+#         }
+#     )
+
+# }
 #
 ###
 #' Функция расчёта позиций относительно ордеров
@@ -393,13 +385,13 @@ CalcPosition_byOrders <- function(order.xts) {
     #
     ind <- index(order.xts)
     order.xts$pos <- NA
-    order.xts$pos <- ifelse(stats::lag(order.xts$pos) == 0 | is.na(stats::lag(order.xts$pos)), # бот вне рынка
-        ifelse(order.xts$bto != 0,
+    order.xts$pos <- ifelse.fast(lag.xts(order.xts$pos) == 0 | is.na(lag.xts(order.xts$pos)), # бот вне рынка
+        ifelse.fast(order.xts$bto != 0,
             order.xts$bto,
             order.xts$sto),
-        ifelse(order.xts$btc == stats::lag(order.xts$pos) | order.xts$stc == stats::lag(order.xts$pos), # бот в рынке и должен выйти
+        ifelse.fast(order.xts$btc == lag.xts(order.xts$pos) | order.xts$stc == lag.xts(order.xts$pos), # бот в рынке и должен выйти
             0,
-            stats::lag(order.xts$pos)))
+            lag.xts(order.xts$pos)))
     #
     return(order.xts$pos)
 }
@@ -455,56 +447,6 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
     return(x)
 }
 #
-###
-#' Функция фильтрации канальных индикаторах на утренних gap'ах
-#'
-#' @param x xts с данными ордеров (bto/stc/sto/btc)
-#'
-#' @return  Лист с очищенными рядами сигналов
-#'
-#' @export
-CleanSignal.gap <- function(x) {
-    # расчёт enpoint'ов
-    ends <- CalcEndpoints(x, on = 'days', k = 1, findFirst = TRUE)
-    x$gap <- 0
-    # свечи gap'ов
-    x$gap[ends] <- 1
-    # выделение данных ордеров
-    col.names <- names(x)
-    bto_col <- grep('bto', col.names)
-    stc_col <- grep('stc', col.names)
-    sto_col <- grep('sto', col.names)
-    btc_col <- grep('btc', col.names)
-    
-    ## на gap'ах:
-    # заход в позиции запрещён
-    x[ends, bto_col] <- 0
-    x[ends, sto_col] <- 0
-    #data <- na.omit(data)
-
-    # # выходы на следующей свече по Open
-    # temp.ind <- which(x$gap == 1 & x[, stc_col] != 0)
-    # if (length(temp.ind) != 0) {
-    #     x[temp.ind + 1, stc_col] <- ifelse(x[temp.ind, stc_col] != 0,
-    #         x[temp.ind, stc_col],
-    #         0)
-    #     #x[temp.ind, stc_col] <- 0
-    # }
-    # rm(temp.ind)
-    # temp.ind <- which(x$gap == 1 & x[, btc_col] != 0)
-    # if (length(temp.ind) != 0) {
-    #     x[temp.ind + 1, btc_col] <- ifelse(x[temp.ind, btc_col] != 0,
-    #         x[temp.ind, btc_col],
-    #         0)
-    #     #x[temp.ind, btc_col] <- 0
-    # }
-    # rm(temp.ind)
-
-    x[ends, stc_col] <- 0
-    x[ends, btc_col] <- 0
-    #
-    return(x)
-}
 # ------------------------------------------------------------------------------
 #' Функция вычисления цены инструмента с учётом проскальзывания (на action-точках)
 #'
@@ -615,7 +557,7 @@ TradeHandler <- function(data,
         na.locf(.)
     # перенос данных по комиссии корзины
     data[[1]]$commiss <- merge(data[[1]], data[[2]]$commiss)$commiss 
-    data[[1]]$commiss[is.na(data[[1]]$commiss)] <- 0
+    data[[1]]$commiss <- Replace.na(data[[1]]$commiss, 0)
         
     # перенос данных по суммарному ГО
     data[[1]]$im.balance <- 
@@ -703,13 +645,13 @@ CalcOneTrade <- function(cache,
                          ohlc_args, trade_args, str_args) {
     FUN.MM <- match.fun(FUN.MM)
     #
-    cache$n[row_ind] <- ifelse(as.integer(row$pos) == 0,
+    cache$n[row_ind] <- ifelse.fast(as.integer(row$pos) == 0,
         0,
-        ifelse(as.integer(row$pos.bars) == 0,
+        ifelse.fast(as.integer(row$pos.bars) == 0,
             FUN.MM(
-                balance = ifelse(!is.null(external_balance),
+                balance = ifelse.fast(!is.null(external_balance),
                     external_balance,
-                    ifelse(row_ind != 1,
+                    ifelse.fast(row_ind != 1,
                         cache$balance[row_ind - 1],
                         trade_args$balance_start)), #* cache$weight[row_ind - 1]),
                 row,
@@ -717,25 +659,25 @@ CalcOneTrade <- function(cache,
             ),
             cache$n[row_ind - 1])
     )
-    cache$diff.n[row_ind] <- ifelse(row_ind != 1,
+    cache$diff.n[row_ind] <- ifelse.fast(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
         0)
     cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
-    cache$margin[row_ind] <- ifelse(row_ind != 1,
+    cache$margin[row_ind] <- ifelse.fast(row_ind != 1,
         coredata(row$cret) * cache$n[row_ind - 1],
         0)
     cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
-    cache$equity[row_ind] <- ifelse(row_ind != 1,
+    cache$equity[row_ind] <- ifelse.fast(row_ind != 1,
         sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
         0)
     cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index(row)] * cache$n[row_ind]
     if (!is.null(external_balance)) {
         # cache$balance[row_ind] <- NA
-        cache$balance[row_ind] <- ifelse(row_ind != 1,
+        cache$balance[row_ind] <- ifelse.fast(row_ind != 1,
             cache$balance[1] + cache$equity[row_ind] - cache$im.balance[row_ind],
             cache$balance[1])
     } else {
-        cache$balance[row_ind] <- ifelse(row_ind != 1,
+        cache$balance[row_ind] <- ifelse.fast(row_ind != 1,
             trade_args$balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
             cache$balance[row_ind])
     }
