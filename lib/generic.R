@@ -202,7 +202,7 @@ ifelse.fast <- function(cond, truepart, falsepart) {
         if (length(truepart) == 1) {
             falsepart[cond] <- truepart
         } else {
-            cond <- ReplaceNA(cond, F)
+            cond <- Replace.na(cond, F)
             if (requireNamespace('xts', quietly = T) && xts::is.xts(truepart)) {
                 falsepart[cond] = coredata(truepart)[cond]    
             } else {

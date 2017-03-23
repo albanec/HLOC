@@ -270,7 +270,7 @@ SimpleStr.gear <- function(ohlc,
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- CalcStates.inData(x = data$pos)
+          data$state <- CalcState(x = data$pos)
           data$state[.] <- data$pos[.]
           return(data$state)
         }

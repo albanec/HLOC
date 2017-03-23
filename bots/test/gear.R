@@ -314,7 +314,7 @@ TestStr.gear <- function(ohlc,
       data$state <- 
         (data$pos.add != 0 | data$pos.drop != 0) %>%
         {
-          data$state <- CalcStates.inData(x = data$pos)
+          data$state <- CalcState(x = data$pos)
           data$state[.] <- data$pos[.]
           # условие закрытия сделок в конце торгового периода
           data$state[index(xts::last(data$state))] <- 0

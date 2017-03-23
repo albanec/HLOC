@@ -24,43 +24,48 @@ Convert.signal_to_states <- function(x) {
 # ------------------------------------------------------------------------------
 #' Функция для перехода к состояниям (фильтрация сигналов)
 #'
-#' @param x Ряд позиций (data$pos)
+#' @param x xts ряд позиций (data$pos)
 #'
 #' @return state Ряд состояний
 #'
 #' @export
-CalcStates.inData <- function(x) {
+CalcState <- function(x) {
     #
-    x <-
-        na.locf(x) %>%
-        Replace.na(., 0) %>%
-        xts(., order.by = index(x))
+    x <- Replace.na(na.locf(x), 0)
     ind <- which(x != lag.xts(x))
     state <- rep(NA, length(x))
     state[ind] <- x[ind]
-    state[1] <- x[1]
+    state[1] <- x[1]    
     #
     return(state)
 }
 ###
-#' Генерирует таблицу сделок
+#' Функция для формирования STATE-таблицы(таблицы состояний)
 #'
-#' @param x Полные данные отработки стратегии
+#' @param x DATA-таблица
 #'
-#' @return result Данные с рядом состояний
+#' @return state STATE-таблица
 #'
 #' @export
-CalcStates.table <- function(x) {
+CalcState.table <- function(x) {
     #
-    result <-
-        x$pos %>%
-        CalcStates.inData(.) %>%
-        {
-            merge(x, state = .)
-        } %>%
-        na.omit(.)
+    x$state <- NA
+    x$state <- CalcState(x$pos) 
     #
-    return(result)
+    return(na.omit(x))
+}
+AddStateTable <- function(x) {
+    state <- CalcState.table(x)
+    # условие закрытия сделок в конце торгового периода
+    state$state[index(xts::last(state$state))] <- 0
+    state$pos[index(xts::last(state$pos))] <- 0
+    # если сделок нет, то 
+    if (is.null(state)) {
+        #message('WARNING(StrGear_turtles): No trades Here!!!', '\n')
+        return(NULL)
+    }
+    #
+    return(list(data = x, state = state)) 
 }
 ###
 #' Функция вычисляет return'ы по всему портфелю внутри XTS
@@ -461,17 +466,9 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
 CalcPrice.slips <- function(price, action, ohlc, slips) {
     price <- price + slips * sign(action)
     price.ind <- index(price)
-    low.ind <-
-        {
-            which(price < Lo(ohlc[price.ind]))
-        } %>%
-        price.ind[.]
-    high.ind <-
-        {
-            which(price > Hi(ohlc[price.ind]))
-        } %>% 
-        price.ind[.]
+    low.ind <- price.ind[which(price < Lo(ohlc[price.ind]))]
     price[low.ind] <- Lo(ohlc[low.ind])
+    high.ind <- price.ind[which(price > Hi(ohlc[price.ind]))]
     price[high.ind] <- Hi(ohlc[high.ind])
     #
     return(price)
@@ -490,6 +487,33 @@ StateTable.clean <- function(x) {
     if ((x$n == 0 && x$diff.n ==0) != FALSE) {
         x <- x[-which(x$n == 0 & x$diff.n ==0)]
     }
+    return(x)
+}
+#
+#' Добавление цен инструмента на action-ах
+#'
+#' @param x xts с DATA-таблицей
+#' @param FUN.AddPrice Функция расчёта цен инструмента на action'ах
+#' @param ohlc_args Лист с данными котировок
+#' @param trade_args Лист с торговыми данными
+#'
+#' @return x DATA-таблица
+#'
+#' @export
+AddPrice <- function(x, FUN.AddPrice, ohlc_args, trade_args) {
+    FUN.AddPrice <- match.fun(FUN.AddPrice)
+    # настройка в STATES
+    x[[2]]$Price <-
+        FUN.AddPrice(x[[2]], ohlc = ohlc_args$ohlc) %>%
+        # учёт проскальзываний
+        CalcPrice.slips(price = ., 
+            action = x[[2]]$action,
+            ohlc = ohlc_args$ohlc, slips = trade_args$slips)
+    # перенос котировок в DATA (в пунктах) 
+    x[[1]] <- merge(x[[1]], Price = x[[2]]$Price) 
+    temp.ind <- index(x[[1]]$Price[is.na(x[[1]]$Price)])
+    x[[1]]$Price[temp.ind] <- ohlc_args$ohlc$Open[temp.ind]    
+    #
     return(x)
 }
 #
