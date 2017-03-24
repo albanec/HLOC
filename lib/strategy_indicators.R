@@ -29,17 +29,15 @@ CrossLine <- function(x1, x2, eq = FALSE) {
 #' Надстройка нал CrossLine для удобства
 #' @export
 CrossLine.up <- function(x1, x2, eq = FALSE) {
-    result <- CrossLine(x1, x2, eq)
     #
-    return(result)
+    return(CrossLine(x1, x2, eq))
 }
 #
 #' Надстройка нал CrossLine для удобства
 #' @export
 CrossLine.down <- function(x1, x2, eq = FALSE) {
-    result <- CrossLine(x2, x1, eq)
     #
-    return(result)
+    return(CrossLine(x2, x1, eq))
 }
 #
 # ------------------------------------------------------------------------------
@@ -54,11 +52,12 @@ CrossLine.down <- function(x1, x2, eq = FALSE) {
 #' @return x XTS ряд со значениями SMA
 #'
 #' @export
-CalcIndicator.SMA <- function(x, n, digits = 0, ...) {
+CalcIndicator.SMA <- function(x, n, digits = NULL) {
     #
-    x <- 
-        SMA(x, n) %>%
-        round(., digits = digits)
+    x <- SMA(x, n)
+    if (!is.null(digits)) {
+        x %<>% round(., digits = digits)
+    }
     #
     return(x)
 }
@@ -73,11 +72,12 @@ CalcIndicator.SMA <- function(x, n, digits = 0, ...) {
 #' @return x XTS со значениями DCI ($high, $mid, $low)
 #'
 #' @export
-CalcIndicator.DCI <- function(x, n, digits = 0, lag = TRUE) {
+CalcIndicator.DCI <- function(x, n, digits = NULL, lag = TRUE) {
     #
-    x <- 
-        DonchianChannel(HL = x, n = n, include.lag = lag) %>%
-        round(., digits = digits)
+    x <- DonchianChannel(HL = x, n = n, include.lag = lag)
+    if (!is.null(digits)) {
+        x %<>% round(., digits = digits)    
+    }
     #
     return(x)
 }
