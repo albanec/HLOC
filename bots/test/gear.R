@@ -93,7 +93,7 @@ TestStr.gear <- function(ohlc,
   ## 1.1 Добавляем индикаторы  (SMA) и позиции по корзине
   data %<>% 
     {
-      data <- xts(NULL, order.by = index(ohlc))
+      data <- xts(NULL, order.by = index.xts(ohlc))
       cat('TestStrategy INFO:  Calculate SMA with period:  ', sma_per, '\n')
       # тикер-индикатор: SI    
       #data$sma <- 
@@ -108,14 +108,14 @@ TestStr.gear <- function(ohlc,
           data$sma > ohlc$SPFB.SI.Close, -1, 0
         )
       )
-      data$sig[index(xts::last(data$sig))] <- 0
+      data$sig[index.xts(xts::last(data$sig))] <- 0
       return(data)
     } %>%   
     na.omit(.) %>%  
     ## 1.2 добавляем позиции
     {
       data <- .
-      data$pos <- stats::lag(data$sig)
+      data$pos <- lag.xts(data$sig)
       data$pos[1] <- 0
       return(data)
     } 
@@ -170,7 +170,7 @@ TestStr.gear <- function(ohlc,
         cumsum(.)
       # ряд номеров позиций 
       data$pos.num <- 
-        stats::lag(data$sig.num) %>%
+        lag.xts(data$sig.num) %>%
         # защита от нумераций пачек нулевых позиций
         {
           temp <- diff(data$pos)
@@ -194,7 +194,7 @@ TestStr.gear <- function(ohlc,
               function(x) {
                 temp <- abs(sign(which(data$sig.num == x)))
                 temp[1] <- 0
-                xts(x = cumsum(temp), order.by = index(data$sig.num[data$sig.num == x]))
+                xts(x = cumsum(temp), order.by = index.xts(data$sig.num[data$sig.num == x]))
               }
             ) %>% 
             MergeData_inList.byRow(.)
@@ -202,7 +202,7 @@ TestStr.gear <- function(ohlc,
         } %T>%
         {
           # ветвим и проставляем тики позиций (добаляем напрямую в data)
-          data$pos.bars <<- stats::lag(.)
+          data$pos.bars <<- lag.xts(.)
           data$pos.bars[1] <<- 0
         } %>%
         {
@@ -222,7 +222,7 @@ TestStr.gear <- function(ohlc,
           return(result)          
         }
       data$sig.add[1] <- 0  
-      data$sig.add <- stats::lag(data$sig.add)
+      data$sig.add <- lag.xts(data$sig.add)
       data$sig.add[1] <- 0  
       return(data)
     } 
@@ -238,10 +238,10 @@ TestStr.gear <- function(ohlc,
       {
         data <- .
         cat('TestStrategy INFO:  Calculate $pos.add and $pos.drop...', '\n')
-        data$pos.add <- ifelse(stats::lag(data$sig.add) == stats::lag(data$sig.drop), 0, stats::lag(data$sig.add))
-        #data$pos.add <- stats::lag(data$pos.add)
+        data$pos.add <- ifelse(lag.xts(data$sig.add) == lag.xts(data$sig.drop), 0, lag.xts(data$sig.add))
+        #data$pos.add <- lag.xts(data$pos.add)
         data$pos.add[is.na(data$pos.add)] <- 0
-        data$pos.drop <- ifelse(stats::lag(data$sig.drop) == stats::lag(data$sig.add), 0, stats::lag(data$sig.drop))
+        data$pos.drop <- ifelse(lag.xts(data$sig.drop) == lag.xts(data$sig.add), 0, lag.xts(data$sig.drop))
         data$pos.drop[1] <- 0
         return(data)    
       } %>%
@@ -264,13 +264,13 @@ TestStr.gear <- function(ohlc,
                       cumsum(data$pos.add[data$pos.num == x]), 
                       order.by = 
                         data$pos.num[data$pos.num == x] %>% 
-                        index(.)
+                        index.xts(.)
                     ),
                     xts(
                       cumsum(data$pos.drop[data$pos.num == x]), 
                       order.by = 
                         data$pos.num[data$pos.num == x] %>% 
-                        index(.)
+                        index.xts(.)
                     )
                   )
                 }
@@ -303,7 +303,7 @@ TestStr.gear <- function(ohlc,
   data %<>%   
     {
       data <- .
-      data$action <- data$pos - stats::lag(data$pos)
+      data$action <- data$pos - lag.xts(data$pos)
       data$action[1] <- 0 
       return(data)
     } %>%
@@ -317,7 +317,7 @@ TestStr.gear <- function(ohlc,
           data$state <- CalcState(x = data$pos)
           data$state[.] <- data$pos[.]
           # условие закрытия сделок в конце торгового периода
-          data$state[index(xts::last(data$state))] <- 0
+          data$state[index.xts(xts::last(data$state))] <- 0
           return(data$state)
         }
       return(data)  
@@ -326,7 +326,7 @@ TestStr.gear <- function(ohlc,
   # >>>
   # 1.5 расщепление переворотов в позициях (расщепление строк с $action = +/-2)
   # индекс строки-переворота
-  temp.ind <- index(data[data$action == 2 | data$action == -2])
+  temp.ind <- index.xts(data[data$action == 2 | data$action == -2])
   if (length(temp.ind) == 0) {
     cat('TestStrategy INFO: No Switch Position there', '\n')
     remove(temp.ind)
@@ -369,7 +369,7 @@ TestStr.gear <- function(ohlc,
   #
   ## 2.1 выгрузка данных по инструментам
   # индексы данных (строк) data
-  data.ind <- index(data)
+  data.ind <- index.xts(data)
   #
   # 2.1.2 скелет таблицы сделок
   cat('TestStrategy INFO:  Build state.table...', '\n')
@@ -392,7 +392,7 @@ TestStr.gear <- function(ohlc,
   # котировки берём из ohlc
   cat('TestStrategy INFO:  Loading Tickers Price from ohlc...', '\n')
   # индексы строк states
-  states.ind <- index(states)
+  states.ind <- index.xts(states)
   ## соотшение позиций внутри корзины
   temp.vector <- c(1, -1, -1)
   #
@@ -420,13 +420,13 @@ TestStr.gear <- function(ohlc,
           'states$',.,'.pos <- states$pos * temp.vector[i] ; ',
           # расчёт return'ов по сделкам (в пунктах) в states 
           'states$',.,'.ret <- ',
-          '(states$',.,'.Price - stats::lag(states$',.,'.Price)) * stats::lag(states$',.,'.pos) ; ',  
+          '(states$',.,'.Price - lag.xts(states$',.,'.Price)) * lag.xts(states$',.,'.pos) ; ',  
           'states$',.,'.ret[1] <- 0 ;',
           # расчёт позиций по инструментам корзины в data
           'data$',.,'.pos <- data$pos * temp.vector[i] ; ',       
           # расчёт return'ов по позициям (в пунктах) в data 
           'data$',.,'.ret <- ',
-          '(data$',.,'.Price - stats::lag(data$',.,'.Price)) * stats::lag(data$',.,'.pos) ; ',  
+          '(data$',.,'.Price - lag.xts(data$',.,'.Price)) * lag.xts(data$',.,'.pos) ; ',  
           'data$',.,'.ret[1] <- 0 ;')
         return(t)
       } 
@@ -469,12 +469,12 @@ TestStr.gear <- function(ohlc,
   #
   states$n <- CalcTrade_inStates.testStr(data = states)
   # Изменение контрактов на такте
-  states$diff.n <- states$n - stats::lag(states$n)
+  states$diff.n <- states$n - lag.xts(states$n)
   states$diff.n[1] <- 0
   # Расчёт баланса, заблокированного на ГО
   states$im.balance <- 
     #индекс uniq state строк
-    index(states$state) %>%
+    index.xts(states$state) %>%
     unique(.) %>%
     {
       states$n * ohlc$IM[.]
@@ -482,7 +482,7 @@ TestStr.gear <- function(ohlc,
   states$im.balance %<>% 
     is.na(.) %>%
     {
-      states$im.balance[.] <- states$n[.] * ohlc$IM[index(states$n[.])]
+      states$im.balance[.] <- states$n[.] * ohlc$IM[index.xts(states$n[.])]
       return(states$im.balance)
     }
   states$im.balance[1] <- 0                   
@@ -490,7 +490,7 @@ TestStr.gear <- function(ohlc,
   states$commiss <- basket.commiss * abs(states$diff.n)
   states$commiss[1] <- 0
   # Расчёт вариационки
-  states$margin <- states$cret * stats::lag(states$n)
+  states$margin <- states$cret * lag.xts(states$n)
   states$margin[1] <- 0
   # расчёт equity по корзине в states
   states$perfReturn <- states$margin - states$commiss
@@ -530,7 +530,7 @@ TestStr.gear <- function(ohlc,
     }
   ## Расчёт показателей в full данных
   # расчёт вариационки в data
-  data$margin <- stats::lag(data$n) * data$cret
+  data$margin <- lag.xts(data$n) * data$cret
   data$margin[1] <- 0      
   # расчёт equity по корзине в data 
   data$perfReturn <- data$margin - data$commiss
@@ -551,7 +551,7 @@ TestStr.gear <- function(ohlc,
           'states$',.,'.diff.n[1] <- 0 ; ',
           'states$',.,'.commiss <- commissions[i] * abs(states$',.,'.diff.n) ; ',
           #'states$',.,'.im.balance <- NA',
-          'states$',.,'.margin <- states$',.,'.cret * stats::lag(states$',.,'.n) ; ',
+          'states$',.,'.margin <- states$',.,'.cret * lag.xts(states$',.,'.n) ; ',
           'states$',.,'.margin[1] <- 0 ; ',
           'states$',.,'.perfReturn <- states$',.,'.margin - states$',.,'.commiss ;',
           'states$',.,'.equity <- cumsum(states$',.,'.perfReturn) ;',
@@ -561,7 +561,7 @@ TestStr.gear <- function(ohlc,
           'merge(data, states$',.,'.n) %$% ',
           'na.locf(',.,'.n) ; ',
           'data$',.,'.margin <- ',
-          'data$',.,'.cret * stats::lag(data$',.,'.n) ; ',
+          'data$',.,'.cret * lag.xts(data$',.,'.n) ; ',
           'data$',.,'.margin[1] <- 0 ; ',
           'data <- merge(data, states$',.,'.commiss) ; ',
           'data$',.,'.commiss[is.na(data$',.,'.commiss)] <- 0 ; ',

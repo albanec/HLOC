@@ -109,7 +109,7 @@ Convert.XTStoDF <- function(x) {
     if (is.xts(x) != TRUE) {
         stop(paste0('ERROR(Convert.XTStoDF):    Input Data wrong type!!!'))
     } else {
-        x <- data.frame(INDEX = index(x), x, row.names = NULL)    
+        x <- data.frame(INDEX = index.xts(x), x, row.names = NULL)    
     }
     #
     return(x)

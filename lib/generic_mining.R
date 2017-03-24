@@ -220,7 +220,7 @@ RollingSlicer <- function(ohlc,
     # проверка на правильность условий
     stopifnot(width > 0, width <= n_rows)
     # индкесы исходных данных
-    data_ind <- index(ohlc)
+    data_ind <- index.xts(ohlc)
     # интервал анализа 
     interval <- paste0(from_date,'::',to_date)
     if (is.null(by)) {
@@ -243,7 +243,7 @@ RollingSlicer <- function(ohlc,
                     ohlc
                 }
             } %>%
-            index(.) %>%
+            index.xts(.) %>%
             {
                 which(data_ind %in% .)
             }
@@ -257,7 +257,7 @@ RollingSlicer <- function(ohlc,
         #         seq((width - offset), (. - offset), by = by) 
         #     } %>%
         #     {
-        #         index(temp_subset)[.]
+        #         index.xts(temp_subset)[.]
         #     }
         #
         # индексы строк начала окон
@@ -269,8 +269,8 @@ RollingSlicer <- function(ohlc,
             function(x) {
                 if (justIndex == TRUE) {
                     rbind.data.frame(
-                        data.frame(Index = index(temp_subset[(x - width + 1), ])), 
-                        data.frame(Index = index(temp_subset[x, ]))
+                        data.frame(Index = index.xts(temp_subset[(x - width + 1), ])), 
+                        data.frame(Index = index.xts(temp_subset[x, ]))
                     )                                                    
                 } else {
                     .subset_xts(temp_subset, (x - width + 1):x)
@@ -334,7 +334,7 @@ RollingSlicer <- function(ohlc,
         # выделение старт/стоп номеров строк 
         interval_rows <- 
             ohlc[interval] %>%
-            index(.) %>%
+            index.xts(.) %>%
             { 
                 which(data_ind %in% .) 
             }
@@ -350,7 +350,7 @@ RollingSlicer <- function(ohlc,
         #         seq((width - offset), (. - offset), by = by) 
         #     } %>%
         #     {
-        #         index(temp_subset)[.]
+        #         index.xts(temp_subset)[.]
         #     }
         #
         # endpoint'ы строк начала окон
@@ -377,8 +377,8 @@ RollingSlicer <- function(ohlc,
                 )
                 if (justIndex == TRUE) {
                     rbind.data.frame(
-                        data.frame(Index = index(ohlc[win_start, ])), 
-                        data.frame(Index = index(ohlc[win_end, ]))
+                        data.frame(Index = index.xts(ohlc[win_start, ])), 
+                        data.frame(Index = index.xts(ohlc[win_end, ]))
                     )    
                 } else {
                     .subset_xts(ohlc, win_start:win_end)
@@ -440,7 +440,7 @@ Subset_TradeOHLC <- function(ohlc, from_date, to_date, lookback = NULL) {
             ohlc[.] 
         lookback_rows <- 
             {
-                which(index(ohlc) == index(xts::first(result_subset)))
+                which(index.xts(ohlc) == index.xts(xts::first(result_subset)))
             } %>%
             {
                 ifelse(lookback > ., 1, . - (lookback - 1)):(. - 1)

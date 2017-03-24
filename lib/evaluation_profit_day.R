@@ -113,7 +113,7 @@ TradingDaysStats <- function(data) {
         # очистка от строк c одинаковым индексом (если есть)
         {
             duplicated.ind <- 
-                index(.) %>%
+                index.xts(.) %>%
                 duplicated(.) %>%
                 which(.)
             if (length(duplicated.ind) != 0) {

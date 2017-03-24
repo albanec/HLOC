@@ -23,7 +23,7 @@ CalcMM.byDCIwidth <- function(balance, row, ohlc_args, trade_args, str_args) {
         max(., 1)
     var2 <- 
         {
-            as.integer(balance) / as.integer(ohlc_args$ohlc$IM[index(row)])
+            as.integer(balance) / as.integer(ohlc_args$ohlc$IM[index.xts(row)])
         } %>%
         floor(.) %>%
         max(., 1)

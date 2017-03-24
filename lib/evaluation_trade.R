@@ -349,7 +349,7 @@ TradeSummary.summary_df <- function(x, type, ticker_names = NULL,
     ## номера позиций
     summary$PositionNum <- x$pos.num
     ## тип позиции
-    summary$Position <- ifelse(x$pos[1] == 1, 'Длинная', 'Короткая')
+    summary$Position <- ifelse(x$pos[1] == 1, 'Long', 'Short')
     ## имя тикера
     if (type == 'byTicker') {
         summary$Ticker <- ticker_names

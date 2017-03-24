@@ -23,16 +23,16 @@ DatesTable <- function(data, states) {
     #
     # cat('INFO(DateTable):    Calc Date Metrics', '\n', sep = '    ')
     trading.days <- 
-        index(data) %>%
+        index.xts(data) %>%
         CalcTradingDays()
     ### начало торговли
     from.date <- 
         xts::first(data) %>%
-        index(.)
+        index.xts(.)
     ### конец торговли
     to.date <-
         xts::last(data) %>%
-        index(.)
+        index.xts(.)
     ### периодичность входных данных
     period <- 
         periodicity(data) %>%
@@ -41,7 +41,7 @@ DatesTable <- function(data, states) {
         }
     ### всего баров
     nbar <- 
-        index(data) %>%
+        index.xts(data) %>%
         unique(.) %>%
         length(.)
     ### бары в рынке

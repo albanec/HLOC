@@ -40,11 +40,11 @@ BotPortfolio.trade_handler <- function(bot.list,
             }) %>%
         do.call(merge, .) %>%
         .$pos %>%
-        index(.)
+        index.xts(.)
     # формирование листа данных по портфелю
         # так же, как с ботами - лист с посвечным xts и лист с данными на сделках
     portfolio_data <- list(
-        xts(NULL, order.by = index(data[[1]][[1]])),
+        xts(NULL, order.by = index.xts(data[[1]][[1]])),
         xts(NULL, order.by = index_norm)
     ) 
     # доп. столбцы по каждому боту
@@ -80,9 +80,9 @@ BotPortfolio.trade_handler <- function(bot.list,
             temp_ind <-
                 which(is.na(data[[x]][[2]]$pos)) %>%
                 data[[x]][[2]]$pos[.] %>%
-                index(.)
+                index.xts(.)
             # удаление индексов, которых нет в full-данных по боту
-            temp_ind <- temp_ind[temp_ind %in% index(data[[x]][[1]]$pos)]
+            temp_ind <- temp_ind[temp_ind %in% index.xts(data[[x]][[1]]$pos)]
             # заполнение данных
             if (length(temp_ind) != 0) {
                 # заполнение $price 
@@ -106,7 +106,7 @@ BotPortfolio.trade_handler <- function(bot.list,
             data[[x]][[2]]$pos.close[is.na(data[[x]][[2]]$pos.close)] <- 0
             # перерасчёт $ret
             data[[x]][[2]]$ret <- CalcReturn(data[[x]][[2]]$Price, 
-                type = trade_args$return_type) * stats::lag(data[[x]][[2]]$pos)
+                type = trade_args$return_type) * lag.xts(data[[x]][[2]]$pos)
             data[[x]][[2]]$ret[is.na(data[[x]][[2]]$ret)] <- 0
             # перерасчёт $cret
             #/// для не-Si инструментов надо переписать расчет $cret (b $Price, возможно)
@@ -343,7 +343,7 @@ BotPortfolio.trade_handler <- function(bot.list,
                 
                 ## Расчёт показателей в data таблицах
                 # расчёт вариационки в data
-                data[[i]][[1]]$margin <- stats::lag(data[[i]][[1]]$n) * data[[i]][[1]]$cret
+                data[[i]][[1]]$margin <- lag.xts(data[[i]][[1]]$n) * data[[i]][[1]]$cret
                 data[[i]][[1]]$margin[1] <- 0
                 # расчёт equity по корзине в data[[i]][[1]]
                 data[[i]][[1]]$perfReturn <- data[[i]][[1]]$margin - data[[i]][[1]]$commiss

@@ -165,7 +165,7 @@ mcTimeSeries <- function(data, tsfunc, byColumn, windowSize, workers) {
     if (windowSize > 1) {
         PAD <- zoo(
             matrix(nrow = windowSize - 1, ncol = ncol(SERIES), NA),
-            order.by = index(data)[1:(windowSize - 1)]
+            order.by = index.xts(data)[1:(windowSize - 1)]
         )
         names(PAD) <- names(SERIES)
         SERIES <- rbind(PAD, SERIES)
@@ -212,6 +212,23 @@ ifelse.fast <- function(cond, truepart, falsepart) {
         #falsepart[!is.na(cond)] = temp
         falsepart
     }
+}
+#' Быстрая версия index.xts() для xts
+#' 
+#' @param x Входной ряд xts
+#'
+#' @return обработанные данные
+#'
+#' @export
+index.xts <- function(x){
+    temp <- attr(x, 'index')
+    class(temp) <- c('POSIXct', 'POSIXt')
+    type <- attr(x, '.indexCLASS')[1]
+    if(type == 'Date' || type == 'yearmon' || type == 'yearqtr') {
+        temp = as.Date(temp)
+    }
+    #
+    return(temp)
 } 
 #
 #' Заменяет NA, NaN, Inf значения

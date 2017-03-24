@@ -30,7 +30,7 @@ DrawdownsTable <- function(data_balance, dd_data_output = FALSE) {
     max_dd_day <- 
         drawdowns[[1]][drawdowns[[1]]$dd == max_drawdown] %>%
         {
-            index(xts::first(.)) 
+            index.xts(xts::first(.)) 
         } %>%
         as.POSIXct(., origin = '1970-01-01')
     ## средняя просадка
@@ -215,7 +215,7 @@ Drawdowns.summary <- function(data) {
 Drawdowns.calc <- function(data) {
     #
     # очистка от строк c одинаковым индексом (если есть)
-    data <- data[which(!duplicated(index(data)))]
+    data <- data[which(!duplicated(index.xts(data)))]
     ## формируем нужные столбцы
     # пики balance
     data$peak <- cummax(data[, 1])

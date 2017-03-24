@@ -14,7 +14,7 @@ Convert.signal_to_states <- function(x) {
     x$a <-
         na.locf(x) %>%
         ifelse.fast(is.na(x$a) | is.nan(x$a) | is.infinite(x$a), 0, x$a)
-    ind <- which(x$a != stats::lag(x$a))
+    ind <- which(x$a != lag.xts(x$a))
     x$y <- rep(NA, length(x$a))
     x$y[ind] = x$a[ind]
     x$y[1] <- x$a[1]
@@ -57,8 +57,8 @@ CalcState.table <- function(x) {
 AddStateTable <- function(x) {
     state <- CalcState.table(x)
     # условие закрытия сделок в конце торгового периода
-    state$state[index(xts::last(state$state))] <- 0
-    state$pos[index(xts::last(state$pos))] <- 0
+    state$state[index.xts(xts::last(state$state))] <- 0
+    state$pos[index.xts(xts::last(state$pos))] <- 0
     # если сделок нет, то 
     if (is.null(state)) {
         #message('WARNING(StrGear_turtles): No trades Here!!!', '\n')
@@ -116,27 +116,27 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
             data$equity <- s0
             data$margin <- 0
             for (i in 2:nrow(data)) {
-                data$margin[i] <- data$w[[i-1]] * ( data$Open[[i]] - data$Open[[i-1]] )
-                data$equity[i] <- (data$equity[[i-1]] + data$margin[[i]])
+                data$margin[i] <- data$w[[i - 1]] * ( data$Open[[i]] - data$Open[[i-1]] )
+                data$equity[i] <- (data$equity[[i - 1]] + data$margin[[i]])
                 data$w[i] <- data$state[[i]] * data$equity[[i]] / data$Open[[i]]
                 data$w[i] <- trunc(data$w[i])
             }
         } else {
             data$w <- 1
-            data$margin <- stats::lag(data$state) * ( data$Open-stats::lag(data$Open) )
+            data$margin <- lag.xts(data$state) * ( data$Open - lag.xts(data$Open) )
             data$margin[1] <- 0
             data$equity <- cumsum(data$margin)
         }
     }
     if (SR == TRUE) {
         if (reinvest == TRUE) {
-          data$SR <- stats::lag(data$state) * data$SR
+          data$SR <- lag.xts(data$state) * data$SR
           data$SR[1] <- 0
         data$margin <- cumprod(data$SR + 1)
         data$margin[1] <- 0
         data$equity <- s0*data$margin
         } else {
-            data$SR <- stats::lag(data$state) * data$SR
+            data$SR <- lag.xts(data$state) * data$SR
             data$SR[1] <- 0
             data$margin <- cumprod(data$SR + 1) - 1
             data$equity <- data$Open[[1]] * as.numeric(data$margin)
@@ -146,7 +146,7 @@ CalcEquity <- function(data, s0 = 0, abs = FALSE, SR = FALSE, LR = FALSE, reinve
         #if (reinvest==TRUE) {
             #
         #} else {
-            data$LR <- stats::lag(data$state) * data$LR
+            data$LR <- lag.xts(data$state) * data$LR
             data$LR[1] <- 0
             data$margin <- cumsum(data$LR)
             data$equity <- data$Open[[1]] * (exp(as.numeric(xts::last(data$margin))) - 1)
@@ -269,7 +269,7 @@ SplitSwitchPosition <- function(data) {
     data$action <- diff(data$pos)
     data$action[1] <- data$pos[1]
     # индекс строки-переворота
-    temp.ind <- index(data[data$action == 2 | data$action == -2])
+    temp.ind <- index.xts(data[data$action == 2 | data$action == -2])
     if (length(temp.ind) == 0) {
         cat('TestStrategy INFO: No Switch Position there', '\n')
         rm(temp.ind)
@@ -321,7 +321,7 @@ CalcPosition.bars <- function(x) {
                     function(var) {
                         temp <- abs(sign(which(x == var)))
                         temp[1] <- 0
-                        xts(x = cumsum(temp), order.by = index(x[x == var]))
+                        xts(x = cumsum(temp), order.by = index.xts(x[x == var]))
                     }) %>%
                 MergeData_inList.byRow(.)
             }
@@ -368,8 +368,8 @@ CalcPosition.num <- function(x) {
 #     # выделение индексов входов
 #     entry_row <- which(sig != 0 & !is.na(sig))
 #     entry_index <- 
-#         index(sig[entry_row]) %>%
-#         c(., index(last(sig)))
+#         index.xts(sig[entry_row]) %>%
+#         c(., index.xts(last(sig)))
 #     sig <- lapply(1:length(entry_index),
 #         function(x) {
 #             Fun.PosStop
@@ -388,7 +388,7 @@ CalcPosition.num <- function(x) {
 #' @export
 CalcPosition_byOrders <- function(order.xts) {
     #
-    ind <- index(order.xts)
+    ind <- index.xts(order.xts)
     order.xts$pos <- NA
     order.xts$pos <- ifelse.fast(lag.xts(order.xts$pos) == 0 | is.na(lag.xts(order.xts$pos)), # бот вне рынка
         ifelse.fast(order.xts$bto != 0,
@@ -423,13 +423,13 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
         btc_col <- grep('btc', col.names)
     }
     # temp.ind <-
-    #     index(x) %>%
+    #     index.xts(x) %>%
     #     strptime(., '%Y-%m-%d') %>%
     #     unique(.) %>%
     #     as.POSIXct(., origin = '1970-01-01', tz='MSK')
     temp.ind <-
             # which(temp.ind %in% exp.vector)
-            which(expiration.dates %in% format(index(x), '%Y-%m-%d')) %>%
+            which(expiration.dates %in% format(index.xts(x), '%Y-%m-%d')) %>%
         expiration.dates[.] %>%
         as.character(.)
     if (length(temp.ind) != 0) {
@@ -465,7 +465,7 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
 #' @export
 CalcPrice.slips <- function(price, action, ohlc, slips) {
     price <- price + slips * sign(action)
-    price.ind <- index(price)
+    price.ind <- index.xts(price)
     low.ind <- price.ind[which(price < Lo(ohlc[price.ind]))]
     price[low.ind] <- Lo(ohlc[low.ind])
     high.ind <- price.ind[which(price > Hi(ohlc[price.ind]))]
@@ -511,7 +511,7 @@ AddPrice <- function(x, FUN.AddPrice, ohlc_args, trade_args) {
             ohlc = ohlc_args$ohlc, slips = trade_args$slips)
     # перенос котировок в DATA (в пунктах) 
     x[[1]] <- merge(x[[1]], Price = x[[2]]$Price) 
-    temp.ind <- index(x[[1]]$Price[is.na(x[[1]]$Price)])
+    temp.ind <- index.xts(x[[1]]$Price[is.na(x[[1]]$Price)])
     x[[1]]$Price[temp.ind] <- ohlc_args$ohlc$Open[temp.ind]    
     #
     return(x)
@@ -590,7 +590,7 @@ TradeHandler <- function(data,
     
     ## Расчёт показателей в full данных
     # расчёт вариационки в data
-    data[[1]]$margin <- stats::lag(data[[1]]$n) * data[[1]]$cret
+    data[[1]]$margin <- lag.xts(data[[1]]$n) * data[[1]]$cret
     data[[1]]$margin[1] <- 0
     # расчёт equity по корзине в data
     data[[1]]$perfReturn <- data[[1]]$margin - data[[1]]$commiss
@@ -694,7 +694,7 @@ CalcOneTrade <- function(cache,
     cache$equity[row_ind] <- ifelse.fast(row_ind != 1,
         sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
         0)
-    cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index(row)] * cache$n[row_ind]
+    cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index.xts(row)] * cache$n[row_ind]
     if (!is.null(external_balance)) {
         # cache$balance[row_ind] <- NA
         cache$balance[row_ind] <- ifelse.fast(row_ind != 1,

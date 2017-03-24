@@ -33,7 +33,7 @@ PerfomanceTable <- function(DATA,
     asset <-    
         DATA[[1]][, which(colnames(DATA[[1]]) %in% asset_cols)] %>% 
         rowSums() %>%
-        xts(., order.by = index(DATA[[1]]))
+        xts(., order.by = index.xts(DATA[[1]]))
     colnames(asset) <- c('asset')
 
     # Если расчёт в fast режиме (нужно для rolling оптимизации и кластеризации) 

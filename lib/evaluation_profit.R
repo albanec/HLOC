@@ -26,14 +26,14 @@ ProfitTable <- function(asset, trade_table, balance_start, by = 'both',
     full_return_percent <- full_return * 100 / balance_start
     ## доходность в год
     full_return_annual <- 
-        index(asset) %>%
+        index.xts(asset) %>%
         ndays(.) %>%
         {
             full_return * 250 / .
         }        
     ## доходность в месяц
     full_return_monthly <-
-        index(asset) %>%
+        index.xts(asset) %>%
         ndays(.) %>%
         {
             full_return * 20 / .

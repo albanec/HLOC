@@ -336,7 +336,7 @@ ExpandOHLC.to_period <- function(x, per) {
         } %>%
         # вычисление индексов
         x[., ] %>%
-        index(.)
+        index.xts(.)
     ## subset 
     x <- 
         # расчёт свечей
@@ -344,7 +344,7 @@ ExpandOHLC.to_period <- function(x, per) {
         # замена индексов на нужные
         {
             if (nrow(.) == length(ind)) {
-                index(.) <- ind 
+                index.xts(.) <- ind 
             } else {
                 stop('ERROR(ExpandOHLC.to_period): ')
             }
