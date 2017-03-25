@@ -630,7 +630,7 @@ CalcTrade <- function(data,
         envir = .TempEnv)
     # вес бота на первой сделке
     #initial_weight <- temp.cache$weight[1]
-    sapply(1:nrow(data[[2]]),
+    lapply(1:nrow(data[[2]]),
         function(x) {
             #data[[2]][x, ] <- FUN.CalcOneTrade(data[[2]], x, ...)  
             FUN.CalcOneTrade(cache = get('cache', envir = .TempEnv), 
@@ -681,8 +681,7 @@ CalcOneTrade <- function(cache,
                 row,
                 ohlc_args, trade_args, str_args 
             ),
-            cache$n[row_ind - 1])
-    )
+            cache$n[row_ind - 1]))
     cache$diff.n[row_ind] <- ifelse.fast(row_ind != 1,
         cache$n[row_ind] - cache$n[row_ind - 1],
         0)
