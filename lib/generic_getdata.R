@@ -344,7 +344,7 @@ ExpandOHLC.to_period <- function(x, per) {
         # замена индексов на нужные
         {
             if (nrow(.) == length(ind)) {
-                index.xts(.) <- ind 
+                index(.) <- ind 
             } else {
                 stop('ERROR(ExpandOHLC.to_period): ')
             }
