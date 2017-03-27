@@ -542,7 +542,7 @@ TradeHandler <- function(data,
     data[[2]]$balance[1] <- trade_args$balance_start
     # начальное число синтетических контрактов корзины
     data[[2]]$n <- NA
-    #data[[2]]$n <- 0
+    data[[2]]$n[data[[2]]$pos == 0] <- 0
     # прочее
     data[[2]]$diff.n <- NA
     data[[2]]$diff.n[1] <- 0
@@ -551,8 +551,11 @@ TradeHandler <- function(data,
     data[[2]]$equity <- NA
     data[[2]]$im.balance <- NA
     data[[2]]$im.balance[1] <- 0
+    data[[2]]$perfReturn <- NA
+    data[[2]]$perfReturn <- 0
     # т.к. обработчик не пакетный, вес бота всегда = 1
-    #data[[2]]$weight <- 1
+    # data[[2]]$weight <- 1
+    
     ## 2.2 Расчёт самих сделок
     temp.df <- FUN.CalcTrade(data, 
         FUN.CalcOneTrade,
@@ -573,19 +576,19 @@ TradeHandler <- function(data,
     # Расчёт баланса
     data[[2]]$balance <- temp.df$balance
     rm(temp.df)
-    #
+    
     ## Перенос данных из state в data таблицу
     # перенос данных по количеству контрактов корзины
     data[[1]]$n <- 
-        merge(data[[1]], data[[2]]$n)$n %>%
+        merge.xts(data[[1]], data[[2]]$n)$n %>%
         na.locf(.)
     # перенос данных по комиссии корзины
-    data[[1]]$commiss <- merge(data[[1]], data[[2]]$commiss)$commiss 
-    data[[1]]$commiss <- Replace.na(data[[1]]$commiss, 0)
-        
+    data[[1]]$commiss <- 
+        merge.xts(data[[1]], data[[2]]$commiss)$commiss %>% 
+        Replace.na(., 0)  
     # перенос данных по суммарному ГО
     data[[1]]$im.balance <- 
-        merge(data[[1]], data[[2]]$im.balance)$im.balance %>%
+        merge.xts(data[[1]], data[[2]]$im.balance)$im.balance %>%
         na.locf(.)
     
     ## Расчёт показателей в full данных
@@ -622,11 +625,12 @@ CalcTrade <- function(data,
     FUN.MM <- match.fun(FUN.MM) 
     .TempEnv <- new.env()
 
-    target_col = c('n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
+    target_col = c(
+        'n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
         'margin', 'perfReturn', 'equity'#, 'weight'
     )
     assign('cache', 
-        data[[2]][, target_col] %>% as.data.frame(., row.names=NULL), 
+        data[[2]][, target_col]  %>% as.data.frame(., row.names=NULL), 
         envir = .TempEnv)
     # вес бота на первой сделке
     #initial_weight <- temp.cache$weight[1]
@@ -682,29 +686,27 @@ CalcOneTrade <- function(cache,
                 ohlc_args, trade_args, str_args 
             ),
             cache$n[row_ind - 1]))
-    cache$diff.n[row_ind] <- ifelse.fast(row_ind != 1,
-        cache$n[row_ind] - cache$n[row_ind - 1],
-        0)
-    cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
-    cache$margin[row_ind] <- ifelse.fast(row_ind != 1,
-        coredata(row$cret) * cache$n[row_ind - 1],
-        0)
-    cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
-    cache$equity[row_ind] <- ifelse.fast(row_ind != 1,
-        sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1]),
-        0)
-    cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index.xts(row)] * cache$n[row_ind]
-    if (!is.null(external_balance)) {
-        # cache$balance[row_ind] <- NA
+    if (row_ind != 1) {
+        cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]    
+        cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
+        cache$margin[row_ind] <- coredata(row$cret) * cache$n[row_ind - 1]
+        cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
+        cache$equity[row_ind] <- sum(cache$perfReturn[row_ind], cache$equity[row_ind - 1])
+        cache$im.balance[row_ind] <- ohlc_args$ohlc$IM[index.xts(row)] * cache$n[row_ind]
+        # if (!is.null(external_balance)) {
+            # cache$balance[row_ind] <- NA
         cache$balance[row_ind] <- ifelse.fast(row_ind != 1,
             cache$balance[1] + cache$equity[row_ind] - cache$im.balance[row_ind],
             cache$balance[1])
+        # } else {
+        #     cache$balance[row_ind] <- ifelse.fast(row_ind != 1,
+        #         trade_args$balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
+        #         cache$balance[1])
+        # }
     } else {
-        cache$balance[row_ind] <- ifelse.fast(row_ind != 1,
-            trade_args$balance_start + cache$equity[row_ind] - cache$im.balance[row_ind],
-            cache$balance[row_ind])
+        cache[row_ind, c('diff.n','commiss','margin','perfReturn','equity','im.balance')] <- 0
+        cache$balance[row_ind] <- trade_args$balance_start
     }
     #
     return(cache)
 }
-#
