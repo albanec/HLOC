@@ -68,12 +68,13 @@ BotPortfolio.trade_handler <- function(bot.list,
             data[[x]][[2]]$diff.n[1] <- 0
             data[[x]][[2]]$margin <- NA
             data[[x]][[2]]$commiss <- NA
-            data[[x]][[2]]$perfReturn <- NA
             data[[x]][[2]]$equity <- NA
             data[[x]][[2]]$im.balance <- NA
             data[[x]][[2]]$im.balance[1] <- 0
+            data[[x]][[2]]$perfReturn <- NA
+            data[[x]][[2]]$perfReturn <- 0
             # вес бота в корзине
-             #data[[x]][[2]]$weight <- 1
+            # data[[x]][[2]]$weight <- 1
         
             ## корректировка данных (для тех строк, где данный бот без action, но возможны action других ботов)
             # выделение индексов, на которых у бота нет action
@@ -100,13 +101,9 @@ BotPortfolio.trade_handler <- function(bot.list,
             rm(temp_ind)
             # заполнение action
             data[[x]][[2]]$action[is.na(data[[x]][[2]]$action)] <- 0
-            # заполение pos.open
-            data[[x]][[2]]$pos.open[is.na(data[[x]][[2]]$pos.open)] <- 0
-            # заполение pos.close
-            data[[x]][[2]]$pos.close[is.na(data[[x]][[2]]$pos.close)] <- 0
             # перерасчёт $ret
-            data[[x]][[2]]$ret <- CalcReturn(data[[x]][[2]]$Price, 
-                type = trade_args$return_type) * lag.xts(data[[x]][[2]]$pos)
+            data[[x]][[2]]$ret <- CalcReturn(data[[x]][[2]]$Price, type = trade_args$return_type) * 
+                lag.xts(data[[x]][[2]]$pos)
             data[[x]][[2]]$ret[is.na(data[[x]][[2]]$ret)] <- 0
             # перерасчёт $cret
             #/// для не-Si инструментов надо переписать расчет $cret (b $Price, возможно)
