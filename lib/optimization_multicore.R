@@ -26,17 +26,22 @@ BruteForceOptimizer.mc <- function(var_df,
     } else {
         workers <- getDoParWorkers()
     }
+    FUN.StrategyGear <- match.fun(FUN.StrategyGear)
+    
     # вычисления
     result <- 
-        foreach(i = 1:workers, .combine = rbind) %dopar% {
+        foreach(i = 1:workers) %dopar% {
             BruteForceOptimizer(
-                var_df = Delegate(i, nrow(var_df), p = workers) %>% var_df[., ], 
-                FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+                var_df = 
+                    Delegate(i, nrow(var_df), p = workers) %>% 
+                    var_df[., ], 
+                FUN.StrategyGear = FUN.StrategyGear, 
                 fast = fast,
                 ohlc_args, trade_args
             ) %>%
             data.frame(.)
-        }
+        } %>%
+        MergeData_inList.byRow(.)
     #
     return(result)
 }

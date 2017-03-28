@@ -19,11 +19,11 @@ BruteForceOptimizer <- function(var_df,
                                 fast = FALSE,
                                 ohlc_args, trade_args) { 
     #
-    #FUN.StrategyGear <- match.fun(FUN.StrategyGear)
+    FUN.StrategyGear <- match.fun(FUN.StrategyGear)
     df <- 
         lapply(1:nrow(var_df),
             function(x) {
-                OneThreadRun(match.fun(FUN.StrategyGear),
+                OneThreadRun(FUN.StrategyGear,
                     fast = fast, 
                     dd_data_output = FALSE,
                     ohlc_args, 
@@ -134,7 +134,10 @@ RollerOptimizer.learning <- function(slice_index,
     } else {
         workers <- getDoParWorkers()
     }
+    FUN.StrategyGear <- match.fun(FUN.StrategyGear)
     
+    #df_data <- integer(length(slice_index)) %>% as.list(.)
+
     ## Вычисление оптимизаций на обучающих периодах
     # выбор оптимальной стратегии распараллеливания
     # if (length(slice_index) >= workers) {
@@ -148,25 +151,26 @@ RollerOptimizer.learning <- function(slice_index,
     #                 return(.)
     #             } %>%    
     #             BruteForceOptimizer(var_df = var_df,
-    #                 FUN.StrategyGear = match.fun(FUN.StrategyGear), 
+    #                 FUN.StrategyGear = FUN.StrategyGear, 
     #                 fast = TRUE,
     #                 ohlc_args = ., trade_args)    
     #         }
     #     }
     # } else {
-        bf_data <- foreach(i = 1:length(slice_index)) %do% {
-            ohlc_args %>%
-            {
-                .$from_date <- slice_index[[i]][1, ]
-                .$to_date <- slice_index[[i]][2, ]
-                return(.)
-            } %>%
-            BruteForceOptimizer.mc(var_df = var_df,
-                FUN.StrategyGear = match.fun(FUN.StrategyGear), 
-                fast = TRUE,
-                ohlc_args = ., 
-                trade_args)
-        }
+        bf_data <- lapply(1:length(slice_index), 
+            function(x) {
+                ohlc_args %>%
+                {
+                    .$from_date <- slice_index[[x]][1, ]
+                    .$to_date <- slice_index[[x]][2, ]
+                    return(.)
+                } %>%
+                BruteForceOptimizer.mc(var_df = var_df,
+                    FUN.StrategyGear = FUN.StrategyGear, 
+                    fast = TRUE,
+                    ohlc_args = ., 
+                    trade_args)
+            })
     # }
 
     ## КА
