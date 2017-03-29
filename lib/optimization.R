@@ -125,6 +125,7 @@ RollerOptimizer.learning <- function(slice_index,
                                      var_df,
                                      FUN.StrategyGear,
                                      win_size,
+                                     plusplus = FALSE,
                                      ohlc_args, trade_args) {
     require(doParallel)
     #.CurrentEnv <- environment()                                                    
@@ -191,12 +192,12 @@ RollerOptimizer.learning <- function(slice_index,
             clustFull.data <- 
                 CalcKmean.parameters(data = data_for_cluster, 
                     iter.max = 100, 
-                    plusplus = FALSE, 
+                    plusplus = plusplus, 
                     test.range = 30) %>%
                 .[[2]] %>%
                 CalcKmean(data = data_for_cluster, 
                     n.opt = ., 
-                    plusplus = FALSE, 
+                    plusplus = plusplus, 
                     var.digits = 3)
             ## Округление центров до значений точек пространства    
             clustFull.data[[2]] %<>%
