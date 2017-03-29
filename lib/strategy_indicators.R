@@ -82,3 +82,22 @@ CalcIndicator.DCI <- function(x, n, digits = NULL, lag = TRUE) {
     return(x)
 }
 #
+###
+#' Функция для расчёта RSI
+#' 
+#' @param x XTS
+#' @param n Период RSI
+#' @param digits Округление до знаков после точки
+#'
+#' @return x XTS со значениями RSI
+#'
+#' @export
+CalcIndicator.RSI <- function(x, n, digits = NULL) {
+    #
+    x <- RSI(price = x, n = n)
+    if (!is.null(digits)) {
+        x %<>% round(., digits = digits)    
+    }
+    #
+    return(x)
+}
