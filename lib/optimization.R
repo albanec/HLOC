@@ -114,9 +114,10 @@ OneThreadRun <- function(FUN.StrategyGear,
 #' @param var_df Оптимизационная матрица параметров стратегии
 #' @param FUN.StrategyGear Функция стратегии
 #' @param win_size Период обучения (нужно для более точной кластеризации)
-#' @param round_type Способ округления (NULL, 'space', 'integer', 'round')
 #' @param ohlc_args Лист с параметрами котировок
 #' @param trade_args Лист с торговыми параметрами
+#' @param cluster_args Лист с параметрами кластеризации (accuracy, 
+#'  iteration_max, max, plusplus, round_type)
 #' @param 
 #'
 #' @return result DF с perfomance'ами по всем итерациям цикла 
@@ -126,9 +127,9 @@ RollerOptimizer.learning <- function(slice_index,
                                      var_df,
                                      FUN.StrategyGear,
                                      win_size,
-                                     plusplus = FALSE,
                                      round_type = NULL,
-                                     ohlc_args, trade_args) {
+                                     ohlc_args, trade_args,
+                                     cluster_args) {
     require(doParallel)
     #.CurrentEnv <- environment()                                                    
     if (getDoParWorkers() == 1) {
@@ -196,26 +197,28 @@ RollerOptimizer.learning <- function(slice_index,
         ## Вычисление кластеров
         clustFull.data <- 
             CalcKmean.parameters(data = data_for_cluster, 
-                iter.max = 100, 
-                plusplus = plusplus, 
-                test.range = 30) %>%
+                iter.max = cluster_args$iteration_max, 
+                test.range = cluster_args$max,
+                accuracy = cluster_args$accuracy,
+                plusplus = cluster_args$plusplus) %>%
             .[[2]] %>%
             CalcKmean(data = data_for_cluster, 
                 n.opt = ., 
-                plusplus = plusplus, 
+                iter.max = cluster_args$iteration_max,
+                plusplus = cluster_args$plusplus, 
                 var.digits = 3)
         ## Округление центров до значений точек пространства    
-        if (!is.null(round_type)) {
+        if (!is.null(cluster_args$round_type)) {
             clustFull.data[[2]] %<>%
                 {
                     for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
-                        if (round_type == 'space') {
+                        if (cluster_args$round_type == 'space') {
                             .[, x] <- .[, x] - .[, x] %% 5    
                         }
-                        if (round_type == 'integer') {
+                        if (cluster_args$round_type == 'integer') {
                             .[, x] <- as.integer(.[, x])    
                         }                
-                        if (round_type == 'round') {
+                        if (cluster_args$round_type == 'round') {
                             .[, x] <- round(.[, x])    
                         }
                     }

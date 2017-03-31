@@ -71,7 +71,11 @@ CalcKmean.preparation <- function(data, n.mouth ,
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
-CalcKmean.parameters <- function(data, test.range = 30, iter.max = 100, plusplus = FALSE) {
+CalcKmean.parameters <- function(data, 
+                                 test.range = 30, 
+                                 iter.max = 100, 
+                                 accuracy = 0.9,
+                                 plusplus = FALSE) {
     #
     n <- nrow(data)
     if (n < test.range) {
@@ -106,7 +110,7 @@ CalcKmean.parameters <- function(data, test.range = 30, iter.max = 100, plusplus
     # byVar: опт. число кластеров определяется как min число, описывающее 90% пространства
     n.byVar <- 
         {
-            min(which(ss.df$Pct.Exp > 0.9))
+            min(which(ss.df$Pct.Exp > accuracy))
         } %>%
         ss.df$Num.Of.Clusters[.]
     # byElbow: опт. число определяется 'методом локтя'
@@ -246,16 +250,15 @@ PlotKmean.ss <- function(ss.df, n.opt) {
     # ----------
     ss.df <- as.data.frame(ss.df)    
     p <- 
-        plot_ly(
-            ss.df, x = Num.Of.Clusters, y = Total.Within.SS, mode = 'lines+markers', color = Pct.Change, 
+        plot_ly(ss.df, 
+            x = Num.Of.Clusters, y = Total.Within.SS, 
+            mode = 'lines+markers', color = Pct.Change, 
             marker = list(symbol = 'circle-dot', size = 10),
-            line = list(dash = '2px')
-        ) %>% 
-        layout(
-            title = 'Суммарная ошибка по кластерам', 
-            annotations = list(list(x = n.opt, y = Total.Within.SS[(n.opt - 1)], 
-                                                            text = 'nOptimal', ax = 30, ay = -40))
-        )
+            line = list(dash = '2px')) %>% 
+        layout(title = 'Суммарная ошибка по кластерам', 
+            annotations = list(list(x = n.opt, 
+                y = Total.Within.SS[(n.opt - 1)], 
+                text = 'nOptimal', ax = 30, ay = -40)))
     #
     return(p)
 }    
