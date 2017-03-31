@@ -30,7 +30,7 @@ BruteForceOptimizer.mc <- function(var_df,
     
     # вычисления
     result <- 
-        foreach(i = 1:workers) %dopar% {
+        foreach(i = 1:workers, preschedule = FALSE, .inorder = FALSE, .combine = rbind) %dopar% {
             BruteForceOptimizer(
                 var_df = 
                     Delegate(i, nrow(var_df), p = workers) %>% 

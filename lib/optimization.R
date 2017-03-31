@@ -114,6 +114,7 @@ OneThreadRun <- function(FUN.StrategyGear,
 #' @param var_df Оптимизационная матрица параметров стратегии
 #' @param FUN.StrategyGear Функция стратегии
 #' @param win_size Период обучения (нужно для более точной кластеризации)
+#' @param round_type Способ округления (NULL, 'space', 'integer', 'round')
 #' @param ohlc_args Лист с параметрами котировок
 #' @param trade_args Лист с торговыми параметрами
 #' @param 
@@ -126,6 +127,7 @@ RollerOptimizer.learning <- function(slice_index,
                                      FUN.StrategyGear,
                                      win_size,
                                      plusplus = FALSE,
+                                     round_type = NULL,
                                      ohlc_args, trade_args) {
     require(doParallel)
     #.CurrentEnv <- environment()                                                    
@@ -175,40 +177,53 @@ RollerOptimizer.learning <- function(slice_index,
     # }
 
     ## КА
-    cluster_data <- lapply(1:length(bf_data),
-        function(x) {
-            ## Подготовка к КА
-            data_for_cluster <- 
-                bf_data[[x]] %>%
-                {
-                    CalcKmean.preparation(data = ., 
-                        n.mouth = win_size, 
-                        hi = TRUE, q.hi = 0.5, 
-                        only_profitable = TRUE)
-                }
-            data_for_cluster$profit <- NULL
-            data_for_cluster$draw <- NULL
-            ## Вычисление кластеров
-            clustFull.data <- 
-                CalcKmean.parameters(data = data_for_cluster, 
-                    iter.max = 100, 
-                    plusplus = plusplus, 
-                    test.range = 30) %>%
-                .[[2]] %>%
-                CalcKmean(data = data_for_cluster, 
-                    n.opt = ., 
-                    plusplus = plusplus, 
-                    var.digits = 3)
-            ## Округление центров до значений точек пространства    
+    if (workers > length(bf_data)) {
+        workers <- length(bf_data)
+    } 
+    cluster_data <- foreach(i = 1:workers) %dopar% {
+        ## Подготовка к КА
+        data_for_cluster <- 
+            Delegate(i, length(bf_data), p = workers) %>% 
+            bf_data[[.]] %>%
+            {
+                CalcKmean.preparation(data = ., 
+                    n.mouth = win_size, 
+                    hi = TRUE, q.hi = 0.5, 
+                    only_profitable = TRUE)
+            }
+        data_for_cluster$profit <- NULL
+        data_for_cluster$draw <- NULL
+        ## Вычисление кластеров
+        clustFull.data <- 
+            CalcKmean.parameters(data = data_for_cluster, 
+                iter.max = 100, 
+                plusplus = plusplus, 
+                test.range = 30) %>%
+            .[[2]] %>%
+            CalcKmean(data = data_for_cluster, 
+                n.opt = ., 
+                plusplus = plusplus, 
+                var.digits = 3)
+        ## Округление центров до значений точек пространства    
+        if (!is.null(round_type)) {
             clustFull.data[[2]] %<>%
                 {
                     for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
-                        .[, x] <- .[, x] - .[, x] %% 5
+                        if (round_type == 'space') {
+                            .[, x] <- .[, x] - .[, x] %% 5    
+                        }
+                        if (round_type == 'integer') {
+                            .[, x] <- as.integer(.[, x])    
+                        }                
+                        if (round_type == 'round') {
+                            .[, x] <- round(.[, x])    
+                        }
                     }
                     return(.)        
                 }    
-            return(clustFull.data)
-        }) 
+        }
+        return(clustFull.data)
+    }
     #
     return(cluster_data)
 }
