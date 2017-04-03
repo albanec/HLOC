@@ -29,19 +29,17 @@ BruteForceOptimizer.mc <- function(var_df,
     FUN.StrategyGear <- match.fun(FUN.StrategyGear)
     
     # вычисления
-    result <- 
-        foreach(i = 1:workers, preschedule = FALSE, .inorder = FALSE, .combine = rbind) %dopar% {
-            BruteForceOptimizer(
-                var_df = 
-                    Delegate(i, nrow(var_df), p = workers) %>% 
-                    var_df[., ], 
-                FUN.StrategyGear = FUN.StrategyGear, 
-                fast = fast,
-                ohlc_args, trade_args
-            ) %>%
-            data.frame(.)
-        } %>%
-        MergeData_inList.byRow(.)
+    result <- foreach(i = 1:workers, .inorder = FALSE, .combine = rbind) %dopar% {
+        BruteForceOptimizer(
+            var_df = 
+                Delegate(i, nrow(var_df), p = workers) %>% 
+                var_df[., ], 
+            FUN.StrategyGear = FUN.StrategyGear, 
+            fast = fast,
+            ohlc_args, trade_args
+        ) %>%
+        data.frame(.)
+    } 
     #
     return(result)
 }
