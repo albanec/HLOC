@@ -127,7 +127,6 @@ RollerOptimizer.learning <- function(slice_index,
                                      var_df,
                                      FUN.StrategyGear,
                                      win_size,
-                                     round_type = NULL,
                                      ohlc_args, trade_args,
                                      cluster_args) {
     require(doParallel)
