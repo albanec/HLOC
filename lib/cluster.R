@@ -145,7 +145,7 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
         if (i == 1 ) {
             # ID первого центра
             center.id <- round(runif(1, 1, n))
-            centers    <- c(centers, center.id)
+            centers <- c(centers, center.id)
             # рассчёт квадратов расстояний от точек до центра
             if (n.dim == 1) {
                 data$s <- apply(cbind(data[center.id, ]), 
@@ -172,7 +172,7 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
                 if (center.id %in% centers == FALSE) break
             }
             # запись найденного центра
-            centers    <- c(centers, center.id)
+            centers <- c(centers, center.id)
             # расчет дальностей для найденного центра 
             data$s <- NULL
             data$ss <- NULL
