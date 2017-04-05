@@ -196,7 +196,8 @@ RollerOptimizer.learning <- function(slice_index,
         ## Вычисление кластеров
         clustFull.data <- 
             CalcKmean.parameters(data = data_for_cluster, 
-                iter.max = cluster_args$iteration_max, 
+                iter.max = cluster_args$iteration_max,
+                nstart =  cluster_args$nstart,
                 test.range = cluster_args$max,
                 accuracy = cluster_args$accuracy,
                 plusplus = cluster_args$plusplus) %>%
@@ -204,6 +205,7 @@ RollerOptimizer.learning <- function(slice_index,
             CalcKmean(data = data_for_cluster, 
                 n.opt = ., 
                 iter.max = cluster_args$iteration_max,
+                nstart =  cluster_args$nstart,
                 plusplus = cluster_args$plusplus, 
                 var.digits = 3)
         ## Округление центров до значений точек пространства    

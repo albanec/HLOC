@@ -63,17 +63,19 @@ CalcKmean.preparation <- function(data, n.mouth ,
 ###
 #' Определение оптимального числа k-mean кластеров
 #' 
-#' @param data подготовленные результаты отработки бэктеста 
+#' @param data Подготовленные результаты отработки бэктеста 
 #' (должны содержать в себе только переменные и нужные метрики)
-#' @param plusplus: использовать простой k-mean или k-mean++
-#' @param iter.max: число итераций k-mean
+#' @param plusplus Использовать простой kmeans или kmeans++
+#' @param iter.max Число итераций kmeans
+#' @param nstart Число итераций kmeans
 #'
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
 CalcKmean.parameters <- function(data, 
                                  test.range = 30, 
-                                 iter.max = 100, 
+                                 iter.max = 100,
+                                 nstart = 100, 
                                  accuracy = 0.9,
                                  plusplus = FALSE) {
     #
@@ -94,9 +96,9 @@ CalcKmean.parameters <- function(data,
     for (i in cluster.range) {
         #cat(i , '\n')
         if (plusplus == TRUE) {
-            cluster.data <- CalcKmean.plusplus(data, n.opt = i, iter.max = iter.max)
+            cluster.data <- CalcKmean.plusplus(data, n.opt = i, iter.max, nstart)
         } else {
-            cluster.data <- kmeans(data, centers = i, iter.max)    
+            cluster.data <- kmeans(data, centers = i, iter.max, nstart)    
         }
         ss <- c(ss, cluster.data$tot.withinss)
         p.exp = c(p.exp, 1 - cluster.data$tot.withinss / cluster.data$totss)
@@ -128,76 +130,90 @@ CalcKmean.parameters <- function(data,
 #' @param data Подготовленные данные
 #' @param n.opt Оптимальное число кластеров для заданного набора данных
 #' @param iter.max Количество итераций вычислений кластера
+#' @param nstart Количество итераций алгоритма
 #'
-#' @return cluster.data Лист с данными кластера
+#' @return out Лист с данными кластера
 #'
 #' @export
-CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
+CalcKmean.plusplus <- function(data, n.opt, iter.max = 100, nstart = 100) {
     #
     # количество точек
     n <- nrow(data)
     # число измерений 
     n.dim <- ncol(data)
-    # ID центров (номера строк, содержащих точки центров)
-    centers <- c()
-    # цикл подбора центров
-    for (i in 1:n.opt) {
-        if (i == 1 ) {
-            # ID первого центра
-            center.id <- round(runif(1, 1, n))
-            centers <- c(centers, center.id)
-            # рассчёт квадратов расстояний от точек до центра
-            if (n.dim == 1) {
-                data$s <- apply(cbind(data[center.id, ]), 
-                    1, 
-                    function(x) {
-                        rowSums((data - center)^2) 
-                    })
+    
+    out <- list()
+    out$tot.withinss <- Inf
+    
+    for (ii in seq_len(nstart)) {
+        # ID центров (номера строк, содержащих точки центров)
+        centers <- c()
+        # цикл подбора центров
+        for (i in 1:n.opt) {
+            if (i == 1 ) {
+                # ID первого центра
+                center.id <- round(runif(1, 1, n))
+                centers <- c(centers, center.id)
+                # рассчёт квадратов расстояний от точек до центра
+                if (n.dim == 1) {
+                    data$s <- apply(cbind(data[center.id, ]), 
+                        1, 
+                        function(x) {
+                            rowSums((data - x)^2) 
+                        })
+                } else {
+                    data$s <- apply(data[center.id, ], 
+                        1, 
+                        function(x) {
+                            rowSums((data - x)^2) 
+                        })
+                }
+                # рассчёт кум. суммы квадратов расстояний
+                data$ss <- cumsum(data$s)
             } else {
-                data$s <- apply(data[center.id, ], 
-                    1, 
-                    function(x) {
-                        rowSums((data - center)^2) 
-                    })
+                # цикл расчёта остальных центров (с проверкой на совпадения)
+                repeat {
+                    # вероятность выбора нового центра 
+                    pr <- runif(1, 0, 1)
+                    ss.step <- pr * data$ss[[n]]
+                    center.id <- min(which(data$ss > ss.step))    
+                    if (center.id %in% centers == FALSE) break
+                }
+                # запись найденного центра
+                centers <- c(centers, center.id)
+                # расчет дальностей для найденного центра 
+                data$s <- NULL
+                data$ss <- NULL
+                if (n.dim == 1) {
+                    data$s <- apply(cbind(data[center.id, ]),
+                        1, 
+                        function(x) {
+                            rowSums((data - x)^2)
+                        })
+                } else {
+                    data$s <- apply(data[center.id, ], 
+                        1, 
+                        function(x) { 
+                            rowSums((data - x)^2)
+                        })
+                }
+                data$ss <- cumsum(data$s)    
             }
-            # рассчёт кум. суммы квадратов расстояний
-            data$ss <- cumsum(data$s)
-        } else {
-            # цикл расчёта остальных центров (с проверкой на совпадения)
-            repeat {
-                # вероятность выбора нового центра 
-                pr <- runif(1, 0, 1)
-                ss.step <- pr * data$ss[[n]]
-                center.id <- min(which(data$ss > ss.step))    
-                if (center.id %in% centers == FALSE) break
-            }
-            # запись найденного центра
-            centers <- c(centers, center.id)
-            # расчет дальностей для найденного центра 
-            data$s <- NULL
-            data$ss <- NULL
-            if (n.dim == 1) {
-                data$s <- apply(cbind(data[center.id, ]),
-                    1, 
-                    function(x) {
-                        rowSums((data - x)^2)
-                    })
-            } else {
-                data$s <- apply(data[center.id, ], 
-                    1, 
-                    function(x) { 
-                        rowSums((data - x)^2)
-                    })
-            }
-            data$ss <- cumsum(data$s)    
+        }
+        data$s <- NULL
+        data$ss <- NULL
+        
+        # рассчёт кластеров, исходя из найденных центров
+        cluster.data <- kmeans(data, data[centers, ], iter.max)
+        # запись инициализирующих центров
+        cluster.data$inicial.centers <- data[centers, ]
+        # если рассчитано оптимальное пространство, то 
+        if (cluster.data$tot.withinss < out$tot.withinss) {
+            out <- cluster.data
         }
     }
-    data$s <- NULL
-    data$ss <- NULL
-    # рассчёт кластеров, исходя из найденных центров
-    cluster.data <- kmeans(data, data[centers, ], iter.max)
     #
-    return(cluster.data)
+    return(out)
 }
 #
 ###
@@ -214,10 +230,10 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
 #' @export
 CalcKmean <- function(data, n.opt, iter.max = 100, nstart = 100, plusplus = FALSE, var.digits = 0) {
     #
-    set.seed(76964057)
+    #set.seed(76964057)
     # вычисление кластера
     if (plusplus == TRUE) {
-        cluster.data <- CalcKmean.plusplus(data, n.opt, iter.max, nstart)
+        cluster.data <- CalcKmean.plusplus_new(data, n.opt, iter.max, nstart)
     } else {
         cluster.data <- kmeans(data, centers = n.opt, iter.max, nstart)
     }
@@ -298,7 +314,7 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
     # подготовка данных
     data <- as.data.frame(data.list[1])
     centers <- as.data.frame(data.list[2])
-    mycolors <-    rainbow(30, start=0.3, end=0.95)
+    mycolors <- rainbow(30, start=0.3, end=0.95)
     # подсветка точек (по кластерам или стандартная по доходности)
     if (cluster.color == TRUE) {
         point.color <- data$cluster
@@ -306,19 +322,21 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
         point.color <- data$profit.norm    
     }
     # стиль шрифта надписей
-        font.style <- list(family = 'Courier New, monospace', size = 18, color = '#6699ff')
+    font.style <- list(family = 'Courier New, monospace', size = 18, color = '#6699ff')
     # выбор 3D / 2D    
     if (dimension == '3d') {
         # базовый график
         p <- plot_ly(
-            data, x = var1, y = var2, z = var3, type = 'scatter3d', mode = 'markers', name = 'Clusters',
+            data, x = ~var1, y = ~var2, z = ~var3, type = 'scatter3d', mode = 'markers', name = 'Clusters',
             colors = mycolors, opacity = point.opacity, color = point.color,
             hoverinfo = 'text', 
-            text = paste0(xaxis.name, data$var1, '<br>',
-                                        yaxis.name, data$var2, '<br>',
-                                        zaxis.name, data$var3, '<br>',
-                                        'ProfitNorm:', round(data$profit.norm, 3), '<br>',
-                                        'Cluster:', data$cluster), 
+            text = paste0(
+                xaxis.name, data$var1, '<br>',
+                yaxis.name, data$var2, '<br>',
+                zaxis.name, data$var3, '<br>',
+                'ProfitNorm:', round(data$profit.norm, 3), '<br>',
+                'Cluster:', data$cluster
+            ), 
             marker = list(
                 symbol = 'circle',    size = point.size, 
                 line = list(color = '#262626', width = point.line.width, opacity = 0.5)
@@ -327,7 +345,7 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
         )
         # добавляем центроиды кластеров
         p <- add_trace(
-            centers, x = var1, y = var2, z = var3, 
+            centers, x = ~var1, y = ~var2, z = ~var3, 
             type = 'scatter3d', mode = 'markers', name = 'Cluster Centers',
             hoverinfo = 'text', 
             text = paste0(
@@ -348,7 +366,7 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
     } else {
         # базовый график
         p <- plot_ly(
-            data, x = var1, y = var2, mode = 'markers', name = 'Clusters',
+            data, x = ~var1, y = ~var2, mode = 'markers', name = 'Clusters',
             colors = mycolors, opacity = point.opacity, color = point.color,
             hoverinfo = 'text', 
             text = paste0(
@@ -364,7 +382,7 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
         )
         # добавляем центроиды кластеров
         p <- add_trace(
-            centers, x = var1, y = var2, mode = 'markers', name = 'Cluster Centers',
+            centers, x = ~var1, y = ~var2, mode = 'markers', name = 'Cluster Centers',
             hoverinfo = 'text', 
             text = paste0(
                 xaxis.name, centers$var1, '<br>',
@@ -379,4 +397,88 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
             yaxis = list(title = yaxis.name, titlefont = font.style))
     }
     return(p)
+}
+#'
+#' @param data an N \times d matrix, where N are the samples and d is the dimension of space.
+#' @param k number of clusters.
+#' @param start first cluster center to start with
+#' @param iter.max the maximum number of iterations allowed
+#' @param nstart how many random sets should be chosen?
+#' @param ... additional arguments passed to kmeans
+#'
+#' @return
+#'
+#' @export
+CalcKmean.plusplus_new <- function(data, n.opt = 2,
+                               start_poit = "random",
+                               iter.max = 100,
+                               nstart = 10) {
+    #
+    if (length(dim(data)) == 0) {
+        data <- matrix(data, ncol = 1)
+    } else {
+        data <- cbind(data)
+    }
+    # количество точек
+    n <- nrow(data)
+    # число измерений пространства
+    ndim <- ncol(data)
+    
+    data.avg <- colMeans(data)
+    data.cov <- cov(data)
+    
+    out <- list()
+    out$tot.withinss <- Inf
+    
+    # цикл вычислений
+    for (i in seq_len(nstart)) {
+        # вектор для ID центров (номеров строк, содержащих точки центров)
+        centers <- rep(0, length = n.opt)
+
+        # выбор стартовой точки
+        if (!is.character(start_poit)) {
+            centers[1:2] <- start_poit
+        } else {
+            if (start_poit == "random") {
+                centers[1:2] <- sample.int(n, 1)
+            }
+            if (start_poit == "normal") {
+                centers[1:2] <- which.min(dmvnorm(data, mean = data.avg, sigma = data.cov))
+            }    
+        }
+
+        # цикл подбора центров
+        for (ii in 2:n.opt) {
+            # расчёт квадратов расстояний от точек до центра
+            if (ndim == 1) {
+                dists <- apply(cbind(data[centers, ]), 
+                    1, 
+                    function(x) {
+                        rowSums((data - x)^2)
+                    })
+            } else {
+                dists <- apply(data[centers, ], 
+                    1, 
+                    function(x) {
+                        rowSums((data - x)^2)
+                    })
+            }
+            # расчет дальностей для найденных центров 
+            probs <- apply(dists, 1, min)
+            probs[centers] <- 0
+            # расчет дальностей для найденного центра 
+            centers[ii] <- sample.int(n, 1, prob = probs)
+        }
+
+        # расчёт кластеров, исходя из найденных центров
+        cluster_data <- kmeans(data, centers = data[centers, ], iter.max = iter.max)
+        # запись инициализирующих центров
+        cluster_data$inicial.centers <- data[centers, ]
+        # если рассчитано оптимальное пространство, то 
+        if (cluster_data$tot.withinss < out$tot.withinss) {
+            out <- cluster_data
+        }
+    }
+    #
+    return(out)
 }
