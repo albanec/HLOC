@@ -150,13 +150,13 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
             if (n.dim == 1) {
                 data$s <- apply(cbind(data[center.id, ]), 
                     1, 
-                    function(center) {
+                    function(x) {
                         rowSums((data - center)^2) 
                     })
             } else {
                 data$s <- apply(data[center.id, ], 
                     1, 
-                    function(center) {
+                    function(x) {
                         rowSums((data - center)^2) 
                     })
             }
@@ -179,14 +179,14 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
             if (n.dim == 1) {
                 data$s <- apply(cbind(data[center.id, ]),
                     1, 
-                    function(center) {
-                        rowSums((data - center)^2)
+                    function(x) {
+                        rowSums((data - x)^2)
                     })
             } else {
                 data$s <- apply(data[center.id, ], 
                     1, 
-                    function(center) { 
-                        rowSums((data - center)^2)
+                    function(x) { 
+                        rowSums((data - x)^2)
                     })
             }
             data$ss <- cumsum(data$s)    
@@ -212,13 +212,14 @@ CalcKmean.plusplus <- function(data, n.opt, iter.max = 100) {
 #' @return list(data, cluster.centers) Лист с данными (сод. номера кластеров) + df с центрами кластеров
 #'
 #' @export
-CalcKmean <- function(data, n.opt, iter.max = 100, plusplus = FALSE, var.digits = 0) {
+CalcKmean <- function(data, n.opt, iter.max = 100, nstart = 100, plusplus = FALSE, var.digits = 0) {
     #
+    set.seed(76964057)
     # вычисление кластера
     if (plusplus == TRUE) {
-        cluster.data <- CalcKmean.plusplus(data, n.opt, iter.max)
+        cluster.data <- CalcKmean.plusplus(data, n.opt, iter.max, nstart)
     } else {
-        cluster.data <- kmeans(data, centers = n.opt, iter.max)
+        cluster.data <- kmeans(data, centers = n.opt, iter.max, nstart)
     }
     # соотнесение данных по кластерам
     data$cluster <- as.factor(cluster.data$cluster)
@@ -251,14 +252,16 @@ PlotKmean.ss <- function(ss.df, n.opt) {
     ss.df <- as.data.frame(ss.df)    
     p <- 
         plot_ly(ss.df, 
-            x = Num.Of.Clusters, y = Total.Within.SS, 
-            mode = 'lines+markers', color = Pct.Change, 
+            x = ~Num.Of.Clusters, y = ~Total.Within.SS, 
+            mode = 'lines+markers', color = ~Pct.Change, 
             marker = list(symbol = 'circle-dot', size = 10),
             line = list(dash = '2px')) %>% 
         layout(title = 'Суммарная ошибка по кластерам', 
-            annotations = list(list(x = n.opt, 
-                y = Total.Within.SS[(n.opt - 1)], 
-                text = 'nOptimal', ax = 30, ay = -40)))
+            annotations = list(
+                list(x = n.opt, 
+                    y = Total.Within.SS[(n.opt - 1)], 
+                    text = 'nOptimal', ax = 30, ay = -40)
+            ))
     #
     return(p)
 }    
