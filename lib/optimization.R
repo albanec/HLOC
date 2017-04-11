@@ -180,54 +180,60 @@ RollerOptimizer.learning <- function(slice_index,
     if (workers > length(bf_data)) {
         workers <- length(bf_data)
     } 
-    cluster_data <- foreach(i = 1:workers) %dopar% {
-        ## Подготовка к КА
-        data_for_cluster <- 
-            Delegate(i, length(bf_data), p = workers) %>% 
-            bf_data[[.]] %>%
-            {
-                CalcKmean.preparation(data = ., 
-                    n.mouth = win_size, 
-                    hi = TRUE, q.hi = 0.5, 
-                    only_profitable = TRUE)
-            }
-        data_for_cluster$profit <- NULL
-        data_for_cluster$draw <- NULL
-        ## Вычисление кластеров
-        clustFull.data <- 
-            CalcKmean.parameters(data = data_for_cluster, 
-                iter.max = cluster_args$iteration_max,
-                nstart =  cluster_args$nstart,
-                test.range = cluster_args$max,
-                accuracy = cluster_args$accuracy,
-                plusplus = cluster_args$plusplus) %>%
-            .[[2]] %>%
-            CalcKmean(data = data_for_cluster, 
-                n.opt = ., 
-                iter.max = cluster_args$iteration_max,
-                nstart =  cluster_args$nstart,
-                plusplus = cluster_args$plusplus, 
-                var.digits = 3)
-        ## Округление центров до значений точек пространства    
-        if (!is.null(cluster_args$round_type)) {
-            clustFull.data[[2]] %<>%
-                {
-                    for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
-                        if (cluster_args$round_type == 'space') {
-                            .[, x] <- .[, x] - .[, x] %% 5    
+    cluster_data <- 
+        foreach(i = 1:workers, .inorder = TRUE) %dopar% {
+            map_range <- Delegate(i, length(bf_data), p = workers)
+            result <- lapply(1:length(map_range),
+                function(x) {
+                    ## Подготовка к КА
+                    data_for_cluster <- 
+                        bf_data[[map_range[x]]] %>%
+                        {
+                            CalcKmean.preparation(data = ., 
+                                n.mouth = win_size, 
+                                hi = TRUE, q.hi = 0.5, 
+                                only_profitable = TRUE)
                         }
-                        if (cluster_args$round_type == 'integer') {
-                            .[, x] <- as.integer(.[, x])    
-                        }                
-                        if (cluster_args$round_type == 'round') {
-                            .[, x] <- round(.[, x])    
-                        }
+                    data_for_cluster$profit <- NULL
+                    data_for_cluster$draw <- NULL
+                    ## Вычисление кластеров
+                    clustFull.data <- 
+                        CalcKmean.parameters(data = data_for_cluster, 
+                            iter.max = cluster_args$iteration_max,
+                            nstart =  cluster_args$nstart,
+                            test.range = cluster_args$max,
+                            accuracy = cluster_args$accuracy,
+                            plusplus = cluster_args$plusplus) %>%
+                        .[[2]] %>%
+                        CalcKmean(data = data_for_cluster, 
+                            n.opt = ., 
+                            iter.max = cluster_args$iteration_max,
+                            nstart =  cluster_args$nstart,
+                            plusplus = cluster_args$plusplus, 
+                            var.digits = 3)
+                    ## Округление центров до значений точек пространства    
+                    if (!is.null(cluster_args$round_type)) {
+                        clustFull.data[[2]] %<>%
+                            {
+                                for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+                                    if (cluster_args$round_type == 'space') {
+                                        .[, x] <- .[, x] - .[, x] %% 5    
+                                    }
+                                    if (cluster_args$round_type == 'integer') {
+                                        .[, x] <- as.integer(.[, x])    
+                                    }                
+                                    if (cluster_args$round_type == 'round') {
+                                        .[, x] <- round(.[, x])    
+                                    }
+                                }
+                                return(.)        
+                            }    
                     }
-                    return(.)        
-                }    
-        }
-        return(clustFull.data)
-    }
+                    return(clustFull.data)
+                })
+            return(result)
+        } %>%
+        unlist(., recursive = FALSE)
     #
     return(cluster_data)
 }
