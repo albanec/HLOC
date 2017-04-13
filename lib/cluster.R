@@ -18,11 +18,12 @@
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
-CalcKmean.preparation <- function(data, n.mouth ,
-                                  hi = TRUE, q.hi = 0.5, 
-                                  low = FALSE, q.low = 0,
-                                  one.scale = FALSE,
-                                  only_profitable = FALSE) {
+# CalcKmeans.preparation
+ClusterAnalysis.preparation <- function(data, n.mouth ,
+                                        hi = TRUE, q.hi = 0.5, 
+                                        low = FALSE, q.low = 0,
+                                        one.scale = FALSE,
+                                        only_profitable = FALSE) {
     #
     # выделение столбцов с переменными
     df <- Subset_byTarget.col(data = data, target = '_')
@@ -58,6 +59,10 @@ CalcKmean.preparation <- function(data, n.mouth ,
         df[nrow(df)+1, ] <- c(rep(0, length(var.cols) + 3))
     }
     #
+    df$profit <- NULL
+    df$draw <- NULL
+    df <- na.omit(df)
+    #
     return(df)
 }
 ###
@@ -72,171 +77,91 @@ CalcKmean.preparation <- function(data, n.mouth ,
 #' @return ss.df DF суммарного отклонения по кластерам
 #'
 #' @export
-CalcKmean.parameters <- function(data, 
-                                 test.range = 30, 
-                                 iter.max = 100,
-                                 nstart = 100, 
-                                 accuracy = 0.9,
-                                 plusplus = FALSE) {
-    #
+#CalcKmeans.parameters
+ClusterAnalysis.parameters <- function(data, 
+                                       method = c('kmeans', 'plusplus', 'pam', 'clara'),
+                                       k.max = 30, 
+                                       ...) {
+    FUN.cluster <- switch(method,
+        kmeans = kmeans,
+        plusplus = CalcKmeans.plusplus,
+        pam = cluster::pam,
+        clara = cluster::clara)
+
     n <- nrow(data)
-    if (n < test.range) {
-        cluster.range <- 2:(n - 1)
+    if (n < k.max) {
+        k.max <- 2:(n - 1)
     } else {
-        cluster.range <- 2:test.range 
+        k.max <- 2:k.max 
     }
-    #cat(cluster.range)
-    #Isolate required features
-    data$profit <- NULL
-    data$draw <- NULL
-    data <- na.omit(data)
-    # расчет суммарного квадрата расстояния точек внутри тестовых кластеров
-    ss <- c()
-    p.exp <- c()
-    for (i in cluster.range) {
-        #cat(i , '\n')
-        if (plusplus == TRUE) {
-            cluster.data <- CalcKmean.plusplus(data, n.opt = i, iter.max, nstart)
-        } else {
-            cluster.data <- kmeans(data, centers = i, iter.max, nstart)    
+
+    if (method %in% c('kmeans', 'plusplus')) {
+        # расчет суммарного квадрата расстояния точек внутри тестовых кластеров
+        ss <- rep(0, length(k.max))
+        p.exp <- rep(0, length(k.max))
+        for (i in k.max) {
+            cluster.data <- FUN.cluster(data, i, ...)
+            # cluster.data <- kmeans(data, i, iter.max, nstart)    
+            ss[i] <- cluster.data$tot.withinss
+            p.exp[i] = 1 - cluster.data$tot.withinss / cluster.data$totss
         }
-        ss <- c(ss, cluster.data$tot.withinss)
-        p.exp = c(p.exp, 1 - cluster.data$tot.withinss / cluster.data$totss)
+         # сводим всё в df
+        ss.df <- data.frame(Num.Of.Clusters = k.max,
+            Total.Within.SS = ss,
+            Pct.Change = c(NA, diff(ss)/ss[1:length(ss)-1]) * 100,
+            Pct.Exp = p.exp)
+        # вычисление оптимального количества кластеров
+        # byVar: опт. число кластеров определяется как min число, описывающее 90% пространства
+        n.byVar <- 
+            {
+                min(which(ss.df$Pct.Exp > 0.9))
+            } %>%
+            ss.df$Num.Of.Clusters[.]
+        # byElbow: опт. число определяется 'методом локтя'
+        # n.byElbow <- FindMaxDistancePoint(ss.df$p.exp[-1]) + 1
+        # n <- c(n.byVar, n.byElbow)
+        # n.opt <- n[which.max(n)]
+        n.opt <- n.byVar 
+        #
+        return(list(ss.df = ss.df, n.opt = n.opt))    
     }
-    # сводим всё в df
-    ss.df <- data.frame(Num.Of.Clusters = cluster.range,
-        Total.Within.SS = ss,
-        Pct.Change = c(NA, diff(ss)/ss[1:length(ss)-1]) * 100,
-        Pct.Exp = p.exp)
-    # вычисление оптимального количества кластеров
-    # byVar: опт. число кластеров определяется как min число, описывающее 90% пространства
-    n.byVar <- 
-        {
-            min(which(ss.df$Pct.Exp > accuracy))
-        } %>%
-        ss.df$Num.Of.Clusters[.]
-    # byElbow: опт. число определяется 'методом локтя'
-    #n.byElbow <- FindMaxDistancePoint(ss.df$p.exp[-1]) + 1
-    #n <- c(n.byVar, n.byElbow)
-    #n.opt <- n[which.max(n)]
-    n.opt <- n.byVar 
-    #
-    return(list(ss.df, n.opt))
-}
-#
-###
-#' Функция вычисления модного k-mean++ 
-#' 
-#' @param data Подготовленные данные
-#' @param n.opt Оптимальное число кластеров для заданного набора данных
-#' @param iter.max Количество итераций вычислений кластера
-#' @param nstart Количество итераций алгоритма
-#'
-#' @return out Лист с данными кластера
-#'
-#' @export
-CalcKmean.plusplus <- function(data, n.opt, iter.max = 100, nstart = 100) {
-    #
-    # количество точек
-    n <- nrow(data)
-    # число измерений 
-    n.dim <- ncol(data)
     
-    out <- list()
-    out$tot.withinss <- Inf
-    
-    for (ii in seq_len(nstart)) {
-        # ID центров (номера строк, содержащих точки центров)
-        centers <- c()
-        # цикл подбора центров
-        for (i in 1:n.opt) {
-            if (i == 1 ) {
-                # ID первого центра
-                center.id <- round(runif(1, 1, n))
-                centers <- c(centers, center.id)
-                # рассчёт квадратов расстояний от точек до центра
-                if (n.dim == 1) {
-                    data$s <- apply(cbind(data[center.id, ]), 
-                        1, 
-                        function(x) {
-                            rowSums((data - x)^2) 
-                        })
-                } else {
-                    data$s <- apply(data[center.id, ], 
-                        1, 
-                        function(x) {
-                            rowSums((data - x)^2) 
-                        })
-                }
-                # рассчёт кум. суммы квадратов расстояний
-                data$ss <- cumsum(data$s)
-            } else {
-                # цикл расчёта остальных центров (с проверкой на совпадения)
-                repeat {
-                    # вероятность выбора нового центра 
-                    pr <- runif(1, 0, 1)
-                    ss.step <- pr * data$ss[[n]]
-                    center.id <- min(which(data$ss > ss.step))    
-                    if (center.id %in% centers == FALSE) break
-                }
-                # запись найденного центра
-                centers <- c(centers, center.id)
-                # расчет дальностей для найденного центра 
-                data$s <- NULL
-                data$ss <- NULL
-                if (n.dim == 1) {
-                    data$s <- apply(cbind(data[center.id, ]),
-                        1, 
-                        function(x) {
-                            rowSums((data - x)^2)
-                        })
-                } else {
-                    data$s <- apply(data[center.id, ], 
-                        1, 
-                        function(x) { 
-                            rowSums((data - x)^2)
-                        })
-                }
-                data$ss <- cumsum(data$s)    
+    if (method == c('pam', 'clara')) {
+        best_pam <- FUN.cluster(data, k = 2, ...)
+        for (i in k.max[-1]) {
+            temp_pam <- FUN.cluster(data, k = i, ...)
+            if (temp_pam$silinfo$avg.width < best_pam$silinfo$avg.width) {
+                best_pam <- temp_pam
             }
-        }
-        data$s <- NULL
-        data$ss <- NULL
-        
-        # рассчёт кластеров, исходя из найденных центров
-        cluster.data <- kmeans(data, data[centers, ], iter.max)
-        # запись инициализирующих центров
-        cluster.data$inicial.centers <- data[centers, ]
-        # если рассчитано оптимальное пространство, то 
-        if (cluster.data$tot.withinss < out$tot.withinss) {
-            out <- cluster.data
+            return(list(pam = best_pam, n.opt = length(best_pam$medoids)))
         }
     }
-    #
-    return(out)
 }
 #
 ###
 #' Функция вычисления k-mean кластеров 
 #' 
 #' @param data Подготовленные данные
+#' @param method Алгоритм кластеризации
 #' @param n.opt Оптимальное число кластеров для заданного набора данных
-#' @param iter.max Количество итераций вычислений кластера
-#' @param plusplus Использовать простой k-mean или k-mean++
 #' @param var.digits Количество занаков после точки в значениях центров кластеров
 #'
 #' @return list(data, cluster.centers) Лист с данными (сод. номера кластеров) + df с центрами кластеров
 #'
 #' @export
-CalcKmean <- function(data, n.opt, iter.max = 100, nstart = 100, plusplus = FALSE, var.digits = 0) {
+ClusterAnalysis <- function(data, method = c('kmeans', 'plusplus', 'pam', 'clara'),
+                            n.opt, var.digits = 0, 
+                            ...) {
     #
-    #set.seed(76964057)
+    #set.seed(1234)
+    FUN.cluster <- switch(method,
+        kmeans = kmeans,
+        plusplus = CalcKmeanss.plusplus,
+        pam = cluster::pam,
+        clara = cluster::clara)
     # вычисление кластера
-    if (plusplus == TRUE) {
-        cluster.data <- CalcKmean.plusplus_new(data, n.opt, iter.max, nstart)
-    } else {
-        cluster.data <- kmeans(data, centers = n.opt, iter.max, nstart)
-    }
+    cluster.data <- FUN.cluster(data, n.opt, ...)
+    #cluster.data <- FUN.cluster(data, n.opt, iter.max, nstart)
     # соотнесение данных по кластерам
     data$cluster <- as.factor(cluster.data$cluster)
     # вычисление центров кластеров 
@@ -250,6 +175,91 @@ CalcKmean <- function(data, n.opt, iter.max = 100, nstart = 100, plusplus = FALS
     result <- list(data = as.data.frame(data), cluster.centers = as.data.frame(cluster.centers))
     
     return(result)
+}
+#
+###
+#' Функция вычисления модного k-mean++ 
+#' 
+#' @param data Подготовленные данные
+#' @param n.opt Оптимальное число кластеров для заданного набора данных
+#' @param iter.max Количество итераций вычислений кластера
+#' @param nstart Количество итераций алгоритма
+#'
+#' @return out Лист с данными кластера
+#'
+#' @export
+CalcKmeans.plusplus <- function(data, n.opt = 2,
+                               start_poit = "random",
+                               iter.max = 100,
+                               nstart = 10) {
+    #
+    if (length(dim(data)) == 0) {
+        data <- matrix(data, ncol = 1)
+    } else {
+        data <- cbind(data)
+    }
+    # количество точек
+    n <- nrow(data)
+    # число измерений пространства
+    ndim <- ncol(data)
+    
+    data.avg <- colMeans(data)
+    data.cov <- cov(data)
+    
+    out <- list()
+    out$tot.withinss <- Inf
+    
+    # цикл вычислений
+    for (i in seq_len(nstart)) {
+        # вектор для ID центров (номеров строк, содержащих точки центров)
+        centers <- rep(0, length = n.opt)
+
+        # выбор стартовой точки
+        if (!is.character(start_poit)) {
+            centers[1:2] <- start_poit
+        } else {
+            if (start_poit == "random") {
+                centers[1:2] <- sample.int(n, 1)
+            }
+            if (start_poit == "normal") {
+                centers[1:2] <- which.min(dmvnorm(data, mean = data.avg, sigma = data.cov))
+            }    
+        }
+
+        # цикл подбора центров
+        for (ii in 2:n.opt) {
+            # расчёт квадратов расстояний от точек до центра
+            if (ndim == 1) {
+                dists <- apply(cbind(data[centers, ]), 
+                    1, 
+                    function(x) {
+                        rowSums((data - x)^2)
+                    })
+            } else {
+                dists <- apply(data[centers, ], 
+                    1, 
+                    function(x) {
+                        rowSums((data - x)^2)
+                    })
+            }
+            # расчет дальностей для найденных центров 
+            probs <- apply(dists, 1, min)
+            probs[centers] <- 0
+            # расчет дальностей для найденного центра 
+            centers[ii] <- sample.int(n, 1, prob = probs)
+        }
+
+        # расчёт кластеров, исходя из найденных центров
+        cluster_data <- kmeans(data, centers = data[centers, ], iter.max = iter.max)
+        # запись инициализирующих центров
+        cluster_data$inicial.centers <- data[centers, ]
+        # если рассчитано оптимальное пространство, то 
+        if (cluster_data$tot.withinss < out$tot.withinss) {
+            out <- cluster_data
+        }
+    }
+    #
+    return(out)
 }
 #
 ###
@@ -398,87 +408,28 @@ PlotKmean.clusters <- function(data.list, cluster.color = FALSE, dimension = '3d
     }
     return(p)
 }
-#'
-#' @param data an N \times d matrix, where N are the samples and d is the dimension of space.
-#' @param k number of clusters.
-#' @param start first cluster center to start with
-#' @param iter.max the maximum number of iterations allowed
-#' @param nstart how many random sets should be chosen?
-#' @param ... additional arguments passed to kmeans
-#'
-#' @return
-#'
-#' @export
-CalcKmean.plusplus_new <- function(data, n.opt = 2,
-                               start_poit = "random",
-                               iter.max = 100,
-                               nstart = 10) {
-    #
-    if (length(dim(data)) == 0) {
-        data <- matrix(data, ncol = 1)
-    } else {
-        data <- cbind(data)
-    }
-    # количество точек
-    n <- nrow(data)
-    # число измерений пространства
-    ndim <- ncol(data)
-    
-    data.avg <- colMeans(data)
-    data.cov <- cov(data)
-    
-    out <- list()
-    out$tot.withinss <- Inf
-    
-    # цикл вычислений
-    for (i in seq_len(nstart)) {
-        # вектор для ID центров (номеров строк, содержащих точки центров)
-        centers <- rep(0, length = n.opt)
 
-        # выбор стартовой точки
-        if (!is.character(start_poit)) {
-            centers[1:2] <- start_poit
-        } else {
-            if (start_poit == "random") {
-                centers[1:2] <- sample.int(n, 1)
-            }
-            if (start_poit == "normal") {
-                centers[1:2] <- which.min(dmvnorm(data, mean = data.avg, sigma = data.cov))
-            }    
-        }
-
-        # цикл подбора центров
-        for (ii in 2:n.opt) {
-            # расчёт квадратов расстояний от точек до центра
-            if (ndim == 1) {
-                dists <- apply(cbind(data[centers, ]), 
-                    1, 
-                    function(x) {
-                        rowSums((data - x)^2)
-                    })
-            } else {
-                dists <- apply(data[centers, ], 
-                    1, 
-                    function(x) {
-                        rowSums((data - x)^2)
-                    })
-            }
-            # расчет дальностей для найденных центров 
-            probs <- apply(dists, 1, min)
-            probs[centers] <- 0
-            # расчет дальностей для найденного центра 
-            centers[ii] <- sample.int(n, 1, prob = probs)
-        }
-
-        # расчёт кластеров, исходя из найденных центров
-        cluster_data <- kmeans(data, centers = data[centers, ], iter.max = iter.max)
-        # запись инициализирующих центров
-        cluster_data$inicial.centers <- data[centers, ]
-        # если рассчитано оптимальное пространство, то 
-        if (cluster_data$tot.withinss < out$tot.withinss) {
-            out <- cluster_data
-        }
-    }
-    #
-    return(out)
+.get_withinSS <- function(d, cluster){
+  d <- stats::as.dist(d)
+  cn <- max(cluster)
+  clusterf <- as.factor(cluster)
+  clusterl <- levels(clusterf)
+  cnn <- length(clusterl)
+  
+  if (cn != cnn) {
+    warning("cluster renumbered because maximum != number of clusters")
+    for (i in 1:cnn) cluster[clusterf == clusterl[i]] <- i
+    cn <- cnn
+  }
+  cwn <- cn
+  # Compute total within sum of square
+  dmat <- as.matrix(d)
+  within.cluster.ss <- 0
+  for (i in 1:cn) {
+    cluster.size <- sum(cluster == i)
+    di <- as.dist(dmat[cluster == i, cluster == i])
+    within.cluster.ss <- within.cluster.ss + sum(di^2)/cluster.size
+  }
+  within.cluster.ss
 }
+

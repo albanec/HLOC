@@ -81,16 +81,16 @@ TestStr_RollerOpt_cl <- function(data_slices, #input_data = 'ohlc.list',
     bf_data.list,
     function(x) {
       ## Подготовка к КА
-      data_for_cluster <- CalcKmean.preparation(data = x, n.mouth = 6, 
+      data_for_cluster <- CalcKmeans.preparation(data = x, n.mouth = 6, 
                                                     hi = TRUE, q.hi = 0.5, 
                                                     one.scale = FALSE)
       data_for_cluster$profit <- NULL
       data_for_cluster$draw <- NULL 
       ## Вычисление параметров кластеризации 
-      clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
+      clustPar.data <- CalcKmeans.parameters(data = data_for_cluster, iter.max = 100, 
                                             plusplus = FALSE, test.range = 30)
       ## Вычисление самох кластеров
-      clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
+      clustFull.data <- CalcKmeans(data = data_for_cluster, clustPar.data[[2]], 
                                   plusplus = FALSE, var.digits = 0)
     } 
   )  

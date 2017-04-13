@@ -72,16 +72,16 @@ system.time(
 PerfomanceTable <- MergeData_inList.byRow(PerfomanceTable)
 ### КА
 ## Подготовка к КА
-data_for_cluster <- CalcKmean.preparation(data = PerfomanceTable, n.mouth = 12, 
+data_for_cluster <- CalcKmeans.preparation(data = PerfomanceTable, n.mouth = 12, 
     hi = TRUE, q.hi = 0.5, 
     one.scale = TRUE)
 data_for_cluster$profit <- NULL
 data_for_cluster$draw <- NULL
 ## Вычисление параметров кластеризации 
-clustPar.data <- CalcKmean.parameters(data = data_for_cluster, iter.max = 100, 
+clustPar.data <- CalcKmeans.parameters(data = data_for_cluster, iter.max = 100, 
     plusplus = FALSE, test.range = 30)
 ## Вычисление самох кластеров
-clustFull.data <- CalcKmean(data = data_for_cluster, clustPar.data[[2]], 
+clustFull.data <- CalcKmeans(data = data_for_cluster, clustPar.data[[2]], 
     plusplus = FALSE, var.digits = 2)
 # вывод данных
 #print(clustFull.data[2])
