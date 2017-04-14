@@ -182,6 +182,9 @@ RollerOptimizer.learning <- function(slice_index,
     } 
     cluster_data <- foreach(i = 1:workers, .inorder = TRUE) %dopar% {
         map_range <- Delegate(i, length(bf_data), p = workers)
+        if (is.null(map_range)) {
+            return(NA)
+        }
         result <- lapply(1:length(map_range),
             function(x) {
                 ## Подготовка к КА
@@ -250,9 +253,10 @@ RollerOptimizer.learning <- function(slice_index,
                 }
                 return(clustFull.data)
             })
-        return(result)
-    } %>%
-    unlist(., recursive = FALSE)
+        return(result)} %>%
+        unlist(., recursive = FALSE) 
+    #
+    cluster_data <- cluster_data[-which(is.na(cluster_data))]
     #
     return(cluster_data)
 }
@@ -311,7 +315,6 @@ RollerOptimizer.trade <- function(slice_index,
                     ohlc_args = .[[1]],
                     trade_args = .[[2]])
             }
-        cat(i, "1",'\n')
         ## расчёты через future треды
         # plan(multiprocess)     
         # расчёт бэнчмарка
@@ -358,7 +361,7 @@ RollerOptimizer.trade <- function(slice_index,
                     trade_args = .[[2]])
             }
         }) %plan% multiprocess
-        cat(i, "2",'\n')
+        
         # запуск тредов
         list(value(benchmark_DATA.future_thread), value(DATA.future_thread)) %>%
         {
@@ -366,7 +369,7 @@ RollerOptimizer.trade <- function(slice_index,
             assign('DATA', .[[2]][[1]], env = .CurrentEnv)
             assign('portfolio_DATA', .[[2]][[2]], env = .CurrentEnv)
         }
-        cat(i, "3",'\n')
+        
         # benchmark_DATA <- value(benchmark_DATA.future_thread)
         # DATA <- value(DATA.future_thread)
     
@@ -456,10 +459,10 @@ RollerOptimizer.trade <- function(slice_index,
             portfolio = value(portfolio_DATA.future_thread)#, 
             #benchmark = value(benchmark_DATA.future_thread)
             )
-        cat(i, "4",'\n')
+
         # баланс для следующих периодов
         available_balance <- available_balance + coredata(result$portfolio$perf$Profit)
-        cat(i, "5",'\n')
+
         # очистка мусора по target = 'temp'
         CleanGarbage(target = 'temp', env = '.GlobalEnv')
         #
