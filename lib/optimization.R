@@ -206,6 +206,23 @@ RollerOptimizer.learning <- function(slice_index,
                             var.digits = 3,
                             iter.max = cluster_args$iter.max,
                             nstart =  cluster_args$nstart)
+                    ## Округление центров до значений точек пространства    
+                    if (!is.null(cluster_args$round_type)) {
+                        clustFull.data[[2]] %<>% {
+                            for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
+                                if (cluster_args$round_type == 'space') {
+                                    .[, x] <- .[, x] - .[, x] %% 5    
+                                }
+                                if (cluster_args$round_type == 'integer') {
+                                    .[, x] <- as.integer(.[, x])    
+                                }                
+                                if (cluster_args$round_type == 'round') {
+                                    .[, x] <- round(.[, x])    
+                                }
+                            }
+                            return(.)        
+                        }    
+                    }
                 }
                 if (cluster_args$method == 'pam') {
                     clustFull.data <- 
@@ -230,23 +247,6 @@ RollerOptimizer.learning <- function(slice_index,
                             n.opt = ., 
                             var.digits = 3,
                             samples = cluster_args$samples)
-                }
-                ## Округление центров до значений точек пространства    
-                if (!is.null(cluster_args$round_type)) {
-                    clustFull.data[[2]] %<>% {
-                        for (x in 1:ncol(.[, !(colnames(.) %in% c('k_mm', 'profit.norm'))])) {
-                            if (cluster_args$round_type == 'space') {
-                                .[, x] <- .[, x] - .[, x] %% 5    
-                            }
-                            if (cluster_args$round_type == 'integer') {
-                                .[, x] <- as.integer(.[, x])    
-                            }                
-                            if (cluster_args$round_type == 'round') {
-                                .[, x] <- round(.[, x])    
-                            }
-                        }
-                        return(.)        
-                    }    
                 }
                 return(clustFull.data)
             })
@@ -291,7 +291,7 @@ RollerOptimizer.trade <- function(slice_index,
     # стартовый баланс
     available_balance <- trade_args$balance_start
     # цикл расчёта по временным слайсам $bySlices
-    result <- foreach(i = 1:length(slice_index), .verbose = TRUE) %do% {
+    result <- foreach(i = 1:length(slice_index), .verbose = FALSE) %do% {
         n_bots <- length(bot.list[[i]])
         ## расчёт сырых данных для портфеля ботов
         DATA <- 

@@ -97,18 +97,20 @@ ClusterAnalysis.parameters <- function(data,
 
     if (method %in% c('kmeans', 'plusplus')) {
         # расчет суммарного квадрата расстояния точек внутри тестовых кластеров
-        ss <- rep(0, length(k.max))
-        p.exp <- rep(0, length(k.max))
+        ss <- c()
+        p.exp <- c()
         for (i in k.max) {
             cluster.data <- FUN.cluster(data, i, ...)
             # cluster.data <- kmeans(data, i, iter.max, nstart)    
             ss[i] <- cluster.data$tot.withinss
             p.exp[i] = 1 - cluster.data$tot.withinss / cluster.data$totss
         }
-         # сводим всё в df
+        ss <- na.omit(ss)
+        p.exp <- na.omit(p.exp)
+        # сводим всё в df
         ss.df <- data.frame(Num.Of.Clusters = k.max,
             Total.Within.SS = ss,
-            Pct.Change = c(NA, diff(ss)/ss[1:length(ss)-1]) * 100,
+            Pct.Change = c(NA, diff(ss) / ss[1:length(ss) - 1]) * 100,
             Pct.Exp = p.exp)
         # вычисление оптимального количества кластеров
         # byVar: опт. число кластеров определяется как min число, описывающее 90% пространства
@@ -126,15 +128,15 @@ ClusterAnalysis.parameters <- function(data,
         return(list(ss.df = ss.df, n.opt = n.opt))    
     }
     
-    if (method == c('pam', 'clara')) {
+    if (method %in% c('pam', 'clara')) {
         best_pam <- FUN.cluster(data, k = 2, ...)
         for (i in k.max[-1]) {
             temp_pam <- FUN.cluster(data, k = i, ...)
             if (temp_pam$silinfo$avg.width < best_pam$silinfo$avg.width) {
                 best_pam <- temp_pam
             }
-            return(list(pam = best_pam, n.opt = length(best_pam$medoids)))
         }
+        return(list(pam = best_pam, n.opt = nrow(best_pam$medoids)))
     }
 }
 #
@@ -161,20 +163,22 @@ ClusterAnalysis <- function(data, method = c('kmeans', 'plusplus', 'pam', 'clara
         clara = cluster::clara)
     # вычисление кластера
     cluster.data <- FUN.cluster(data, n.opt, ...)
-    #cluster.data <- FUN.cluster(data, n.opt, iter.max, nstart)
-    # соотнесение данных по кластерам
-    data$cluster <- as.factor(cluster.data$cluster)
-    # вычисление центров кластеров 
-    cluster.centers <- round(cluster.data$centers[, -ncol(cluster.data$centers)], digits = var.digits)
-    cluster.centers <- cbind(
-        cluster.centers, 
-        round(cluster.data$centers[, ncol(cluster.data$centers)], digits = 3)
-    )
-    colnames(cluster.centers)[ncol(cluster.centers)] <- 'profit.norm'
+    if (method %in% c('kmeans', 'plusplus')) {
+        # соотнесение данных по кластерам
+        data$cluster <- as.factor(cluster.data$cluster)
+        # вычисление центров кластеров 
+        cluster.centers <- round(cluster.data$centers[, -ncol(cluster.data$centers)], digits = var.digits)
+        cluster.centers <- cbind(cluster.centers, 
+            round(cluster.data$centers[, ncol(cluster.data$centers)], digits = 3))
+        colnames(cluster.centers)[ncol(cluster.centers)] <- 'profit.norm'
+        #
+        return(list(data = as.data.frame(data), cluster.centers = as.data.frame(cluster.centers)))    
+    }
     #
-    result <- list(data = as.data.frame(data), cluster.centers = as.data.frame(cluster.centers))
-    
-    return(result)
+    return(list(data = cluster.data, 
+        cluster.centers = 
+            cluster.data$medoids[, -ncol(cluster.data$medoids)] %>% 
+            as.data.frame(., row.names = FALSE)))
 }
 #
 ###
