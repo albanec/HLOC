@@ -253,10 +253,13 @@ RollerOptimizer.learning <- function(slice_index,
                 }
                 return(clustFull.data)
             })
-        return(result)} %>%
+            return(result)
+        } %>%
         unlist(., recursive = FALSE) 
     #
-    cluster_data <- cluster_data[-which(is.na(cluster_data))]
+    if (any(is.na(cluster_data))) {
+        cluster_data <- cluster_data[-which(is.na(cluster_data))]    
+    }
     #
     return(cluster_data)
 }

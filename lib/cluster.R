@@ -175,10 +175,12 @@ ClusterAnalysis <- function(data, method = c('kmeans', 'plusplus', 'pam', 'clara
         return(list(data = as.data.frame(data), cluster.centers = as.data.frame(cluster.centers)))    
     }
     #
-    return(list(data = cluster.data, 
-        cluster.centers = 
-            cluster.data$medoids[, -ncol(cluster.data$medoids)] %>% 
-            as.data.frame(., row.names = FALSE)))
+    return(
+        list(data = cluster.data, 
+            cluster.centers = 
+                cluster.data$medoids[, -ncol(cluster.data$medoids)] %>% 
+                as.data.frame(., row.names = FALSE))
+    )
 }
 #
 ###
@@ -193,9 +195,9 @@ ClusterAnalysis <- function(data, method = c('kmeans', 'plusplus', 'pam', 'clara
 #'
 #' @export
 CalcKmeans.plusplus <- function(data, n.opt = 2,
-                               start_poit = "random",
-                               iter.max = 100,
-                               nstart = 10) {
+                                start_poit = "random",
+                                iter.max = 100,
+                                nstart = 10) {
     #
     if (length(dim(data)) == 0) {
         data <- matrix(data, ncol = 1)
