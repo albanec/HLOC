@@ -93,9 +93,10 @@ OneThreadRun <- function(FUN.StrategyGear,
         }
     }
     # добавление использованных параметров
-    for (i in 1:length(str_args)) {
+    var_names <- names(str_args)[grep('_', names(str_args))]
+    for (i in 1:length(var_names)) {
         temp_text <- paste0(
-            'perfomanceTable %<>% cbind.data.frame(.,',names(str_args)[i],' = ',str_args[[names(str_args)[i]]],')'
+            'perfomanceTable %<>% cbind.data.frame(.,',var_names[i],' = ',str_args[[var_names[i]]],')'
         )
         eval(parse(text = temp_text))
     }

@@ -43,18 +43,19 @@ CrossLine.down <- function(x1, x2, eq = FALSE) {
 # ------------------------------------------------------------------------------
 # Набор функций для расчёта индикаторов
 #
-#' Функция для расчёта SMA
+#' Функция для расчёта MA
 #' 
 #' @param x XTS
 #' @param n Период SMA
 #' @param digits Округление до знаков после точки
-#'
+#' @param FUN Функция для вычисления MA
 #' @return x XTS ряд со значениями SMA
 #'
 #' @export
-CalcIndicator.SMA <- function(x, n, digits = NULL) {
-    #
-    x <- SMA(x, n)
+#CalcIndicator.SMA
+CalcIndicator.MA <- function(x, n, FUN, digits = NULL) {
+    FUN <- match.fun(FUN)
+    x <- FUN(x, n)
     if (!is.null(digits)) {
         x %<>% round(., digits = digits)
     }

@@ -466,10 +466,14 @@ CleanSignal.expiration <- function(x, exp.vector, pos = FALSE) {
 CalcPrice.slips <- function(price, action, ohlc, slips) {
     price <- price + slips * sign(action)
     price.ind <- index.xts(price)
-    low.ind <- price.ind[which(price < Lo(ohlc[price.ind]))]
-    price[low.ind] <- Lo(ohlc[low.ind])
-    high.ind <- price.ind[which(price > Hi(ohlc[price.ind]))]
-    price[high.ind] <- Hi(ohlc[high.ind])
+    
+    low.row <- which(price < Lo(ohlc[price.ind]))
+    low.ind <- price.ind[low.row]
+    price[low.row] <- Lo(ohlc[low.ind])
+    
+    high.row <- which(price > Hi(ohlc[price.ind]))
+    high.ind <- price.ind[high.row]
+    price[high.row] <- Hi(ohlc[high.ind])
     #
     return(price)
 }
@@ -511,11 +515,42 @@ AddPrice <- function(x, FUN.AddPrice, ohlc_args, trade_args) {
             ohlc = ohlc_args$ohlc, slips = trade_args$slips)
     # перенос котировок в DATA (в пунктах) 
     x[[1]] <- merge(x[[1]], Price = x[[2]]$Price) 
+    # заполнение NA
     temp.ind <- index.xts(x[[1]]$Price[is.na(x[[1]]$Price)])
     x[[1]]$Price[temp.ind] <- ohlc_args$ohlc$Open[temp.ind]    
     #
     return(x)
 }
+#
+#' Добавление цен инструмента внутри state-table
+#'
+#' @param x xts с DATA-таблицей
+#' @param ohlc xts с котировками
+#'
+#' @return x DATA-таблица
+#'
+#' @export
+AddPrice.byMarket <- function(x, ohlc) {
+    x$Price <- NA
+    # индексы action'в
+    action_index <- list(
+        state = index.xts(x),
+        open = index.xts(x[x$pos != 0]),
+        close = index.xts(x[x$pos == 0]),
+        neutral = index.xts(x[x$pos == 0 & x$action == 0])
+    )
+    # цены открытий (на сделках)
+    x$Price[x$pos != 0] <- Op(ohlc)[action_index$open]       
+    # цены закрытий (на сделках)
+    x$Price[x$pos == 0] <- Op(ohlc)[action_index$close]
+    # цены промежуточный состояний (в сделках) (для проверки)   
+    if (length(action_index$neutral) != 0) {
+        x$Price[x$pos == 0 & x$action == 0] <- Op(ohlc)[action_index$neutral]    
+    }
+    coredata(x$Price) <- as.integer(x$Price)
+    #
+    return(x$Price)
+} 
 #
 # ----------------------------------------------------------------------------------------------------------------------
 # Функции для расчета данных по сделкам
