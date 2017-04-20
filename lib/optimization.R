@@ -298,6 +298,7 @@ RollerOptimizer.trade <- function(slice_index,
     FUN.MM <- match.fun(FUN.MM)
     # стартовый баланс
     available_balance <- trade_args$balance_start
+    
     # цикл расчёта по временным слайсам $bySlices
     result <- foreach(i = 1:length(slice_index), .verbose = FALSE) %do% {
         n_bots <- length(bot.list[[i]])
