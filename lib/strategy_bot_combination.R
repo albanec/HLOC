@@ -78,6 +78,7 @@ BotPortfolio.trade_handler <- function(bot.list,
         
             ## корректировка данных (для тех строк, где данный бот без action, но возможны action других ботов)
             # выделение индексов, на которых у бота нет action
+            #temp_row <- which(is.na(data[[x]][[2]]$pos))
             temp_ind <-
                 which(is.na(data[[x]][[2]]$pos)) %>%
                 data[[x]][[2]]$pos[.] %>%
@@ -87,15 +88,32 @@ BotPortfolio.trade_handler <- function(bot.list,
             # заполнение данных
             if (length(temp_ind) != 0) {
                 # заполнение $price 
-                data[[x]][[2]]$Price[temp_ind] <- ohlc_args$ohlc[temp_ind, paste0(bot.list[[x]]$ticker,'.Open')]
+                data[[x]][[2]]$Price[temp_ind] <- 
+                    merge.xts(data[[x]][[2]]$Price, ohlc_args$ohlc[temp_ind, paste0(bot.list[[x]]$ticker,'.Open')]) %>%
+                    {
+                        .[temp_ind, ncol(.)] %>%
+                        na.locf(.)
+                    }
                 # перенос $pos
-                data[[x]][[2]]$pos[temp_ind] <- data[[x]][[1]]$pos[temp_ind]
+                data[[x]][[2]]$pos[temp_ind] <- 
+                    merge.xts(data[[x]][[2]]$pos, data[[x]][[1]]$pos[temp_ind]) %>%
+                    {
+                        .[temp_ind, ncol(.)]
+                    }                
                 data[[x]][[2]]$pos[is.na(data[[x]][[2]]$pos)] <- 0
                 # перенос $pos.bars
-                data[[x]][[2]]$pos.bars[temp_ind] <- data[[x]][[1]]$pos.bars[temp_ind]
+                data[[x]][[2]]$pos.bars[temp_ind] <- 
+                    merge.xts(data[[x]][[2]]$pos.bars, data[[x]][[1]]$pos.bars[temp_ind]) %>%
+                    {
+                        .[temp_ind, ncol(.)]
+                    }   
                 data[[x]][[2]]$pos.bars[is.na(data[[x]][[2]]$pos.bars)] <- 0
                 # перенос $pos.num
-                data[[x]][[2]]$pos.num[temp_ind] <- data[[x]][[1]]$pos.num[temp_ind]
+                data[[x]][[2]]$pos.num[temp_ind] <- 
+                    merge.xts(data[[x]][[2]]$pos.num, data[[x]][[1]]$pos.num[temp_ind]) %>%
+                    {
+                        .[temp_ind, ncol(.)]
+                    }
                 data[[x]][[2]]$pos.num[is.na(data[[x]][[2]]$pos.num)] <- 0
             }
             rm(temp_ind)

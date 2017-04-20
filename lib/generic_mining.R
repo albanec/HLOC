@@ -401,10 +401,10 @@ RollingSlicer <- function(ohlc,
 #
 #' Функция простановки endpoint'ов
 #'
-#' @param x 
-#' @param on 
-#' @param k 
-#' @param finfFirst 
+#' @param x XTS на входе
+#' @param on Выделяемый период  
+#' @param k k-й выделяцемый период
+#' @param findFirst T/F найти первый элемент
 #'
 #' @return end XTS с данными endpoint'ов
 #'

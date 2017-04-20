@@ -661,7 +661,7 @@ CalcTrade <- function(data,
     .TempEnv <- new.env()
 
     target_col = c(
-        'n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
+        'pos', 'n', 'diff.n', 'balance', 'im', 'im.balance', 'commiss', 
         'margin', 'perfReturn', 'equity'#, 'weight'
     )
     assign('cache', 
@@ -710,7 +710,7 @@ CalcOneTrade <- function(cache,
     #
     cache$n[row_ind] <- ifelse.fast(as.integer(row$pos) == 0,
         0,
-        ifelse.fast(as.integer(row$pos.bars) == 0,
+        ifelse.fast(as.integer(row$pos.bars) == 0,# | abs(as.integer(row$action)) == 2,
             FUN.MM(
                 balance = ifelse.fast(!is.null(external_balance),
                     external_balance,
@@ -722,7 +722,8 @@ CalcOneTrade <- function(cache,
             ),
             cache$n[row_ind - 1]))
     if (row_ind != 1) {
-        cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]    
+        #cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    
+        cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]
         cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
         cache$margin[row_ind] <- coredata(row$cret) * cache$n[row_ind - 1]
         cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
