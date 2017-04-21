@@ -330,6 +330,7 @@ RollerOptimizer.trade <- function(slice_index,
                 .[[1]]$from_date <- slice_index[[i]][1, ]
                 .[[1]]$to_date <- slice_index[[i]][2, ]
                 .[[2]]$balance_start <- available_balance %/% n_bots
+                .[[2]]$balance_operating <- .[[2]]$balance_operating %/% n_bots
                 .[[2]]$trade_handler <- 'standalone'
                 return(.)
             } %>%

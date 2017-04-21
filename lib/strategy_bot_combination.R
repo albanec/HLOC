@@ -205,8 +205,8 @@ BotPortfolio.trade_handler <- function(bot.list,
             available_balance <- ifelse.fast(row_num == 1,                
                 cache_portfolio$balance[1] %/% n_bots,
                 # ifelse.fast(trade_args$reinvest == FALSE, 
-                #     ifelse.fast(cache_portfolio$balance[row_num - 1] >= cache_portfolio$balance[1], 
-                #         cache_portfolio$balance[1] %/% n_bots,
+                #     ifelse.fast(cache_portfolio$balance[row_num - 1] >= trade_args$balance_operating, 
+                #         trade_args$balance_operating %/% n_bots,
                 #         cache_portfolio$balance[row_num - 1] %/% n_bots), 
                     cache_portfolio$balance[row_num - 1] %/% n_bots#)
             )
@@ -229,7 +229,12 @@ BotPortfolio.trade_handler <- function(bot.list,
                                 FUN.MM = FUN.MM,
                                 external_balance = available_balance,
                                 ohlc_args = ohlc_args, 
-                                trade_args = trade_args, 
+                                trade_args =
+                                    trade_args %>%
+                                    {
+                                        .$balance_operating <- trade_args$balance_operating %/% n_bots 
+                                        return(.)
+                                    } , 
                                 str_args = 
                                     if (!is.null(var_pattern)) {
                                         do.call(list, bot.list[[bot_num]][grep('_', names(bot.list[[bot_num]]))])
