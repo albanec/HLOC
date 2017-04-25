@@ -93,7 +93,7 @@ RollerOptimizer.cluster_analysis <- function(data, cluster_args) {
     }
     cluster_data <- 
         foreach(i = 1:workers, .inorder = TRUE) %dopar% {
-            map_range <- Delegate(i, length(bf_data), p = workers)
+            map_range <- Delegate(i, length(data), p = workers)
             if (is.null(map_range)) {
             return(NA)
             }
