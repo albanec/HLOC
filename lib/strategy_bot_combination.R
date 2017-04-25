@@ -214,36 +214,33 @@ BotPortfolio.trade_handler <- function(bot.list,
     
             ## перебор по каждому боту
             # обработка строки сделок
-            cache_bot <- 
-                lapply(1:n_bots,
-                    function(bot_num) {
-                        ## вызов посделочного обработчика
-                        # cat('bot_num',bot_num, '__')
-                        # cat('ab:',available_balance, '  sb:',cache_bot[[bot_num]]$balance[1], '\n')
+            cache_bot <- lapply(1:n_bots,
+                function(bot_num) {
+                    ## вызов посделочного обработчика
+                    # cat('bot_num',bot_num, '__')
+                    # cat('ab:',available_balance, '  sb:',cache_bot[[bot_num]]$balance[1], '\n')
 
-                        cache_bot[[bot_num]] <- 
-                            list(
-                                cache = cache_bot[[bot_num]], 
-                                row_ind = row_num,
-                                row = data[[bot_num]][[2]][row_num, ],
-                                FUN.MM = FUN.MM,
-                                external_balance = available_balance,
-                                ohlc_args = ohlc_args, 
-                                trade_args =
-                                    trade_args %>%
-                                    {
-                                        .$balance_operating <- trade_args$balance_operating %/% n_bots 
-                                        return(.)
-                                    } , 
-                                str_args = 
-                                    if (!is.null(var_pattern)) {
-                                        do.call(list, bot.list[[bot_num]][grep('_', names(bot.list[[bot_num]]))])
-                                    } else {
-                                        do.call(list, bot.list[[bot_num]])
-                                    }
-                            ) %>%
-                            do.call(FUN.CalcOneTrade, ., envir = .CurrentEnv)
-                    })
+                    cache_bot[[bot_num]] <- 
+                        list(cache = cache_bot[[bot_num]], 
+                            row_ind = row_num,
+                            row = data[[bot_num]][[2]][row_num, ],
+                            FUN.MM = FUN.MM,
+                            external_balance = available_balance,
+                            ohlc_args = ohlc_args, 
+                            trade_args =
+                                trade_args %>%
+                                {
+                                    .$balance_operating <- trade_args$balance_operating %/% n_bots 
+                                    return(.)
+                                } , 
+                            str_args = 
+                                if (!is.null(var_pattern)) {
+                                    do.call(list, bot.list[[bot_num]][grep('_', names(bot.list[[bot_num]]))])
+                                } else {
+                                    do.call(list, bot.list[[bot_num]])
+                                }) %>%
+                        do.call(FUN.CalcOneTrade, ., envir = .CurrentEnv)
+                })
             assign('cache_bot', cache_bot, envir = .CacheEnv)
 
             ## расчёт общих данных по корзине 
@@ -314,8 +311,7 @@ BotPortfolio.trade_handler <- function(bot.list,
             # запись данных по портфолио в кэш
             assign('cache_portfolio', cache_portfolio, envir = .CacheEnv)
             rm(cache_portfolio, cache_bot)
-        }
-    )
+        })
 
     ### результаты
     ## данные по ботам

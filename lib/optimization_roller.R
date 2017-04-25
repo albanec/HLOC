@@ -198,9 +198,9 @@ RollerOptimizer.trade <- function(slice_index,
             {
                 BotPortfolio.trade_handler(bot.list = bot.list[[i]],
                     data = DATA,
-                    FUN.CalcOneTrade = CalcOneTrade,
-                    FUN.MM = CalcMM.byDCIwidth,
-                    var_pattern = var_pattern,
+                    FUN.CalcOneTrade,
+                    FUN.MM,
+                    var_pattern,
                     ohlc_args = .[[1]],
                     trade_args = .[[2]])
             }
