@@ -78,6 +78,15 @@ RollerOptimizer.bruteforce_optimizer <- function(slice_index,
 #'
 #' @export
 RollerOptimizer.cluster_analysis <- function(data, cluster_args) {
+    require(doParallel)
+    #.CurrentEnv <- environment()                                                    
+    if (getDoParWorkers() == 1) {
+        workers <- detectCores() - 1    
+        registerDoParallel(cores = workers)
+    } else {
+        workers <- getDoParWorkers()
+    }
+
     ## КА
     if (workers > length(data)) {
         workers <- length(data)
@@ -178,7 +187,7 @@ RollerOptimizer.trade <- function(slice_index,
                     var_pattern = var_pattern,
                     #append(list(dots$data[map_range[x]]), var_args[map_range[x]])
                     eval_str = paste0('var_args <- append(dots$data[map_range[x]], var_args);
-                        names(var_args) <- c("data", "ohlc_args", "trade_args", "str_args")
+                        names(var_args) <- c("data", "ohlc_args", "trade_args", "str_args");
                         do.call(FUN_names[map_range[x]], var_args, envir = .CurrentEnv)'),
                     ohlc_args = .[[1]],
                     trade_args = .[[2]],  

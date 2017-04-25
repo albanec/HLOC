@@ -44,7 +44,10 @@ BotPortfolio.trade_handler <- function(bot.list,
     # формирование листа данных по портфелю
         # так же, как с ботами - лист с посвечным xts и лист с данными на сделках
     portfolio_data <- list(
-        xts(NULL, order.by = index.xts(data[[1]][[1]])),
+        xts(NULL, 
+            order.by = index.xts(
+                merge(xts(integer(nrow(data[[1]][[1]])), order.by = index.xts(data[[1]][[1]])),
+                    xts(integer(length(index_norm)), order.by = index_norm)))),
         xts(NULL, order.by = index_norm)
     ) 
     # доп. столбцы по каждому боту
@@ -78,45 +81,34 @@ BotPortfolio.trade_handler <- function(bot.list,
         
             ## корректировка данных (для тех строк, где данный бот без action, но возможны action других ботов)
             # выделение индексов, на которых у бота нет action
-            #temp_row <- which(is.na(data[[x]][[2]]$pos))
+            temp_row <- which(is.na(data[[x]][[2]]$pos)) 
             temp_ind <-
-                which(is.na(data[[x]][[2]]$pos)) %>%
-                data[[x]][[2]]$pos[.] %>%
+                data[[x]][[2]]$pos[temp_row] %>%
                 index.xts(.)
             # удаление индексов, которых нет в full-данных по боту
-            temp_ind <- temp_ind[temp_ind %in% index.xts(data[[x]][[1]]$pos)]
+            temp_ind <- temp_ind[temp_ind %in% index.xts(data[[x]][[1]]$pos)]               
             # заполнение данных
             if (length(temp_ind) != 0) {
                 # заполнение $price 
-                data[[x]][[2]]$Price[temp_ind] <- 
+                data[[x]][[2]]$Price[temp_row] <- 
                     merge.xts(data[[x]][[2]]$Price, ohlc_args$ohlc[temp_ind, paste0(bot.list[[x]]$ticker,'.Open')]) %>%
                     {
                         .[temp_ind, ncol(.)] %>%
                         na.locf(.)
                     }
                 # перенос $pos
-                data[[x]][[2]]$pos[temp_ind] <- 
-                    merge.xts(data[[x]][[2]]$pos, data[[x]][[1]]$pos[temp_ind]) %>%
-                    {
-                        .[temp_ind, ncol(.)]
-                    }                
-                data[[x]][[2]]$pos[is.na(data[[x]][[2]]$pos)] <- 0
+                data[[x]][[2]]$pos <- na.locf(data[[x]][[2]]$pos)
                 # перенос $pos.bars
-                data[[x]][[2]]$pos.bars[temp_ind] <- 
+                data[[x]][[2]]$pos.bars[temp_row] <- 
                     merge.xts(data[[x]][[2]]$pos.bars, data[[x]][[1]]$pos.bars[temp_ind]) %>%
                     {
-                        .[temp_ind, ncol(.)]
+                        .[temp_row, ncol(.)] %>%
+                        na.locf(.)
                     }   
-                data[[x]][[2]]$pos.bars[is.na(data[[x]][[2]]$pos.bars)] <- 0
                 # перенос $pos.num
-                data[[x]][[2]]$pos.num[temp_ind] <- 
-                    merge.xts(data[[x]][[2]]$pos.num, data[[x]][[1]]$pos.num[temp_ind]) %>%
-                    {
-                        .[temp_ind, ncol(.)]
-                    }
-                data[[x]][[2]]$pos.num[is.na(data[[x]][[2]]$pos.num)] <- 0
+                data[[x]][[2]]$pos.num <- na.locf(data[[x]][[2]]$pos.num)  
             }
-            rm(temp_ind)
+            rm(temp_row, temp_ind)
             # заполнение action
             data[[x]][[2]]$action[is.na(data[[x]][[2]]$action)] <- 0
             # перерасчёт $ret
@@ -366,6 +358,9 @@ BotPortfolio.trade_handler <- function(bot.list,
                     }
                 
                 ## Расчёт показателей в data таблицах
+                # защита от ошибок на переворотах
+                data[[i]][[1]]$ret <- Replace.na(data[[i]][[1]]$ret, 0)
+                data[[i]][[1]]$cret <- Replace.na(data[[i]][[1]]$cret, 0)
                 # расчёт вариационки в data
                 data[[i]][[1]]$margin <- lag.xts(data[[i]][[1]]$n) * data[[i]][[1]]$cret
                 data[[i]][[1]]$margin[1] <- 0
