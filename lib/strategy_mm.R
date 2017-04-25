@@ -34,7 +34,7 @@ CalcMM.byDCIwidth <- function(balance, row, ohlc_args, trade_args, str_args) {
 #
 CalcMM.simple_byIM <- function(balance, row, ohlc_args, trade_args, str_args) {
     row.ind <- index(row)
-    result <- balance %/% (str_args$k_mm * ohlc_args$ohlc$IM[row.ind]) %>% as.integer(.)
+    result <- as.integer(balance) %/% (str_args$k_mm * as.integer(ohlc_args$ohlc$IM[row.ind])) %>% as.integer(.)
     #
     return(result)
 }

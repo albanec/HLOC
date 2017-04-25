@@ -145,9 +145,11 @@ RollerOptimizer.trade <- function(slice_index,
     FUN.MM <- match.fun(FUN.MM)
     # стартовый баланс
     available_balance <- trade_args$balance_start
+    assign('available_balance', available_balance, env = .CurrentEnv)
     
     # цикл расчёта по временным слайсам $bySlices
     result <- foreach(i = 1:length(slice_index), .verbose = FALSE) %do% {
+        available_balance <- get('available_balance', envir = .CurrentEnv) 
         n_bots <- length(bot.list[[i]])
         ## расчёт сырых данных для портфеля ботов
         DATA <- 
@@ -203,7 +205,7 @@ RollerOptimizer.trade <- function(slice_index,
                 .[[2]]$balance_start <- available_balance
                 .[[2]]$trade_handler <- 'basket'
                 return(.)
-            } %>%
+            } %>%   
             {
                 BotPortfolio.trade_handler(bot.list = bot.list[[i]],
                     data = DATA,
@@ -315,6 +317,7 @@ RollerOptimizer.trade <- function(slice_index,
 
         # баланс для следующих периодов
         available_balance <- available_balance + coredata(result$portfolio$perf$Profit)
+        assign('available_balance', available_balance, env = .CurrentEnv)
 
         # очистка мусора по target = 'temp'
         CleanGarbage(target = 'temp', env = '.GlobalEnv')

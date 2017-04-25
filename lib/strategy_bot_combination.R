@@ -194,14 +194,16 @@ BotPortfolio.trade_handler <- function(bot.list,
             # было: баланс может делится относительно ботов, входящих в позы (тогда надо раскомментить код для open_pos)
             # available_balance <- cache_portfolio$balance[row_num - 1] / open_pos
             # стало: баланс делится в зависимости от количества ботов 
-            available_balance <- ifelse.fast(row_num == 1,                
-                cache_portfolio$balance[1] %/% n_bots,
-                # ifelse.fast(trade_args$reinvest == FALSE, 
-                #     ifelse.fast(cache_portfolio$balance[row_num - 1] >= trade_args$balance_operating, 
-                #         trade_args$balance_operating %/% n_bots,
-                #         cache_portfolio$balance[row_num - 1] %/% n_bots), 
-                    cache_portfolio$balance[row_num - 1] %/% n_bots#)
-            )
+            available_balance <- 
+                ifelse.fast(row_num == 1,                
+                    cache_portfolio$balance[1] %/% n_bots,
+                    # ifelse.fast(trade_args$reinvest == FALSE, 
+                    #     ifelse.fast(cache_portfolio$balance[row_num - 1] >= trade_args$balance_operating, 
+                    #         trade_args$balance_operating %/% n_bots,
+                    #         cache_portfolio$balance[row_num - 1] %/% n_bots), 
+                        cache_portfolio$balance[row_num - 1] %/% n_bots#)
+                ) %>%
+                as.integer(.)
             #rm(open_pos)
     
             ## перебор по каждому боту
