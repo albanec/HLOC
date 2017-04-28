@@ -95,9 +95,14 @@ BruteForceOptimizer.cluster_analysis <- function(data, cluster_args) {
     data_for_cluster <- ClusterAnalysis.preparation(data, 
         n.mouth = cluster_args$win_size, 
         hi = TRUE, q.hi = 0.5, 
-        only_profitable = TRUE)
+        only_profitable = cluster_args$only_profitable)
     data_for_cluster$profit <- NULL
     data_for_cluster$draw <- NULL
+    if (nrow(data_for_cluster) < 50) {
+        cluster_args$only_profitable <- FALSE
+        clustFull.data <- BruteForceOptimizer.cluster_analysis(data, cluster_args)
+        return(clustFull.data)
+    } 
     ## Вычисление кластеров
     if (cluster_args$method %in% c('kmeans','plusplus')) {
         clustFull.data <- 
