@@ -181,59 +181,6 @@ CalcProfit <- function(data, s0 = 0, pip, reinvest = TRUE) {
 }
 #
 # ------------------------------------------------------------------------------
-# Функции нормирования исходных данных
-#
-#' Функция для расчёта стоимости тиков внутри основного листа данных
-#'
-#' @param data XTS данные котировок (основной лист данных)
-#' @param names Список тикеров для конвертирования
-#' @param norm.data Нормировочные данные
-#' @param outnames Название столбца для результатов
-#' @param convert.to
-#' @param tick.val Тиков в шаге цены
-#' @param tick.price Цена тика
-#'
-#' @return data Основной XTS (нужные данные конвертированы к нужной валюте)
-#'
-#' @export
-NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
-    x <- norm.data
-    for (i in 1:length(names)) {
-        temp.text <- paste0(
-            'data$',outnames[i],' <- NormData.price(',
-                'data = data$',names[i],',',
-                'norm.data = x, convert.to = \"',convert.to,'\",',
-                'tick.val = ',tick.val[i],',',
-                'tick.price = ', tick.price[i],')'
-        )
-        eval(parse(text = temp.text))
-    }
-    #
-    return(data)
-}
-###
-#' Функция для расчёта стоимости тиков
-#'
-#' @param data XTS, содержащий нужные данные
-#' @param norm.data Нормировочные данные
-#' @param convert.to Валюта конвертирования (USD/RUB)
-#' @param tick.val Тиков в шаге цены
-#' @param tick.price Цена тика
-#'
-#' @return data XTS ряд
-#'
-#' @export
-NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
-    if (convert.to == 'RUB') {
-        data <- (data * tick.price / tick.val) * norm.data
-    }
-    if (convert.to == 'USD') {
-        data <- (data * tick.price / tick.val) / norm.data
-    }
-    #
-    return(data)
-}
-# ------------------------------------------------------------------------------
 #' Расчёт суммарного параметра (согласно весам инструмента в портфеле)
 #'
 #' @param data xts с данными корзины

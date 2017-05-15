@@ -141,12 +141,11 @@ ReadOHLC.FinamCSV <- function(filename) {
     data <- Read_CSV.toDF(file.path = filename, sep = ',')
     ## проверка полей-заголовков
     colNames.temp <- data[1, ]
-    data <- data[-1, ]
     #
     if ('<TICKER>' %in% colNames.temp) {
         ticker_name <- 
             which(colNames.temp %in% '<TICKER>') %>%
-            data[1, .]
+            data[2, .]
     } else {
         ticker_name <- 'Unkown ticker'
     }
@@ -154,8 +153,8 @@ ReadOHLC.FinamCSV <- function(filename) {
     #
     if ('<PER>' %in% colNames.temp) {
         per <-    
-            which(colNames.temp %in% '<TICKER>') %>%
-            data[1, .]
+            which(colNames.temp %in% '<PER>') %>%
+            data[2, .]
         if (per <= 10 && per != 0) {    
             per <- 
                 c('tick', '1min', '5min', '10min', '15min', '30min', 'hour', 'day', 'week', 'month') %>%
@@ -176,6 +175,8 @@ ReadOHLC.FinamCSV <- function(filename) {
         } %>%    
         data[, .] 
     ## обработка
+    colNames.temp <- data[1, ]
+    data <- data[-1, ]
     ## выделение и обработка котировок
     quotes <- 
         c('<OPEN>', '<HIGH>', '<LOW>', '<CLOSE>', '<VOL>') %>%
@@ -205,7 +206,7 @@ ReadOHLC.FinamCSV <- function(filename) {
         ## конвертирование в integer
         {
             foreach(i = 1:ncol(.), .combine = cbind) %do% {
-                as.integer(.[, i]) %>%
+                as.character(.[, i]) %>%
                 data.frame(.)
             }
         } %>%

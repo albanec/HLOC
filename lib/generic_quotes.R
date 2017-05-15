@@ -77,52 +77,50 @@ NormData_inXTS.na <- function(data, type = 'full', filename = FALSE) {
 #
 ###
 #' Функция для расчёта стоимости тиков внутри основного листа данных
-#' 
-#' @param data Данные котировок
-#' @names Список тикеров для конвертирования 
-#' @param norm.data Данные USDRUB_TOM
-#' @convert.to Валюта конвертации
-#' @tick.val Шаг тика
-#' @tick.price Цена тика
-#' @outnames Имя столбца, в который будут направлены данные
 #'
-#' @return data Основной xts
+#' @param data XTS данные котировок (основной лист данных)
+#' @param exchange_rate Обменный курс
+#' @param names_in Список тикеров для конвертирования
+#' @param names_out Название столбца для результатов
+#' @param tick_value Тиков в шаге цены
+#' @param tick_price Цена тика    
+#' @param convert_to Валюта конвертирования (USD или RUB)
+#'
+#' @return data Основной XTS (нужные данные конвертированы к нужной валюте)
 #'
 #' @export
-NormData_inXTS.price <- function(data, names, norm.data, outnames, convert.to, tick.val, tick.price) {
-    # ----------
-    x <- norm.data
-    for (i in 1:length(names)) {
+NormData_inXTS.price <- function(data, exchange_rate, names_in, names_out, tick_value, tick_price, convert_to) {
+    for (i in 1:length(names_in)) {
         temp.text <- paste0(
-            'data$',outnames[i],' <- NormData.price(data = data$',names[i],',
-                norm.data = x, convert.to = \"',convert.to,'\",
-                tick.val = ',tick.val[i],',
-                tick.price = ', tick.price[i],')'
+            'data$',names_out[i],' <- NormData.price(data$',names_in[i],',',
+                'exchange_rate, convert_to = \"',convert_to,'\",',
+                tick_value[i],',',
+                tick_price[i],')'
         )
-        eval(parse(text = temp.text))    
+        eval(parse(text = temp.text))
     }
-    return(data)    
+    #
+    return(data)
 }
 #
 ###
 #' Функция для расчёта стоимости тиков
-#' 
-#' @param data Данные котировок
-#' @param norm.data Данные USDRUB_TOM
-#' @convert.to Валюта конвертации
-#' @tick.val Шаг тика
-#' @tick.price Цена тика
 #'
-#' @return data Основной xts
+#' @param data XTS, содержащий нужные данные
+#' @param exchange_rate Обменный курс
+#' @param convert_to Валюта конвертирования (USD или RUB)
+#' @param tick_value Тиков в шаге цены
+#' @param tick_price Цена тика
+#'
+#' @return data XTS ряд
 #'
 #' @export
-NormData.price <- function(data, norm.data, convert.to, tick.val, tick.price) {
-    # ----------
-    if (convert.to == 'RUB') {
-        data <- (data * tick.price / tick.val) * norm.data
+NormData.price <- function(data, exchange_rate, convert_to, tick_value, tick_price) {
+    if (convert_to == 'RUB') {
+        data <- data * tick_price * exchange_rate / tick_value 
     }
-    if (convert.to == 'USD') {
-        data <- (data * tick.price / tick.val) / norm.data    
+    if (convert_to == 'USD') {
+        data <- data * tick_price / (tick_value * exchange_rate)
     }
     #
     return(data)
