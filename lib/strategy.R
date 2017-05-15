@@ -541,7 +541,7 @@ TradeHandler <- function(data,
     # tradeTable$weight <- 1
     
     ## 2.2 Расчёт самих сделок
-    temp.df <- FUN.CalcTrade(data, 
+    temp.df <- FUN.CalcTrade(list(fullTable, tradeTable), 
         FUN.CalcOneTrade,
         FUN.MM, 
         ohlc_args, trade_args, str_args)
