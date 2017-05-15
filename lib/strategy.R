@@ -708,26 +708,21 @@ CalcOneTrade <- function(cache,
                          ohlc_args, trade_args, str_args) {
     FUN.MM <- match.fun(FUN.MM)
     #
+    if (!is.null(external_balance)) {
+        balance <- ifelse.fast(trade_args$reinvest == FALSE,
+            min(trade_args$balance_operating, external_balance),
+            external_balance)
+    } else {
+        balance <- ifelse.fast(row_ind == 1,
+            cache$balance[1],
+            ifelse.fast(trade_args$reinvest == FALSE,
+                min(trade_args$balance_operating, cache$balance[row_ind - 1]),
+                cache$balance[row_ind - 1])) #* cache$weight[row_ind - 1])
+    }
     cache$n[row_ind] <- ifelse.fast(as.integer(row$pos) == 0,
         0,
         ifelse.fast(as.integer(row$pos.bars) == 0,# | abs(as.integer(row$action)) == 2,
-            FUN.MM(
-                balance = ifelse.fast(!is.null(external_balance),
-                    ifelse.fast(trade_args$reinvest == FALSE,
-                        ifelse.fast(external_balance >= trade_args$balance_operating,
-                            trade_args$balance_operating,
-                            external_balance),
-                        external_balance),
-                    ifelse.fast(row_ind == 1,
-                        cache$balance[1],
-                        ifelse.fast(trade_args$reinvest == FALSE,
-                            ifelse.fast(cache$balance[row_ind - 1] >= trade_args$balance_operating,
-                                trade_args$balance_operating,
-                                cache$balance[row_ind - 1]),
-                            cache$balance[row_ind - 1]))), #* cache$weight[row_ind - 1]),
-                row,
-                ohlc_args, trade_args, str_args 
-            ),
+            FUN.MM(balance, row, ohlc_args, trade_args, str_args),
             cache$n[row_ind - 1]))
     if (row_ind != 1) {
         #cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    

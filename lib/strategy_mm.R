@@ -19,17 +19,18 @@ CalcMM.byDCIwidth <- function(balance, row, ohlc_args, trade_args, str_args) {
         {
             as.integer(balance) * str_args$k_mm * trade_args$tick_price / as.integer(row$widthDCI)
         } %>%
-        floor(.) %>%
-        max(., 1)
+        {
+            max(floor(.), 1)
+        }
     var2 <- 
         {
             as.integer(balance) / as.integer(ohlc_args$ohlc$IM[index.xts(row)])
         } %>%
-        floor(.) %>%
-        max(., 1)
-    result <- min(var1, var2)
+        {
+            max(floor(.), 1)
+        }
     #
-    return(result)
+    return(min(var1, var2))
 }
 #
 CalcMM.simple_byIM <- function(balance, row, ohlc_args, trade_args, str_args) {

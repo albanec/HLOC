@@ -211,9 +211,6 @@ BotPortfolio.trade_handler <- function(bot.list,
             cache_bot <- lapply(1:n_bots,
                 function(bot_num) {
                     ## вызов посделочного обработчика
-                    # cat('bot_num',bot_num, '__')
-                    # cat('ab:',available_balance, '  sb:',cache_bot[[bot_num]]$balance[1], '\n')
-
                     cache_bot[[bot_num]] <- 
                         list(cache = cache_bot[[bot_num]], 
                             row_ind = row_num,
