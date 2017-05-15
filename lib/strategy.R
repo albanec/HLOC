@@ -518,25 +518,27 @@ TradeHandler <- function(data,
                          ohlc_args, trade_args, str_args) {
     #
     FUN.CalcTrade <- match.fun(FUN.CalcTrade)
+    fullTable <- data[[1]]
+    tradeTable <- data[[2]]
     # 2.1.4 Начальные параметры для расчёта сделок
     # начальный баланс
-    data[[2]]$balance <- NA
-    data[[2]]$balance[1] <- trade_args$balance_start
+    tradeTable$balance <- NA
+    tradeTable$balance[1] <- trade_args$balance_start
     # начальное число синтетических контрактов корзины
-    data[[2]]$n <- NA
-    data[[2]]$n[data[[2]]$pos == 0] <- 0
+    tradeTable$n <- NA
+    tradeTable$n[tradeTable$pos == 0] <- 0
     # прочее
-    data[[2]]$diff.n <- NA
-    data[[2]]$diff.n[1] <- 0
-    data[[2]]$margin <- NA
-    data[[2]]$commiss <- NA
-    data[[2]]$equity <- NA
-    data[[2]]$im.balance <- NA
-    data[[2]]$im.balance[1] <- 0
-    data[[2]]$perfReturn <- NA
-    data[[2]]$perfReturn <- 0
+    tradeTable$diff.n <- NA
+    tradeTable$diff.n[1] <- 0
+    tradeTable$margin <- NA
+    tradeTable$commiss <- NA
+    tradeTable$equity <- NA
+    tradeTable$im.balance <- NA
+    tradeTable$im.balance[1] <- 0
+    tradeTable$perfReturn <- NA
+    tradeTable$perfReturn <- 0
     # т.к. обработчик не пакетный, вес бота всегда = 1
-    # data[[2]]$weight <- 1
+    # tradeTable$weight <- 1
     
     ## 2.2 Расчёт самих сделок
     temp.df <- FUN.CalcTrade(data, 
@@ -544,47 +546,47 @@ TradeHandler <- function(data,
         FUN.MM, 
         ohlc_args, trade_args, str_args)
     # Изменение контрактов на такте
-    data[[2]]$n <- temp.df$n
-    data[[2]]$diff.n <- temp.df$diff.n
+    tradeTable$n <- temp.df$n
+    tradeTable$diff.n <- temp.df$diff.n
     # Расчёт баланса, заблокированного на ГО
-    data[[2]]$im.balance <- temp.df$im.balance
+    tradeTable$im.balance <- temp.df$im.balance
     # Расчёт комиссии на такте
-    data[[2]]$commiss <- temp.df$commiss
+    tradeTable$commiss <- temp.df$commiss
     # Расчёт вариационки
-    data[[2]]$margin <- temp.df$margin
+    tradeTable$margin <- temp.df$margin
     # расчёт equity по корзине в state-таблице
-    data[[2]]$perfReturn <- temp.df$perfReturn
-    data[[2]]$equity <- temp.df$equity
+    tradeTable$perfReturn <- temp.df$perfReturn
+    tradeTable$equity <- temp.df$equity
     # Расчёт баланса
-    data[[2]]$balance <- temp.df$balance
+    tradeTable$balance <- temp.df$balance
     rm(temp.df)
     
     ## Перенос данных из state в data таблицу
     # перенос данных по количеству контрактов корзины
-    data[[1]]$n <- 
-        merge.xts(data[[1]], data[[2]]$n)$n %>%
+    fullTable$n <- 
+        merge.xts(fullTable, tradeTable$n)$n %>%
         na.locf(.)
     # перенос данных по комиссии корзины
-    data[[1]]$commiss <- 
-        merge.xts(data[[1]], data[[2]]$commiss)$commiss %>% 
+    fullTable$commiss <- 
+        merge.xts(fullTable, tradeTable$commiss)$commiss %>% 
         Replace.na(., 0)  
     # перенос данных по суммарному ГО
-    data[[1]]$im.balance <- 
-        merge.xts(data[[1]], data[[2]]$im.balance)$im.balance %>%
+    fullTable$im.balance <- 
+        merge.xts(fullTable, tradeTable$im.balance)$im.balance %>%
         na.locf(.)
     
     ## Расчёт показателей в full данных
     # расчёт вариационки в data
-    data[[1]]$margin <- lag.xts(data[[1]]$n) * data[[1]]$cret
-    data[[1]]$margin[1] <- 0
+    fullTable$margin <- lag.xts(fullTable$n) * fullTable$cret
+    fullTable$margin[1] <- 0
     # расчёт equity по корзине в data
-    data[[1]]$perfReturn <- data[[1]]$margin - data[[1]]$commiss
-    data[[1]]$equity <- cumsum(data[[1]]$perfReturn)
+    fullTable$perfReturn <- fullTable$margin - fullTable$commiss
+    fullTable$equity <- cumsum(fullTable$perfReturn)
     # расчёт баланса
-    data[[1]]$balance <- trade_args$balance_start + data[[1]]$equity - data[[1]]$im.balance
-    data[[1]]$balance[1] <- trade_args$balance_start
+    fullTable$balance <- trade_args$balance_start + fullTable$equity - fullTable$im.balance
+    fullTable$balance[1] <- trade_args$balance_start
     #
-    return(data)
+    return(list(fullTable, tradeTable))
 }
 #
 #' Функция расчёта сделок
@@ -672,8 +674,8 @@ CalcOneTrade <- function(cache,
             FUN.MM(balance, row, ohlc_args, trade_args, str_args),
             cache$n[row_ind - 1]))
     if (row_ind != 1) {
-        #cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    
-        cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]
+        cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    
+        #cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]
         cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
         cache$margin[row_ind] <- coredata(row$cret) * cache$n[row_ind - 1]
         cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
