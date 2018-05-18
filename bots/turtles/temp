@@ -1,0 +1,45 @@
+
+ends <- CalcEndpoints(portfolio_asset, on = 'years', k = 1, findFirst=TRUE)
+portfolio_asset$ends <- NA
+portfolio_asset$ends[ends] <- 1
+portfolio_asset$start_balance <- NA
+portfolio_asset$start_balance[which(portfolio_asset$ends == 1)] <- portfolio_asset$balance[which(portfolio_asset$ends == 1)]  
+portfolio_asset$start_balance <- na.locf(portfolio_asset$start_balance)
+portfolio_asset$new_balance <- round((portfolio_asset$balance - portfolio_asset$start_balance) * 100 / portfolio_asset$start_balance, digits = 3)
+
+temp_slice <- 
+    RollingSlicer(ohlc = ohlc_args$ohlc, 
+        from_date = ohlc_args$from_date, to_date = ohlc_args$to_date, period = 'years',
+        width = 4, by = 1,
+        align = 'left',
+        add_bySlice = TRUE, 
+        justIndex = TRUE) %>%
+    .$bySlice
+
+portfolio_by_month <- 
+    lapply(1:length(temp_slice),
+        function(x) {
+            temp.xts <- 
+                paste(temp_slice[[x]][1, ], temp_slice[[x]][2, ], sep = '::') %>%
+                portfolio_asset$new_balance[.]
+            out.xts <- xts(NULL, 
+                order.by = 
+                    format(index(temp.xts[1, ]), "%Y-%m-%d") %>% 
+                    as.Date(.))
+            out.xts$Open <- first(temp.xts$new_balance)
+            out.xts$High <- max(temp.xts$new_balance)
+            out.xts$Low <- min(temp.xts$new_balance)
+            out.xts$Close <- last(temp.xts$new_balance)
+            return(out.xts)
+        }
+    ) %>%
+    MergeData_inList.byRow(.)
+candleChart(portfolio_by_month)
+
+#df <- data.frame(Date=index(portfolio_by_month),coredata(portfolio_by_month))
+#p <- 
+#    df %>%
+#   plot_ly(x = ~Date, type="candlestick",
+#            open = ~Open, close = ~Close,
+#            high = ~High, low = ~Low) %>%
+#    layout(title = "2016 и кусочек 17")
