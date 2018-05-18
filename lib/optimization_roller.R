@@ -90,6 +90,7 @@ RollerOptimizer.cluster_analysis <- function(data, cluster_args) {
     ## КА
     if (workers > length(data)) {
         workers <- length(data)
+        registerDoParallel(cores = workers)
     }
     cluster_data <- 
         foreach(i = 1:workers, .inorder = TRUE) %dopar% {

@@ -433,7 +433,7 @@ CalcEndpoints <- function(x, on, k, findFirst = FALSE) {
 #' @return result_subset XTS с данными котировок для торговли
 #'
 #' @export
-Subset_TradeOHLC <- function(ohlc, from_date, to_date, lookback = NULL) {
+Subset_TradeOHLC <- function(ohlc, from_date, to_date, lookback = NULL, ...) {
     if (!is.null(lookback)) {
         result_subset <- 
             paste0(from_date,'::',to_date) %>%

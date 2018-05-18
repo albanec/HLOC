@@ -102,3 +102,29 @@ CalcIndicator.RSI <- function(x, n, digits = NULL) {
     #
     return(x)
 }
+
+CalcIndicator.chlvl_daydiap <-  function(data, ohlc_args) {
+    ohlc <- ohlc_args$ohlc[index(data)]
+    result <- suppressWarnings(
+        split(ohlc, 'days') %>%
+        {
+            lapply(1:length(.),
+                function(x){
+                    temp_data <- .[[x]] 
+                    max(Cl(temp_data)) - min(Cl(temp_data)) %>%
+                    xts(., order.by = last(index.xts(temp_data)))
+                })
+        } %>%
+        MergeData_inList.byRow(.) %>%
+        merge(data, .) %>%
+        lag.xts(.) 
+    )
+    names(result) <- 'daydiap'   
+    return(result)
+}
+
+CalcIndicator.chlvl_level <- function(x, ohlc_args, str_args) { 
+    rollmean(x[!is.na(x)], str_args$countDay_) %>%
+    merge(x, .) %>%
+    .[, 2]
+}

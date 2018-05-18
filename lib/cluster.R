@@ -23,19 +23,21 @@ ClusterAnalysis.preparation <- function(data, n.mouth ,
                                         hi = TRUE, q.hi = 0.5, 
                                         low = FALSE, q.low = 0,
                                         one.scale = FALSE,
-                                        only_profitable = FALSE) {
+                                        only_profitable = FALSE,
+                                        profit_colname = 'ProfitPercent',
+                                        dd_colname = 'DrawdownMaxPercent') {
     #
     # выделение столбцов с переменными
     df <- Subset_byTarget.col(data = data, target = '_')
     # добавление столбцов с профитом и просадкой
     df$profit <- 
         {
-            which(colnames(data) %in% 'ProfitPercent')
+            which(colnames(data) %in% profit_colname)
         } %>%
         data[, .] 
     df$draw <- 
         {
-            which(colnames(data) %in% 'DrawdownMaxPercent')
+            which(colnames(data) %in% dd_colname)
         } %>%
         data[, .]
     # если нужны только профитные (profit > 0) результаты, то

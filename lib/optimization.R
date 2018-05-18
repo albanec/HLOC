@@ -20,6 +20,7 @@ BruteForceOptimizer.mc <- function(var_df,
                                    ohlc_args, trade_args) {
     #
     require(doParallel)
+    
     if (getDoParWorkers() == 1) {
         workers <- detectCores() - 1    
         registerDoParallel(cores = workers)

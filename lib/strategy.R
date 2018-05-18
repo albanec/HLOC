@@ -674,8 +674,8 @@ CalcOneTrade <- function(cache,
             FUN.MM(balance, row, ohlc_args, trade_args, str_args),
             cache$n[row_ind - 1]))
     if (row_ind != 1) {
-        cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    
-        #cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]
+        #cache$diff.n[row_ind] <- cache$pos[row_ind] * cache$n[row_ind] - cache$pos[row_ind - 1] * cache$n[row_ind - 1]    
+        cache$diff.n[row_ind] <- cache$n[row_ind] - cache$n[row_ind - 1]
         cache$commiss[row_ind] <- trade_args$commiss * abs(cache$diff.n[row_ind])
         cache$margin[row_ind] <- coredata(row$cret) * cache$n[row_ind - 1]
         cache$perfReturn[row_ind] <- cache$margin[row_ind] - cache$commiss[row_ind]
